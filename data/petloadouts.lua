@@ -10,6 +10,44 @@ local ADDON_NAME, addon = ...;
 
 local PETBUDDY_LOADOUT_TEXT = "Enter a name for current pet loadout:|n|n%s";
 local CURRENT_LOADOUT_NAME = nil;
+local unpackFunc = unpack or table.unpack;
+
+local function TrimInput(text)
+	text = tostring(text or "");
+
+	if(type(strtrim) == "function") then
+		return strtrim(text);
+	end
+
+	if(type(string.trim) == "function") then
+		return string.trim(text);
+	end
+
+	return (text:gsub("^%s+", ""):gsub("%s+$", ""));
+end
+
+local function GetPopupEditBox(frame)
+	if(type(frame) ~= "table") then
+		return nil;
+	end
+
+	if(frame.EditBox) then
+		return frame.EditBox;
+	end
+
+	if(frame.editBox) then
+		return frame.editBox;
+	end
+
+	if(type(frame.GetParent) == "function") then
+		local parent = frame:GetParent();
+		if(type(parent) == "table") then
+			return parent.EditBox or parent.editBox;
+		end
+	end
+
+	return nil;
+end
 
 StaticPopupDialogs["PETBUDDY_LOADOUT_ERROR_LOCKED"] = {
 	text = "Cannot save loadout: all pet battle slots are not unlocked.",
@@ -37,6 +75,9 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_SAVE_EXISTS"] = {
 			addon:DeleteLoadout(data.name);
 			addon:SaveLoadout(data.name);
 		else
+			if(data.oldName == data.name) then
+				return;
+			end
 			addon:DeleteLoadout(data.name);
 			addon:RenameLoadout(data.oldName, data.name);
 		end
@@ -101,20 +142,33 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_SAVE"] = {
 	hasEditBox = 1,
 	maxLetters = 38,
 	OnAccept = function(self)
-		local name = string.trim(self.editBox:GetText());
+		local editBox = GetPopupEditBox(self);
+		local name = TrimInput(editBox and editBox:GetText() or "");
 		addon:SaveLoadout(name);
 	end,
 	EditBoxOnEnterPressed = function(self)
-		local name = string.trim(self:GetParent().editBox:GetText());
+		local parent = type(self.GetParent) == "function" and self:GetParent() or nil;
+		local editBox = GetPopupEditBox(self);
+		local name = TrimInput(editBox and editBox:GetText() or "");
 		addon:SaveLoadout(name);
-		self:GetParent():Hide();
+		if(parent and type(parent.Hide) == "function") then
+			parent:Hide();
+		end
 	end,
 	OnShow = function(self)
-		self.editBox:SetFocus();
+		local editBox = GetPopupEditBox(self);
+		if(editBox) then
+			editBox:SetFocus();
+		end
 	end,
 	OnHide = function(self)
-		ChatEdit_FocusActiveWindow();
-		self.editBox:SetText("");
+		if(type(ChatEdit_FocusActiveWindow) == "function") then
+			ChatEdit_FocusActiveWindow();
+		end
+		local editBox = GetPopupEditBox(self);
+		if(editBox) then
+			editBox:SetText("");
+		end
 	end,
 	timeout = 0,
 	exclusive = 1,
@@ -195,8 +249,6 @@ function addon:GetRematchLoadouts()
 	local loadoutData = {};
 	if(not addon:IsRematchLoadoutsEnabled()) then return loadoutData, 0 end
 
-	local filterText = PetBuddyFrameLoadouts and PetBuddyFrameLoadouts.filterText or "";
-
 	local iter = nil;
 	local state = nil;
 	local key = nil;
@@ -218,34 +270,7 @@ function addon:GetRematchLoadouts()
 		if(type(team) == "table" and team.name and team.name ~= "") then
 			local data = addon:BuildRematchLoadout(teamID, team);
 			if(data) then
-				local searchHit = true;
-				if(filterText and filterText ~= "") then
-					local loweredName = string.lower(data.name or "");
-					searchHit = string.find(loweredName, filterText, 1, true) ~= nil;
-
-					if(not searchHit) then
-						for i = 1, 3 do
-							local petData = data.pets[i];
-							if(petData and petData.petID) then
-								local speciesID, customName, _, _, _, _, _, speciesName = C_PetJournal.GetPetInfoByPetID(petData.petID);
-								if(speciesID) then
-									if(string.find(string.lower(speciesName or ""), filterText, 1, true)) then
-										searchHit = true;
-										break;
-									end
-									if(customName and string.find(string.lower(customName), filterText, 1, true)) then
-										searchHit = true;
-										break;
-									end
-								end
-							end
-						end
-					end
-				end
-
-				if(searchHit) then
-					tinsert(loadoutData, data);
-				end
+				tinsert(loadoutData, data);
 			end
 		end
 	end
@@ -264,21 +289,34 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_RENAME"] = {
 	hasEditBox = 1,
 	maxLetters = 38,
 	OnAccept = function(self)
-		local new_name = string.trim(self.editBox:GetText());
+		local editBox = GetPopupEditBox(self);
+		local new_name = TrimInput(editBox and editBox:GetText() or "");
 		addon:RenameLoadout(self.data, new_name);
 	end,
 	EditBoxOnEnterPressed = function(self)
-		local new_name = string.trim(self:GetParent().editBox:GetText());
-		addon:RenameLoadout(self:GetParent().data, new_name);
-		self:GetParent():Hide();
+		local parent = type(self.GetParent) == "function" and self:GetParent() or nil;
+		local editBox = GetPopupEditBox(self);
+		local new_name = TrimInput(editBox and editBox:GetText() or "");
+		addon:RenameLoadout(parent and parent.data or nil, new_name);
+		if(parent and type(parent.Hide) == "function") then
+			parent:Hide();
+		end
 	end,
 	OnShow = function(self)
-		self.editBox:SetText(self.data);
-		self.editBox:SetFocus();
+		local editBox = GetPopupEditBox(self);
+		if(editBox) then
+			editBox:SetText(self.data or "");
+			editBox:SetFocus();
+		end
 	end,
 	OnHide = function(self)
-		ChatEdit_FocusActiveWindow();
-		self.editBox:SetText("");
+		if(type(ChatEdit_FocusActiveWindow) == "function") then
+			ChatEdit_FocusActiveWindow();
+		end
+		local editBox = GetPopupEditBox(self);
+		if(editBox) then
+			editBox:SetText("");
+		end
 	end,
 	timeout = 0,
 	exclusive = 1,
@@ -295,10 +333,10 @@ function addon:GetPetLoadoutText(saved_loadout)
 			petID, ability1, ability2, ability3, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
 		elseif(saved_loadout[slotIndex] and saved_loadout[slotIndex].petID and saved_loadout[slotIndex].abilities) then
 			petID = saved_loadout[slotIndex].petID;
-			ability1, ability2, ability3 = unpack(saved_loadout[slotIndex].abilities);
+			ability1, ability2, ability3 = unpackFunc(saved_loadout[slotIndex].abilities);
 			locked = false;
 		elseif(saved_loadout[slotIndex] and saved_loadout[slotIndex].abilities) then
-			ability1, ability2, ability3 = unpack(saved_loadout[slotIndex].abilities);
+			ability1, ability2, ability3 = unpackFunc(saved_loadout[slotIndex].abilities);
 		end
 		
 		local petString;
@@ -343,18 +381,15 @@ end
 	
 function addon:SaveLoadout(loadout_name)
 	if(not loadout_name) then return false end
-	if(loadout_name == "") then return end
-
-	if(addon:IsRematchLoadoutsEnabled()) then
-		StaticPopup_Show("PETBUDDY_LOADOUT_REMATCH_MANAGED");
-		return false;
-	end
+	loadout_name = TrimInput(loadout_name);
+	if(loadout_name == "") then return false end
 	
 	if(self.db.global.SavedLoadouts[loadout_name]) then
 		StaticPopup_Show("PETBUDDY_LOADOUT_SAVE_EXISTS", loadout_name, nil, {
 			newSave = true,
 			name = loadout_name,
 		});
+		return false;
 	end
 	
 	local currentLoadout = {};
@@ -397,7 +432,6 @@ function addon:RestoreLoadout(loadout_info)
 		PetBuddyPetFrame_ResetAbilitySwitches();
 		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
 		CloseMenus();
-		PetBuddyFrameLoadoutsSearchBox:ClearFocus();
 		return true;
 	end
 
@@ -426,18 +460,15 @@ function addon:RestoreLoadout(loadout_info)
 	
 	PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
 	CloseMenus();
-	
-	PetBuddyFrameLoadoutsSearchBox:ClearFocus();
 end
 
 function addon:RenameLoadout(old_loadout_name, new_loadout_name)
 	if(not old_loadout_name or not new_loadout_name) then return false end
-	if(new_loadout_name == "") then return end
-	
-	if(addon:IsRematchLoadoutsEnabled()) then
-		StaticPopup_Show("PETBUDDY_LOADOUT_REMATCH_MANAGED");
-		return false;
-	end
+	old_loadout_name = TrimInput(old_loadout_name);
+	new_loadout_name = TrimInput(new_loadout_name);
+	if(new_loadout_name == "") then return false end
+	if(old_loadout_name == "" or old_loadout_name == new_loadout_name) then return false end
+	if(not self.db.global.SavedLoadouts[old_loadout_name]) then return false end
 	
 	if(self.db.global.SavedLoadouts[new_loadout_name]) then
 		StaticPopup_Show("PETBUDDY_LOADOUT_SAVE_EXISTS", new_loadout_name, nil, {
@@ -445,6 +476,7 @@ function addon:RenameLoadout(old_loadout_name, new_loadout_name)
 			name = new_loadout_name,
 			oldName = old_loadout_name,
 		});
+		return false;
 	end
 	
 	self.db.global.SavedLoadouts[new_loadout_name] = self.db.global.SavedLoadouts[old_loadout_name];
@@ -456,12 +488,8 @@ end
 
 function addon:DeleteLoadout(loadout_name)
 	if(not loadout_name) then return false end
-	if(loadout_name == "") then return end
-	
-	if(addon:IsRematchLoadoutsEnabled()) then
-		StaticPopup_Show("PETBUDDY_LOADOUT_REMATCH_MANAGED");
-		return false;
-	end
+	loadout_name = TrimInput(loadout_name);
+	if(loadout_name == "") then return false end
 	
 	if(self.db.global.SavedLoadouts[loadout_name]) then
 		self.db.global.SavedLoadouts[loadout_name] = nil;
@@ -472,41 +500,12 @@ function addon:DeleteLoadout(loadout_name)
 end
 
 function addon:GetSortedLoadouts()
-	if(addon:IsRematchLoadoutsEnabled()) then
-		local rematchLoadouts, numRematchLoadouts = addon:GetRematchLoadouts();
-		if(numRematchLoadouts > 0) then
-			return rematchLoadouts, numRematchLoadouts;
-		end
-	end
-
 	local loadoutData = {};
 	for loadout_name, pets in pairs(addon.db.global.SavedLoadouts) do
-		local searchHit = true;
-		if(PetBuddyFrameLoadouts.filterText ~= "") then
-			searchHit = string.find(string.lower(loadout_name), PetBuddyFrameLoadouts.filterText) ~= nil;
-			
-			if(not searchHit) then
-				for i=1, 3 do
-					local speciesID, customName, _, _, _, _, _, speciesName = C_PetJournal.GetPetInfoByPetID(pets[i].petID);
-					if(speciesID) then
-						searchHit = string.find(string.lower(speciesName), PetBuddyFrameLoadouts.filterText) ~= nil;
-						
-						if(not searchHit and customName) then
-							searchHit = string.find(string.lower(customName), PetBuddyFrameLoadouts.filterText) ~= nil;
-						end
-					end
-					
-					if(searchHit) then break; end
-				end
-			end
-		end
-		
-		if(searchHit) then
-			tinsert(loadoutData, {
-				name = loadout_name,
-				pets = pets,
-			});
-		end
+		tinsert(loadoutData, {
+			name = loadout_name,
+			pets = pets,
+		});
 	end
 	
 	table.sort(loadoutData, function(a, b)
@@ -519,7 +518,7 @@ function addon:GetSortedLoadouts()
 	
 	if(#loadoutData == 0) then
 		tinsert(loadoutData, {
-			name = "N/addon",
+			name = "No loadouts",
 			pets = {},
 			notFound = true,
 		});
@@ -674,37 +673,63 @@ function PetBuddyLoadoutsButton_OnLeave(self)
 	GameTooltip:Hide();
 end
 
-function PetBuddyFrameLoadouts_OnSearchTextChanged(self)
-	SearchBoxTemplate_OnTextChanged(self);
-	PetBuddyFrameLoadouts.filterText = string.lower(self:GetText());
-	
-	if(PetBuddyFrameLoadouts.filterText ~= "") then
-		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(true);
-	end
-	
-	PetBuddyFrameLoadouts_UpdateList();
-end
-
 function PetBuddyFrameLoadouts_OnLoad(self)
-	self.filterText = "";
 	self.scrollFrame.update = PetBuddyFrameLoadouts_UpdateList;
 	-- self.scrollFrame.scrollBar.doNotHide = true;
 	
 	HybridScrollFrame_CreateButtons(self.scrollFrame, "PetBuddyLoadoutsButtonTemplate", 0, 0, nil, nil, 0, 0);
 end
 
+function addon:OpenRematchSaveTeamDialog()
+	if(type(Rematch) ~= "table" or not addon:IsRematchLoadoutsEnabled()) then
+		return false;
+	end
+
+	-- Preferred path: use Rematch's existing Save As button behavior.
+	local saveAsButton = Rematch.bottombar and Rematch.bottombar.SaveAsButton;
+	if(saveAsButton and type(saveAsButton.OnClick) == "function") then
+		local ok = pcall(saveAsButton.OnClick, saveAsButton);
+		if(ok) then
+			return true;
+		end
+	end
+
+	-- Fallback path: invoke SaveTeam dialog directly.
+	if(Rematch.saveDialog and type(Rematch.saveDialog.SidelineLoadouts) == "function") then
+		pcall(Rematch.saveDialog.SidelineLoadouts, Rematch.saveDialog);
+	end
+
+	if(Rematch.dialog and type(Rematch.dialog.ShowDialog) == "function") then
+		local saveMode = (Rematch.constants and Rematch.constants.SAVE_MODE_SAVEAS) or 2;
+		local subject = { saveMode = saveMode };
+		local currentTeamID = Rematch.settings and Rematch.settings.currentTeamID;
+
+		if(Rematch.savedTeams and type(Rematch.savedTeams.IsUserTeam) == "function" and currentTeamID and Rematch.savedTeams:IsUserTeam(currentTeamID)) then
+			subject.teamID = currentTeamID;
+		end
+
+		local ok = pcall(Rematch.dialog.ShowDialog, Rematch.dialog, "SaveTeam", subject);
+		if(ok) then
+			return true;
+		end
+	end
+
+	return false;
+end
+
 function PetBuddyLoadoutsSaveButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\PetBuddy2\\Media\\SaveButtonIcon",
+		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\SaveButtonIcon",
 		-- count = "S",
 		tooltipTitle = "Save Loadout",
-		tooltipDescription = "Save current pets and abilities so that they can later be restored (disabled when Rematch controls loadouts)",
+		tooltipDescription = "Save current pets and abilities to PetBuddy loadouts (Shift-Click: open Rematch Save Team when available)",
 		func = function(self)
-			if(addon:IsRematchLoadoutsEnabled()) then
-				StaticPopup_Show("PETBUDDY_LOADOUT_REMATCH_MANAGED");
-			else
-				StaticPopup_Show("PETBUDDY_LOADOUT_SAVE");
+			if(IsShiftKeyDown() and addon:IsRematchLoadoutsEnabled()) then
+				if(addon:OpenRematchSaveTeamDialog()) then
+					return;
+				end
 			end
+			StaticPopup_Show("PETBUDDY_LOADOUT_SAVE");
 		end,
 	};
 	
@@ -713,7 +738,7 @@ end
 
 function PetBuddyLoadoutsToggleButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\PetBuddy2\\Media\\ToggleButtonIconDown",
+		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconDown",
 		tooltipTitle = "Toggle Loadout List",
 		tooltipDescription = "Show/hide the list of existing loadouts",
 		func = function(self)
@@ -733,17 +758,19 @@ function PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
 	if(showstate) then
 		PetBuddyFrameLoadouts_UpdateList();
 		HybridScrollFrame_SetOffset(PetBuddyFrameLoadouts.scrollFrame, 0);
-		button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\Media\\ToggleButtonIconUp");
+		button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconUp");
 	else
-		button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\Media\\ToggleButtonIconDown");
+		button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconDown");
 	end
 end
 
 function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
 	if(not relativeFrame) then return end
+	if(not relativeFrame.data or relativeFrame.data.notFound) then return end
 	
 	if(not PetBuddyFrameLoadouts.ContextMenu) then
-		PetBuddyFrameLoadouts.ContextMenu = CreateFrame("Frame", "PetBuddyLoadoutsContextMenuFrame", PetBuddyFrame, "UIDropDownMenuTemplate");
+		PetBuddyFrameLoadouts.ContextMenu = CreateFrame("Frame", "PetBuddyLoadoutsContextMenuFrame", UIParent, "UIDropDownMenuTemplate");
+		PetBuddyFrameLoadouts.ContextMenu:SetFrameStrata("DIALOG");
 	end
 	
 	local data = relativeFrame.data;
@@ -801,8 +828,13 @@ function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
 		contextMenuData[2].disabled = true;
 	end
 	
+	PetBuddyFrameLoadouts.ContextMenu:ClearAllPoints();
 	PetBuddyFrameLoadouts.ContextMenu:SetPoint("TOPLEFT", relativeFrame, "CENTER", 0, 5);
-	EasyMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
+	if(type(addon.OpenDropDownMenu) == "function") then
+		addon:OpenDropDownMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
+	elseif(type(EasyMenu) == "function") then
+		EasyMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
+	end
 end
 
 

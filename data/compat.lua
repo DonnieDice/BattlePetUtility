@@ -34,6 +34,60 @@ if type(GetSpellCooldown) ~= "function" and C_Spell and type(C_Spell.GetSpellCoo
 	end
 end
 
+if type(IsUsableSpell) ~= "function" and C_Spell and type(C_Spell.IsSpellUsable) == "function" then
+	function IsUsableSpell(spellIdentifier)
+		local usable, noMana = C_Spell.IsSpellUsable(spellIdentifier);
+
+		if type(usable) == "table" then
+			local info = usable;
+			return info.isUsable and true or false, info.notEnoughMana and true or false;
+		end
+
+		return usable and true or false, noMana and true or false;
+	end
+end
+
+if type(IsUsableItem) ~= "function" and C_Item and type(C_Item.IsUsableItem) == "function" then
+	function IsUsableItem(item)
+		local usable = C_Item.IsUsableItem(item);
+
+		if type(usable) == "table" then
+			local info = usable;
+			return info.isUsable and true or false;
+		end
+
+		return usable and true or false;
+	end
+end
+
+if type(GetPetTypeTexture) ~= "function" then
+	local PET_TYPE_TEXTURE_SUFFIX = {
+		[1] = "Humanoid",
+		[2] = "Dragon",
+		[3] = "Flying",
+		[4] = "Undead",
+		[5] = "Critter",
+		[6] = "Magical",
+		[7] = "Elemental",
+		[8] = "Beast",
+		[9] = "Water",
+		[10] = "Mechanical",
+	};
+
+	function GetPetTypeTexture(petType)
+		local suffix = PET_TYPE_TEXTURE_SUFFIX[petType];
+		if(not suffix and type(PET_TYPE_SUFFIX) == "table") then
+			suffix = PET_TYPE_SUFFIX[petType];
+		end
+
+		if(not suffix) then
+			suffix = "Humanoid";
+		end
+
+		return "Interface\\PetBattles\\PetIcon-" .. suffix;
+	end
+end
+
 if type(GetNumGossipOptions) ~= "function" and C_GossipInfo and type(C_GossipInfo.GetOptions) == "function" then
 	function GetNumGossipOptions()
 		return TableLen(C_GossipInfo.GetOptions());

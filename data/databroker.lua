@@ -9,8 +9,19 @@
 local ADDON_NAME, addon = ...;
 local E = addon.E;
 
-local LibStub = LibStub;
-local LDB = LibStub:GetLibrary("LibDataBroker-1.1");
+local function GetLibDataBroker()
+	local libStubObject = rawget(_G, "LibStub");
+	if(type(libStubObject) ~= "table" or type(libStubObject.GetLibrary) ~= "function") then
+		return nil;
+	end
+
+	local ok, ldb = pcall(libStubObject.GetLibrary, libStubObject, "LibDataBroker-1.1", true);
+	if(not ok) then
+		return nil;
+	end
+
+	return ldb;
+end
 
 local ICON_PATTERN_12 = "|T%s:12:12:0:0|t";
 local ICON_PATTERN_16 = "|T%s:16:16:0:0|t";
@@ -75,7 +86,13 @@ function addon:GetDatabrokerMenuData()
 		},
 		{
 			text = "Always resummon companion",
-			func = function() self.db.global.AutoSummonPet = not self.db.global.AutoSummonPet; addon:UpdateDatabrokerText(); end,
+			func = function()
+				self.db.global.AutoSummonPet = not self.db.global.AutoSummonPet;
+				addon:UpdateDatabrokerText();
+				if(self.db.global.AutoSummonPet) then
+					addon:UpdateAutoResummon(true);
+				end
+			end,
 			checked = function() return self.db.global.AutoSummonPet; end,
 			isNotRadio = true,
 			hasArrow = true,
@@ -113,6 +130,12 @@ function addon:GetDatabrokerMenuData()
 end
 
 function addon:InitializeDatabroker()
+	local LDB = GetLibDataBroker();
+	if(not LDB) then
+		addon.databroker = nil;
+		return;
+	end
+
 	addon.databroker = LDB:NewDataObject(ADDON_NAME, {
 		type = "data source",
 		label = "PetBuddy2",
@@ -240,8 +263,8 @@ function addon:UpdateDatabrokerText()
 	end
 	
 	if(self.db.global.Broker.ShowPetCharms) then
-		local charmsItemID, charmsNumAmount = addon:GetPetCharmsInfo();
-		local petCharmIconString = ICON_PATTERN_12:format(tostring(GetItemIcon(charmsItemID) or ""));
+		local charmIcon, charmsNumAmount = addon:GetPetCharmsInfo();
+		local petCharmIconString = ICON_PATTERN_12:format(tostring(charmIcon or ""));
 		tinsert(strings, string.format("%d %s", charmsNumAmount, petCharmIconString));
 	end
 	

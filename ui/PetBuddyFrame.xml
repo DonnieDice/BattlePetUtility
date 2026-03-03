@@ -2,7 +2,7 @@
 ..\FrameXML\UI.xsd">
 	<CheckButton name="PetBuddyAutoHealButton" frameStrata="MEDIUM" inherits="UICheckButtonTemplate" parent="GossipFrame" hidden="true">
 		<Anchors>
-			<Anchor point="TOPRIGHT" parent="GossipFrame" relativePoint="TOPRIGHT" x="-80" y="-27"/>
+			<Anchor point="TOPRIGHT" relativeTo="GossipFrame" relativePoint="TOPRIGHT" x="-80" y="-27"/>
 		</Anchors>
 		<Scripts>
 			<OnShow>
@@ -95,7 +95,6 @@
 							</Layer>
 						</Layers>
 						<Scripts>
-							<OnLoad method="OnShow"/>
 							<OnShow method="OnShow"/>
 							<OnHide method="OnHide"/>
 							<OnEvent method="OnEvent"/>
@@ -172,34 +171,34 @@
 					<Anchor point="TOPRIGHT" relativeTo="$parentPet3" relativePoint="BOTTOMRIGHT"/>
 				</Anchors>
 				<Frames>
-					<CheckButton parentKey="itemButton1" inherits="PetBuddyButtonTemplate" hidden="true">
+					<CheckButton name="$parentItemButton1" parentKey="itemButton1" inherits="PetBuddyButtonTemplate" hidden="true">
 						<Anchors>
-							<Anchor point="TOPRIGHT" relativeTo="$parent" relativePoint="TOPRIGHT" x="-6" y="-6"/>
+							<Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPLEFT" x="6" y="-6"/>
 						</Anchors>
 					</CheckButton>
-					<CheckButton parentKey="itemButton2" inherits="PetBuddyButtonTemplate" hidden="true">
+					<CheckButton name="$parentItemButton2" parentKey="itemButton2" inherits="PetBuddyButtonTemplate" hidden="true">
 						<Anchors>
-							<Anchor point="RIGHT" relativeKey="$parent.itemButton1" relativePoint="LEFT" x="-6" y="0"/>
+							<Anchor point="LEFT" relativeKey="$parent.itemButton1" relativePoint="RIGHT" x="6" y="0"/>
 						</Anchors>
 					</CheckButton>
-					<CheckButton parentKey="itemButton3" inherits="PetBuddyButtonTemplate" hidden="true">
+					<CheckButton name="$parentItemButton3" parentKey="itemButton3" inherits="PetBuddyButtonTemplate" hidden="true">
 						<Anchors>
-							<Anchor point="RIGHT" relativeKey="$parent.itemButton2" relativePoint="LEFT" x="-6" y="0"/>
+							<Anchor point="LEFT" relativeKey="$parent.itemButton2" relativePoint="RIGHT" x="6" y="0"/>
 						</Anchors>
 					</CheckButton>
-					<CheckButton parentKey="itemButton4" inherits="PetBuddyButtonTemplate" hidden="true">
+					<CheckButton name="$parentItemButton4" parentKey="itemButton4" inherits="PetBuddyButtonTemplate" hidden="true">
 						<Anchors>
-							<Anchor point="RIGHT" relativeKey="$parent.itemButton3" relativePoint="LEFT" x="-6" y="0"/>
+							<Anchor point="LEFT" relativeKey="$parent.itemButton3" relativePoint="RIGHT" x="6" y="0"/>
 						</Anchors>
 					</CheckButton>
-					<CheckButton parentKey="itemButton5" inherits="PetBuddyButtonTemplate" hidden="true">
+					<CheckButton name="$parentItemButton5" parentKey="itemButton5" inherits="PetBuddyButtonTemplate" hidden="true">
 						<Anchors>
-							<Anchor point="RIGHT" relativeKey="$parent.itemButton4" relativePoint="LEFT" x="-6" y="0"/>
+							<Anchor point="LEFT" relativeKey="$parent.itemButton4" relativePoint="RIGHT" x="6" y="0"/>
 						</Anchors>
 					</CheckButton>
-					<CheckButton parentKey="itemButton6" inherits="PetBuddyButtonTemplate" hidden="true">
+					<CheckButton name="$parentItemButton6" parentKey="itemButton6" inherits="PetBuddyButtonTemplate" hidden="true">
 						<Anchors>
-							<Anchor point="RIGHT" relativeKey="$parent.itemButton5" relativePoint="LEFT" x="-6" y="0"/>
+							<Anchor point="LEFT" relativeKey="$parent.itemButton5" relativePoint="RIGHT" x="6" y="0"/>
 						</Anchors>
 					</CheckButton>
 					
@@ -217,7 +216,7 @@
 				</Frames>
 				<Scripts>
 					<OnLoad>
-						self:SetScale(0.812);
+						self:SetScale(0.6);
 						PetBuddyFrameButtons_OnShow(self);
 					</OnLoad>
 					<OnShow>
@@ -262,25 +261,6 @@
 						</Scripts>
 					</CheckButton>
 					
-					<EditBox name="$parentSearchBox" inherits="SearchBoxTemplate" parentKey="searchBox" autoFocus="false" letters="38">
-						<Size x="138" y="20"/>
-						<Anchors>
-							<Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPLEFT" x="8" y="-5"/>
-						</Anchors>
-						<Scripts>
-							<OnLoad>
-								SearchBoxTemplate_OnLoad(self);
-								self.Instructions:SetText("Search Loadouts")
-							</OnLoad>
-							<OnTextChanged function="PetBuddyFrameLoadouts_OnSearchTextChanged"/>
-							<OnEscapePressed>
-								self:SetText("");
-								self:ClearFocus();
-								PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
-							</OnEscapePressed>
-						</Scripts>
-					</EditBox>
-					
 					<ScrollFrame name="$parentScrollFrame" parentKey="scrollFrame" inherits="HybridScrollFrameTemplate" hidden="true">
 						<Size x="208" y="138"/>
 						<Anchors>
@@ -299,7 +279,6 @@
 								tinsert(UISpecialFrames, self:GetName());
 							</OnLoad>
 							<OnHide>
-								self:GetParent().searchBox:SetText("");
 								PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
 							</OnHide>
 						</Scripts>
@@ -324,10 +303,10 @@
 				PetBuddyFrame_OnMouseWheel(self, delta);
 			</OnMouseWheel>
 			<OnMouseDown>
-				PetBuddyFrame_StartMoving();
+				PetBuddyFrame_StartMoving(button);
 			</OnMouseDown>
 			<OnMouseUp>
-				PetBuddyFrame_StopMoving();
+				PetBuddyFrame_StopMoving(button);
 			</OnMouseUp>
 			<OnShow>
 				PetBuddyFrame_OnShow(self);

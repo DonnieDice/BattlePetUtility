@@ -6,24 +6,212 @@
 	Questions can be sent to temu92@gmail.com
 --]]
 
-local ADDON_NAME = ...;
-local addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceEvent-3.0", "AceHook-3.0", "AceTimer-3.0");
+local ADDON_NAME, addon = ...;
 _G[ADDON_NAME] = addon;
 
-addon.E = {};
+addon.E = addon.E or {};
 addon.ADDON_TITLE = "PetBuddy2";
 local E = addon.E;
+local unpackFunc = unpack or table.unpack;
+local PET_TYPE_TEXTURE_SUFFIX = {
+	[1] = "Humanoid",
+	[2] = "Dragon",
+	[3] = "Flying",
+	[4] = "Undead",
+	[5] = "Critter",
+	[6] = "Magical",
+	[7] = "Elemental",
+	[8] = "Beast",
+	[9] = "Water",
+	[10] = "Mechanical",
+};
 
-BINDING_HEADER_PETBUDDY = addon.ADDON_TITLE;
-_G["BINDING_NAME_CLICK PetBuddyFrameToggler:LeftButton"] = "Toggle PetBuddy2";
-_G["BINDING_NAME_PETBUDDY_TOGGLE_BUTTONS"] = "Show Pet Related Items Menu";
-_G["BINDING_NAME_PETBUDDY_TOGGLE_LOADOUTS"] = "Show Pet Loadouts Menu";
-_G["BINDING_NAME_PETBUDDY_SEARCH_LOADOUTS"] = "Search Pet Loadouts";
+local function GetPetTypeTexturePath(petType)
+	if(type(GetPetTypeTexture) == "function") then
+		local texturePath = GetPetTypeTexture(petType);
+		if(texturePath and texturePath ~= "") then
+			return texturePath;
+		end
+	end
+
+	local suffix = nil;
+	if(type(PET_TYPE_SUFFIX) == "table") then
+		suffix = PET_TYPE_SUFFIX[petType];
+	end
+
+	if(not suffix) then
+		suffix = PET_TYPE_TEXTURE_SUFFIX[petType] or "Humanoid";
+	end
+
+	return "Interface\\PetBattles\\PetIcon-" .. suffix;
+end
+
+addon._eventHandlers = addon._eventHandlers or {};
+addon._timers = addon._timers or {};
+
+addon.EventFrame = addon.EventFrame or CreateFrame("Frame");
+addon.EventFrame:SetScript("OnEvent", function(_, event, ...)
+	local handler = addon._eventHandlers[event];
+	if(not handler) then
+		handler = addon[event];
+	end
+
+	if(type(handler) == "string") then
+		handler = addon[handler];
+	end
+
+	if(type(handler) == "function") then
+		handler(addon, event, ...);
+	end
+end);
+
+function addon:RegisterEvent(event, handler)
+	if(not event) then return end
+
+	local ok = pcall(self.EventFrame.RegisterEvent, self.EventFrame, event);
+	if(not ok) then
+		self._eventHandlers[event] = nil;
+		return false;
+	end
+
+	self._eventHandlers[event] = handler or event;
+	return true;
+end
+
+function addon:UnregisterEvent(event)
+	if(not event) then return end
+
+	self._eventHandlers[event] = nil;
+	pcall(self.EventFrame.UnregisterEvent, self.EventFrame, event);
+end
+
+local function RunTimerCallback(callback, args)
+	if(type(callback) == "string") then
+		local method = addon[callback];
+		if(type(method) == "function") then
+			method(addon, unpackFunc(args, 1, args.n));
+		end
+	elseif(type(callback) == "function") then
+		callback(unpackFunc(args, 1, args.n));
+	end
+end
+
+function addon:ScheduleTimer(callback, delay, ...)
+	if(not callback or delay == nil) then return nil end
+
+	local args = { n = select("#", ...), ... };
+	local timer;
+
+	timer = C_Timer.NewTimer(math.max(0, delay), function()
+		addon._timers[timer] = nil;
+		RunTimerCallback(callback, args);
+	end);
+
+	self._timers[timer] = true;
+	return timer;
+end
+
+function addon:ScheduleRepeatingTimer(callback, delay, ...)
+	if(not callback or delay == nil) then return nil end
+
+	local args = { n = select("#", ...), ... };
+	local ticker = C_Timer.NewTicker(math.max(0.01, delay), function()
+		RunTimerCallback(callback, args);
+	end);
+
+	self._timers[ticker] = true;
+	return ticker;
+end
+
+function addon:CancelTimer(timerHandle)
+	if(not timerHandle) then return end
+
+	if(type(timerHandle.Cancel) == "function") then
+		timerHandle:Cancel();
+	end
+
+	self._timers[timerHandle] = nil;
+end
+
+function addon:CancelAllTimers()
+	for timerHandle in pairs(self._timers) do
+		if(type(timerHandle.Cancel) == "function") then
+			timerHandle:Cancel();
+		end
+		self._timers[timerHandle] = nil;
+	end
+end
+
+addon.CHAT_PREFIX = "|TInterface\\Icons\\INV_PandarenSerpentPet:16:16:0:0|t - [|cff58be81PB2|r] ";
+
+local function GetAddonVersion()
+	if(C_AddOns and type(C_AddOns.GetAddOnMetadata) == "function") then
+		return C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") or "unknown";
+	elseif(type(GetAddOnMetadata) == "function") then
+		return GetAddOnMetadata(ADDON_NAME, "Version") or "unknown";
+	end
+
+	return "unknown";
+end
+
+function addon:PrintMessage(message)
+	local line = (self.CHAT_PREFIX or "") .. tostring(message or "");
+	if(DEFAULT_CHAT_FRAME and type(DEFAULT_CHAT_FRAME.AddMessage) == "function") then
+		DEFAULT_CHAT_FRAME:AddMessage(line);
+	else
+		print(line);
+	end
+end
+
+function addon:ShowWelcomeMessage()
+	if(not self.db or self.db.global.ShowWelcomeMessage == false) then return end
+
+	self:PrintMessage("Welcome! Use |cff58be81/petbuddy|r to toggle, and |cff58be81/petbuddy help|r for commands.");
+	self:PrintMessage("|cffffff00Version:|r |cff7598b6" .. GetAddonVersion() .. "|r");
+end
+
+function addon:ToggleWelcomeMessage()
+	if(not self.db) then return end
+
+	self.db.global.ShowWelcomeMessage = not self.db.global.ShowWelcomeMessage;
+	if(self.db.global.ShowWelcomeMessage) then
+		self:PrintMessage("|cff00ff00Welcome message enabled.|r");
+	else
+		self:PrintMessage("|cffff0000Welcome message disabled.|r");
+	end
+end
+
+function addon:PrintHelp()
+	self:PrintMessage("|cffffff00PetBuddy2 Commands:|r");
+	self:PrintMessage(" |cff58be81/petbuddy|r - Toggle PetBuddy2");
+	self:PrintMessage(" |cff58be81/petbuddy help|r - Show command help");
+	self:PrintMessage(" |cff58be81/petbuddy welcome|r - Toggle login welcome message");
+	self:PrintMessage(" |cff58be81/petbuddy version|r - Show current version");
+end
 
 local PetsBattleData = {};
 
+local function TryLoadCollectionsUI()
+	if(C_AddOns and type(C_AddOns.LoadAddOn) == "function") then
+		pcall(C_AddOns.LoadAddOn, "Blizzard_Collections");
+		return;
+	end
+
+	if(type(LoadAddOn) ~= "function") then
+		return;
+	end
+
+	if(type(securecallfunction) == "function") then
+		securecallfunction(LoadAddOn, "Blizzard_Collections");
+	elseif(type(securecall) == "function") then
+		securecall(LoadAddOn, "Blizzard_Collections");
+	else
+		pcall(LoadAddOn, "Blizzard_Collections");
+	end
+end
+
 function addon:OnEnable()
-	securecall("LoadAddOn", "Blizzard_Collections");
+	TryLoadCollectionsUI();
 	
 	addon.SecureFrameToggler = CreateFrame("Button", "PetBuddyFrameToggler", nil, "SecureHandlerClickTemplate");
 	addon.SecureFrameToggler:SetFrameRef("PetBuddyFrame", PetBuddyFrame);
@@ -50,12 +238,21 @@ function addon:OnEnable()
 	
 	addon:RegisterEvent("PET_JOURNAL_NEW_BATTLE_SLOT", addon.UpdatePets);
 	
-	addon:RegisterEvent("UPDATE_SUMMONPETS_ACTION", addon.UpdatePets);
-	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE", addon.UpdatePets);
+	addon:RegisterEvent("UPDATE_SUMMONPETS_ACTION");
+	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
+	addon:RegisterEvent("PLAYER_ENTERING_WORLD");
+	addon:RegisterEvent("PLAYER_ALIVE", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("PLAYER_UNGHOST", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("PLAYER_CONTROL_GAINED", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("UNIT_EXITED_VEHICLE", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("UNIT_AURA", addon.HandleAutoSummonTrigger);
 	
 	addon:RegisterEvent("SPELL_UPDATE_COOLDOWN");
 	
-	addon:RegisterEvent("CURSOR_UPDATE");
+	if(not addon:RegisterEvent("CURSOR_UPDATE")) then
+		addon:RegisterEvent("CURSOR_CHANGED", addon.CURSOR_UPDATE);
+	end
 	
 	addon:RegisterEvent("PLAYER_REGEN_DISABLED");
 	addon:RegisterEvent("PLAYER_REGEN_ENABLED");
@@ -68,6 +265,8 @@ function addon:OnEnable()
 	addon:RegisterEvent("BARBER_SHOP_CLOSE");
 	
 	addon:UpdatePets();
+	addon:ShowWelcomeMessage();
+	addon:HandleAutoSummonTrigger("PLAYER_ENTERING_WORLD");
 	
 	addon:ScheduleRepeatingTimer(function()
 		if(not addon.BlizzHooked and PetJournal_UpdatePetLoadOut) then
@@ -107,8 +306,8 @@ end
 
 function PetBuddyFocusSearch()
 	PetBuddySetUtility(2);
-	if(PetBuddyFrameLoadoutsSearchBox) then
-		PetBuddyFrameLoadoutsSearchBox:SetFocus();
+	if(type(PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
+		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(true);
 	end
 end
 
@@ -155,37 +354,73 @@ end
 
 function addon:UpdateUtilityMenuState()
 	if(InCombatLockdown()) then return end
-	
-	if(addon.db.global.PetUtilityMenuState < 0 or addon.db.global.PetUtilityMenuState > 2) then
-		addon.db.global.PetUtilityMenuState = 0;
+
+	local menuState = tonumber(addon.db.global.PetUtilityMenuState) or 0;
+	menuState = math.floor(menuState);
+	if(menuState < 0 or menuState > 3) then
+		menuState = 0;
 	end
-	
-	if(addon.db.global.PetUtilityMenuState == 1) then
+	addon.db.global.PetUtilityMenuState = menuState;
+
+	local showItems = (menuState == 1 or menuState == 3);
+	local showLoadouts = (menuState == 2 or menuState == 3);
+	local scrollFrame = PetBuddyFrameLoadoutsScrollFrame;
+	local showLoadoutList = (showLoadouts and scrollFrame and scrollFrame:IsShown()) and true or false;
+
+	addon.db.global.ShowPetItems = showItems;
+	addon.db.global.ShowPetLoadouts = showLoadouts;
+
+	PetBuddyFrameButtons:ClearAllPoints();
+	PetBuddyFrameButtons:SetPoint("TOPLEFT", PetBuddyFramePet3, "BOTTOMLEFT", 0, 0);
+	PetBuddyFrameLoadouts:ClearAllPoints();
+	if(showItems) then
+		PetBuddyFrameLoadouts:SetPoint("TOPLEFT", PetBuddyFrameButtons, "TOPLEFT", 0, 0);
+	else
+		PetBuddyFrameLoadouts:SetPoint("TOPLEFT", PetBuddyFramePet3, "BOTTOMLEFT", 0, 0);
+	end
+
+	if(showItems) then
 		PetBuddyFrameButtons:Show();
-		PetBuddyFrameLoadouts:Hide();
 		addon:UpdateItemButtons();
-		
-	elseif(addon.db.global.PetUtilityMenuState == 2) then
+	else
 		PetBuddyFrameButtons:Hide();
+	end
+
+	if(showLoadouts) then
 		PetBuddyFrameLoadouts:Show();
 		PetBuddyFrameLoadouts_UpdateList();
 	else
-		PetBuddyFrameButtons:Hide();
 		PetBuddyFrameLoadouts:Hide();
 	end
-	
-	PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
+
+	if(type(PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
+		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showLoadoutList);
+	end
 end
 
 function PetBuddyFrame_OnMouseWheel(self, delta)
 	if(InCombatLockdown() or C_PetBattles.IsInBattle()) then return end
-	
-	local menuState = addon.db.global.PetUtilityMenuState;
-	
-	menuState = menuState - delta;
-	if(menuState > 2) then menuState = 0; end
-	if(menuState < 0) then menuState = 2; end
-	
+
+	local cycle = { 0, 1, 3, 2 };
+	local menuState = tonumber(addon.db.global.PetUtilityMenuState) or 0;
+	local cycleIndex = 1;
+	for i, state in ipairs(cycle) do
+		if(state == menuState) then
+			cycleIndex = i;
+			break;
+		end
+	end
+
+	if(delta > 0) then
+		cycleIndex = cycleIndex - 1;
+	else
+		cycleIndex = cycleIndex + 1;
+	end
+
+	if(cycleIndex < 1) then cycleIndex = #cycle; end
+	if(cycleIndex > #cycle) then cycleIndex = 1; end
+	menuState = cycle[cycleIndex];
+
 	addon.db.global.PetUtilityMenuState = menuState;
 	
 	addon:UpdateUtilityMenuState();
@@ -387,6 +622,9 @@ function addon:PET_BATTLE_CLOSE()
 	
 	addon:UpdatePets();
 	addon:UpdateNumWoundedPets();
+	addon:ScheduleTimer(function()
+		addon:UpdateAutoResummon(false);
+	end, 1.0);
 end
 
 function addon:UpdatePets()
@@ -436,7 +674,7 @@ function addon:UpdatePets()
 				petFrame.abilities.typeInfo.petID = petID;
 				petFrame.abilities.typeInfo.speciesID = speciesID;
 				petFrame.abilities.typeInfo.abilityID = PET_BATTLE_PET_TYPE_PASSIVES[petType];
-				petFrame.abilities.typeInfo.icon:SetTexture("Interface\\PetBattles\\PetIcon-"..PET_TYPE_SUFFIX[petType]);
+				petFrame.abilities.typeInfo.icon:SetTexture(GetPetTypeTexturePath(petType));
 				
 				if(GetCursorInfo() ~= "battlepet") then
 					petFrame.glowHighlight:Hide();
@@ -461,7 +699,7 @@ function addon:UpdatePets()
 				petFrame.iconBorder:SetVertexColor(rarityColor.r, rarityColor.g, rarityColor.b);
 				
 				petFrame.petTypeTexture:Show();
-				petFrame.petTypeTexture:SetTexture(GetPetTypeTexture(petType));
+				petFrame.petTypeTexture:SetTexture(GetPetTypeTexturePath(petType));
 
 				petFrame.petName:SetFormattedText("%s[%d]|r %s", rarityColor.hex, level, customName or speciesName);
 				
@@ -483,7 +721,7 @@ function addon:UpdatePets()
 				petFrame.stats.petHealth.text:SetText(healthText);
 				
 				petFrame.dragButton.petTypeIcon:Show();
-				petFrame.dragButton.petTypeIcon:SetTexture("Interface\\PetBattles\\PetIcon-"..PET_TYPE_SUFFIX[petType]);
+				petFrame.dragButton.petTypeIcon:SetTexture(GetPetTypeTexturePath(petType));
 				
 				if(level < 25 and maxXp > 0) then
 					if(not petFrame.SwitchingAbilities) then
@@ -544,7 +782,7 @@ function addon:UpdatePets()
 					
 					petFrame.slotInfoText:Show();
 					
-					if(self.db.global.ShowPetItems and not PetBuddyFrameLoadouts:IsShown()) then
+					if(self.db.global.ShowPetItems) then
 						PetBuddyFrameButtons:Show();
 					end
 					
@@ -573,7 +811,9 @@ function addon:UpdatePets()
 	end
 end
 
-function PetBuddyFrame_StartMoving()
+function PetBuddyFrame_StartMoving(button)
+	if(button and button ~= "LeftButton") then return end
+
 	if(addon.db.global.IsFrameLocked) then return end
 	
 	CloseMenus();
@@ -585,12 +825,42 @@ function PetBuddyFrame_StartMoving()
 	-- PetBuddyPetFrame_ResetAbilitySwitches();
 end
 
-function PetBuddyFrame_StopMoving()
+function PetBuddyFrame_StopMoving(button)
+	if(button and button ~= "LeftButton") then return end
+
 	if(PetBuddyFrame.IsMoving) then
 		PetBuddyFrame:StopMovingOrSizing();
 		PetBuddyFrame.IsMoving = false;
 		PetBuddyFrame_SavePosition();
 	end
+end
+
+function addon:UPDATE_SUMMONPETS_ACTION()
+	addon:UpdatePets();
+	addon:UpdateAutoResummon();
+end
+
+function addon:PET_JOURNAL_LIST_UPDATE()
+	addon:UpdatePets();
+	addon:UpdateAutoResummon();
+end
+
+local function IsCursorOverFrame(frame)
+	if(not frame or not frame:IsShown()) then return false end
+
+	local left, bottom, width, height = frame:GetRect();
+	if(not left or not bottom or not width or not height) then
+		return false;
+	end
+
+	local right = left + width;
+	local top = bottom + height;
+	local scale = UIParent:GetEffectiveScale();
+	local cursorX, cursorY = GetCursorPosition();
+	cursorX = cursorX / scale;
+	cursorY = cursorY / scale;
+
+	return cursorX >= left and cursorX <= right and cursorY >= bottom and cursorY <= top;
 end
 
 ----------------------------
@@ -600,42 +870,148 @@ PetBuddy_PetCharmsMixin = {}
 function PetBuddy_PetCharmsMixin:OnShow()
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
 	self:RegisterEvent("BAG_UPDATE_DELAYED");
+	self:RegisterEvent("CURRENCY_DISPLAY_UPDATE");
 	self:OnEvent();
 end
 
 function PetBuddy_PetCharmsMixin:OnHide()
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
 	self:UnregisterEvent("BAG_UPDATE_DELAYED");
+	self:UnregisterEvent("CURRENCY_DISPLAY_UPDATE");
+end
+
+local PET_CHARM_ITEM_IDS = {
+	163036, -- Polished Pet Charm
+	116415, -- Shiny Pet Charm
+};
+
+local function BuildPetCharmNameSet()
+	local names = {
+		["pet charm"] = true,
+		["polished pet charm"] = true,
+		["shiny pet charm"] = true,
+	};
+
+	for _, itemID in ipairs(PET_CHARM_ITEM_IDS) do
+		local itemName = GetItemInfo(itemID);
+		if(itemName and itemName ~= "") then
+			names[string.lower(itemName)] = true;
+		end
+	end
+
+	return names;
+end
+
+local function IsPetCharmName(name, charmNameSet)
+	if(type(name) ~= "string" or name == "") then
+		return false;
+	end
+
+	local lowered = string.lower(name);
+	if(charmNameSet[lowered]) then
+		return true;
+	end
+
+	return string.find(lowered, "pet charm", 1, true) ~= nil;
+end
+
+local function GetTrackedItemCount(itemID)
+	if(C_Item and type(C_Item.GetItemCount) == "function") then
+		local ok, count = pcall(C_Item.GetItemCount, itemID, true, false, true, true);
+		if(ok and type(count) == "number") then
+			return count;
+		end
+	end
+
+	return tonumber(GetItemCount(itemID, true)) or tonumber(GetItemCount(itemID)) or 0;
 end
 
 function addon:GetPetCharmsInfo()
-	local charmsItems = {
-		163036, -- Polished Pet Charm
-		116415, -- Shiny Pet Charm
-	};
-	
-	for _, itemID in ipairs(charmsItems) do
-		local amount = GetItemCount(itemID);
-		if (amount and amount > 0) then
-			return itemID, amount;
+	local entries = {};
+	local totalAmount = 0;
+	local displayIcon = nil;
+	local charmNameSet = BuildPetCharmNameSet();
+
+	for _, itemID in ipairs(PET_CHARM_ITEM_IDS) do
+		local amount = GetTrackedItemCount(itemID);
+		local itemName = GetItemInfo(itemID);
+		local itemIcon = GetItemIcon(itemID);
+
+		if(itemIcon and not displayIcon) then
+			displayIcon = itemIcon;
+		end
+
+		if(amount > 0) then
+			totalAmount = totalAmount + amount;
+			tinsert(entries, {
+				source = "item",
+				id = itemID,
+				name = itemName or ("Item " .. tostring(itemID)),
+				amount = amount,
+				icon = itemIcon,
+			});
 		end
 	end
-	return charmsItems[1], 0;
+
+	if(C_CurrencyInfo and type(C_CurrencyInfo.GetCurrencyListSize) == "function" and type(C_CurrencyInfo.GetCurrencyListInfo) == "function") then
+		local count = C_CurrencyInfo.GetCurrencyListSize();
+		for index = 1, count do
+			local info = C_CurrencyInfo.GetCurrencyListInfo(index);
+			if(type(info) == "table" and not info.isHeader and not info.isTypeUnused) then
+				local amount = tonumber(info.quantity or info.totalQuantity) or 0;
+				if(amount > 0 and IsPetCharmName(info.name, charmNameSet)) then
+					local icon = info.iconFileID or info.icon;
+					totalAmount = totalAmount + amount;
+					tinsert(entries, {
+						source = "currency",
+						id = info.currencyTypesID or info.currencyType,
+						name = info.name or "Pet Charm",
+						amount = amount,
+						icon = icon,
+					});
+
+					if(icon and not displayIcon) then
+						displayIcon = icon;
+					end
+				end
+			end
+		end
+	end
+
+	if(not displayIcon) then
+		displayIcon = GetItemIcon(PET_CHARM_ITEM_IDS[1]) or "Interface\\Icons\\INV_Misc_QuestionMark";
+	end
+
+	return displayIcon, totalAmount, entries;
 end
 
 function PetBuddy_PetCharmsMixin:OnEvent(event, ...)
-	local charmsItemID, charmsNumAmount = addon:GetPetCharmsInfo();
-	if (charmsItemID ~= nil and charmsNumAmount ~= nil) then
-		self.text:SetText(charmsNumAmount);
-		self.icon:SetTexture(GetItemIcon(charmsItemID));
+	local charmIcon, charmsNumAmount = addon:GetPetCharmsInfo();
+	if(charmIcon ~= nil and charmsNumAmount ~= nil) then
+		self.text:SetText(tostring(charmsNumAmount));
+		self.icon:SetTexture(charmIcon);
 	end
 	addon:UpdateDatabrokerText();
 end
 
 function PetBuddy_PetCharmsMixin:OnEnter()
-	local charmsItemID, charmsNumAmount = addon:GetPetCharmsInfo();
+	local _, charmsNumAmount, charmEntries = addon:GetPetCharmsInfo();
 	GameTooltip:SetOwner(self, "ANCHOR_CURSOR");
-	GameTooltip:SetItemByID(charmsItemID);
+	GameTooltip:ClearLines();
+	GameTooltip:AddLine("Pet Charms");
+	GameTooltip:AddLine(" ");
+	GameTooltip:AddDoubleLine("Total", tostring(charmsNumAmount or 0), 1, 1, 1, 1, 1, 1);
+
+	if(type(charmEntries) == "table" and #charmEntries > 0) then
+		table.sort(charmEntries, function(a, b)
+			return (a.amount or 0) > (b.amount or 0);
+		end);
+
+		for _, entry in ipairs(charmEntries) do
+			local entryName = entry.name or "Pet Charm";
+			GameTooltip:AddDoubleLine(entryName, tostring(entry.amount or 0), 0.75, 0.85, 1.0, 1, 1, 1);
+		end
+	end
 	GameTooltip:Show();
 end
 
@@ -745,6 +1121,10 @@ end
 
 function PetBuddyFrame_OnClick(self, button, ...)
 	if(button == "RightButton") then
+		if(PetBuddyFrameLoadouts and PetBuddyFrameLoadouts:IsShown() and IsCursorOverFrame(PetBuddyFrameLoadouts)) then
+			return;
+		end
+
 		addon:OpenContextMenu();
 	end
 end
@@ -761,8 +1141,8 @@ function PetBuddyFrame_OnShow(self)
 	
 	addon:RegisterEvent("PET_JOURNAL_NEW_BATTLE_SLOT", addon.UpdatePets);
 	
-	addon:RegisterEvent("UPDATE_SUMMONPETS_ACTION", addon.UpdatePets);
-	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE", addon.UpdatePets);
+	addon:RegisterEvent("UPDATE_SUMMONPETS_ACTION");
+	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
 	
 	addon:RefreshMedia();
 	
@@ -803,6 +1183,7 @@ function addon:PLAYER_REGEN_ENABLED()
 	
 	self.db.global.Visible = PetBuddyFrame:IsShown();
 	addon:UpdateUtilityMenuState();
+	addon:UpdateAutoResummon(false);
 end
 
 function addon:CURSOR_UPDATE()
@@ -839,18 +1220,81 @@ function addon:CURSOR_UPDATE()
 	end, 0.01);
 end
 
+local AUTOSUMMON_BLOCK_AFTER_DISMOUNT = 2.0;
+local AUTOSUMMON_BLOCK_AFTER_LOGIN = 4.0;
+
 addon.SummonDisabledTimer = 0;
 hooksecurefunc("Dismount", function()
 	addon.SummonDisabledTimer = GetTime();
 end)
 
-local function UnitAuraByNameOrId(unit, aura_name_or_id, filter)
-	for index = 1, 40 do
-		local name, _, _, _, _, _, _, _, _, spell_id = UnitAura(unit, index, filter);
-		if (name == aura_name_or_id or spell_id == aura_name_or_id) then
-			return UnitAura(unit, index, filter);
+function addon:HandleAutoSummonTrigger(event, ...)
+	if(not self.db or not self.db.global.AutoSummonPet) then
+		return;
+	end
+
+	if(event == "UNIT_AURA") then
+		local unit = ...;
+		if(unit ~= "player") then
+			return;
+		end
+	elseif(event == "UNIT_EXITED_VEHICLE") then
+		local unit = ...;
+		if(unit ~= "player") then
+			return;
 		end
 	end
+
+	-- Immediate attempt when state changes, then delayed retries for login/loading transitions.
+	addon:UpdateAutoResummon(false);
+
+	if(event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_CONTROL_GAINED" or event == "UNIT_EXITED_VEHICLE") then
+		addon:ScheduleTimer(function()
+			addon:UpdateAutoResummon(false);
+		end, 1.5);
+		addon:ScheduleTimer(function()
+			addon:UpdateAutoResummon(false);
+		end, 4.0);
+	end
+end
+
+local function UnitAuraByNameOrId(unit, aura_name_or_id, filter)
+	if(not aura_name_or_id) then
+		return nil;
+	end
+
+	if(type(UnitAura) == "function") then
+		for index = 1, 40 do
+			local name, icon, count, debuffType, duration, expirationTime, sourceUnit, isStealable, nameplateShowPersonal, spell_id = UnitAura(unit, index, filter);
+			if(not name) then
+				break;
+			end
+
+			if(name == aura_name_or_id or spell_id == aura_name_or_id) then
+				return name, icon, count, debuffType, duration, expirationTime, sourceUnit, isStealable, nameplateShowPersonal, spell_id;
+			end
+		end
+	end
+
+	if(C_UnitAuras and type(C_UnitAuras.GetAuraDataByIndex) == "function") then
+		for index = 1, 40 do
+			local auraData = C_UnitAuras.GetAuraDataByIndex(unit, index, filter);
+			if(not auraData) then
+				break;
+			end
+
+			local name = auraData.name;
+			local spell_id = auraData.spellId;
+			if(name == aura_name_or_id or spell_id == aura_name_or_id) then
+				return name, auraData.icon or auraData.iconFileID, auraData.applications or auraData.charges, auraData.dispelName, auraData.duration, auraData.expirationTime, auraData.sourceUnit, auraData.isStealable, auraData.nameplateShowPersonal, spell_id;
+			end
+		end
+	end
+
+	if(AuraUtil and type(AuraUtil.FindAuraByName) == "function" and type(aura_name_or_id) == "string") then
+		return AuraUtil.FindAuraByName(aura_name_or_id, unit, filter);
+	end
+
 	return nil;
 end
 
@@ -877,8 +1321,8 @@ function addon:CanSafelySummonPet()
 	return not (not HasFullControl() or UnitOnTaxi("player") 
 				or UnitUsingVehicle("player") or UnitIsDeadOrGhost("player")
 				or addon.BarberShopOpen
-				or IsMounted() or IsFalling() or (GetTime()-addon.SummonDisabledTimer) < 15.0
-				or (GetTime()-addon.LoginTime) < 15.0
+				or IsMounted() or IsFalling() or (GetTime()-addon.SummonDisabledTimer) < AUTOSUMMON_BLOCK_AFTER_DISMOUNT
+				or (GetTime()-addon.LoginTime) < AUTOSUMMON_BLOCK_AFTER_LOGIN
 				or UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil
 				or IsStealthed()
 				or addon:IsPlayerEating()
@@ -921,8 +1365,12 @@ function addon:UpdateAutoResummon(forceSummon)
 	end
 end
 
-function addon:PLAYER_ENTERING_WORLD()
-	
+function addon:PLAYER_ENTERING_WORLD(event, isInitialLogin, isReloadingUi)
+	if(isInitialLogin or isReloadingUi) then
+		addon.LoginTime = GetTime();
+	end
+
+	addon:HandleAutoSummonTrigger("PLAYER_ENTERING_WORLD");
 end
 
 function addon:SPELL_UPDATE_COOLDOWN()
@@ -949,12 +1397,23 @@ function TogglePetBuddy()
 end
 	
 function addon:OnInitialize()
-	SLASH_PETBUDDY1	= "/pb";
-	SLASH_PETBUDDY2	= "/petbuddy";
-	SLASH_PETBUDDY3	= "/petbuddy2";
-	SLASH_PETBUDDY4	= "/bpb";
+	SLASH_PETBUDDY1	= "/petbuddy";
+	SLASH_PETBUDDY2	= "/pb";
+	SLASH_PETBUDDY3	= "/bpb";
 	SlashCmdList["PETBUDDY"] = function(command)
-		TogglePetBuddy();
+		command = string.lower(strtrim(command or ""));
+
+		if(command == "") then
+			TogglePetBuddy();
+		elseif(command == "help") then
+			addon:PrintHelp();
+		elseif(command == "welcome") then
+			addon:ToggleWelcomeMessage();
+		elseif(command == "version") then
+			addon:PrintMessage("|cffffff00Version:|r |cff7598b6" .. GetAddonVersion() .. "|r");
+		else
+			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cff58be81/petbuddy help|r.");
+		end
 	end
 	
 	addon:InitializeDatabase();
@@ -972,4 +1431,32 @@ end
 function addon:OnDisable()
 		
 end
+
+local function InitializeAddon()
+	if(addon._initialized) then return end
+	addon._initialized = true;
+
+	if(type(addon.OnInitialize) == "function") then
+		addon:OnInitialize();
+	end
+end
+
+local function EnableAddon()
+	if(addon._enabled) then return end
+	addon._enabled = true;
+
+	if(type(addon.OnEnable) == "function") then
+		addon:OnEnable();
+	end
+end
+
+local bootstrapFrame = CreateFrame("Frame");
+bootstrapFrame:RegisterEvent("PLAYER_LOGIN");
+bootstrapFrame:SetScript("OnEvent", function(_, event, arg1)
+	if(event == "PLAYER_LOGIN") then
+		InitializeAddon();
+		EnableAddon();
+		bootstrapFrame:UnregisterEvent("PLAYER_LOGIN");
+	end
+end);
 

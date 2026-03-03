@@ -8,15 +8,124 @@
 
 local ADDON_NAME, addon = ...;
 local E = addon.E;
+local DEFAULT_FONT_NAME = "DorisPP";
+local DEFAULT_FONT_PATH = [[Interface\AddOns\PetBuddy2\media\DORISPP.ttf]];
+local DEFAULT_STATUSBAR_NAME = "RenAscensionL";
+local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\media\RenAscensionL.tga]];
 
-local LibStub = LibStub;
-local AceDB = LibStub("AceDB-3.0");
+addon.Media = addon.Media or {
+	font = {},
+	statusbar = {},
+	defaults = {
+		font = DEFAULT_FONT_NAME,
+		statusbar = DEFAULT_STATUSBAR_NAME,
+	},
+};
 
-local LibSharedMedia = LibStub("LibSharedMedia-3.0");
+local function EnsureTable(tbl, key)
+	if(type(tbl[key]) ~= "table") then
+		tbl[key] = {};
+	end
+	return tbl[key];
+end
 
--- Adding default media to LibSharedMedia if they're not already added
-LibSharedMedia:Register("font", "DorisPP", [[Interface\AddOns\PetBuddy2\Media\DORISPP.ttf]]);
-LibSharedMedia:Register("statusbar", "RenAscensionL", [[Interface\AddOns\PetBuddy2\Media\RenAscensionL.tga]]);
+local function CopyDefaults(dst, src)
+	for key, value in pairs(src) do
+		if(type(value) == "table") then
+			if(type(dst[key]) ~= "table") then
+				dst[key] = {};
+			end
+			CopyDefaults(dst[key], value);
+		elseif(dst[key] == nil) then
+			dst[key] = value;
+		end
+	end
+end
+
+local function GetCharacterKey()
+	local characterName = UnitName("player") or "Unknown";
+	local realmName = GetRealmName() or "Unknown";
+	return characterName .. " - " .. realmName;
+end
+
+function addon:RegisterMedia(mediaType, name, path)
+	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
+	if(not mediaTable or type(name) ~= "string" or type(path) ~= "string") then
+		return;
+	end
+
+	mediaTable[name] = path;
+end
+
+function addon:HasMedia(mediaType, name)
+	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
+	return type(mediaTable) == "table" and mediaTable[name] ~= nil;
+end
+
+function addon:FetchMedia(mediaType, name)
+	local mediaKey = string.lower(mediaType or "");
+	local mediaTable = self.Media and self.Media[mediaKey];
+	if(type(mediaTable) ~= "table") then
+		return nil;
+	end
+
+	if(type(name) == "string" and mediaTable[name]) then
+		return mediaTable[name];
+	end
+
+	local defaultName = self.Media.defaults and self.Media.defaults[mediaKey];
+	if(type(defaultName) == "string" and mediaTable[defaultName]) then
+		return mediaTable[defaultName];
+	end
+
+	for _, path in pairs(mediaTable) do
+		return path;
+	end
+
+	return nil;
+end
+
+function addon:ListMedia(mediaType)
+	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
+	if(type(mediaTable) ~= "table") then
+		return {};
+	end
+
+	local list = {};
+	for name in pairs(mediaTable) do
+		tinsert(list, name);
+	end
+	table.sort(list);
+	return list;
+end
+
+local function ImportExternalSharedMedia()
+	local libStubObject = rawget(_G, "LibStub");
+	if(type(libStubObject) ~= "table" or type(libStubObject.GetLibrary) ~= "function") then
+		return;
+	end
+
+	local ok, externalLSM = pcall(libStubObject.GetLibrary, libStubObject, "LibSharedMedia-3.0", true);
+	if(not ok or not externalLSM) then
+		return;
+	end
+
+	for _, mediaType in ipairs({ "font", "statusbar" }) do
+		local mediaList = externalLSM:List(mediaType) or {};
+		for _, mediaName in ipairs(mediaList) do
+			local mediaPath = externalLSM:Fetch(mediaType, mediaName, true) or externalLSM:Fetch(mediaType, mediaName);
+			if(type(mediaPath) == "string" and mediaPath ~= "") then
+				addon:RegisterMedia(mediaType, mediaName, mediaPath);
+			end
+		end
+	end
+end
+
+addon:RegisterMedia("font", DEFAULT_FONT_NAME, DEFAULT_FONT_PATH);
+addon:RegisterMedia("font", "Friz Quadrata", STANDARD_TEXT_FONT or DEFAULT_FONT_PATH);
+addon:RegisterMedia("statusbar", DEFAULT_STATUSBAR_NAME, DEFAULT_STATUSBAR_PATH);
+addon:RegisterMedia("statusbar", "Blizzard", "Interface\\TargetingFrame\\UI-StatusBar");
+ImportExternalSharedMedia();
 
 E.VISIBILITY_MODE = {
 	DO_NOTHING 	= 0x1,
@@ -72,9 +181,18 @@ function addon:InitializeDatabase()
 			PetUtilityMenuState = 1,
 			
 			ShowPepe = true,
+			ShowWelcomeMessage = true,
 			
 			ShowPetItems = true,
 			ShowPetLoadouts = false,
+			PetItemCategories = {
+				heal_spell = true,
+				battle_bandage = true,
+				battle_stones = false,
+				pet_consumables = false,
+				pet_rewards = false,
+				pet_currencies = false,
+			},
 			
 			AutoHealPets = true,
 			AutoHealPetsFee = true,
@@ -89,7 +207,29 @@ function addon:InitializeDatabase()
 		}
 	};
 	
-	self.db = AceDB:New("PetBuddyDB", defaults);
+	PetBuddyDB = type(PetBuddyDB) == "table" and PetBuddyDB or {};
+	local saved = PetBuddyDB;
+
+	local globalData = EnsureTable(saved, "global");
+	local charRoot = EnsureTable(saved, "char");
+	local charKey = GetCharacterKey();
+	if(type(charRoot[charKey]) ~= "table") then
+		charRoot[charKey] = {};
+	end
+
+	CopyDefaults(globalData, defaults.global);
+	CopyDefaults(charRoot[charKey], defaults.char);
+
+	self.db = {
+		global = globalData,
+		char = charRoot[charKey],
+		_saved = saved,
+	};
+
+	if(type(addon.InitializePetItemCategoryDefaults) == "function") then
+		addon:InitializePetItemCategoryDefaults();
+	end
+
 	addon:RestoreSavedSettings();
 end
 
@@ -139,8 +279,20 @@ function addon:RestoreSavedSettings()
 end
 
 function addon:RefreshMedia(font, barTexture)
-	local fontPath = LibSharedMedia:Fetch("font", font or self.db.global.fontFace);
-	local statusBarPath = LibSharedMedia:Fetch("statusbar", barTexture or self.db.global.barTexture);
+	local selectedFont = font or self.db.global.fontFace;
+	local selectedBarTexture = barTexture or self.db.global.barTexture;
+
+	if(not addon:HasMedia("font", selectedFont)) then
+		selectedFont = DEFAULT_FONT_NAME;
+		self.db.global.fontFace = selectedFont;
+	end
+	if(not addon:HasMedia("statusbar", selectedBarTexture)) then
+		selectedBarTexture = DEFAULT_STATUSBAR_NAME;
+		self.db.global.barTexture = selectedBarTexture;
+	end
+
+	local fontPath = addon:FetchMedia("font", selectedFont);
+	local statusBarPath = addon:FetchMedia("statusbar", selectedBarTexture);
 	
 	local fontSize = self.db.global.fontSize;
 	
@@ -168,7 +320,7 @@ function addon:GetWindowScaleMenu()
 	for index, scale in ipairs(windowScales) do
 		tinsert(menu, {
 			text = string.format("%d%%", scale * 100),
-			func = function() addon:SetWindowScale(scale); CloseMenus(); end,
+			func = function() addon:SetWindowScale(scale); end,
 			checked = function() return self.db.global.WindowScale == scale end,
 		});
 	end
@@ -176,9 +328,25 @@ function addon:GetWindowScaleMenu()
 	return menu;
 end
 
+local function NormalizeUtilityMenuState(state)
+	state = tonumber(state) or 0;
+	state = math.floor(state);
+	if(state < 0 or state > 3) then
+		state = 0;
+	end
+	return state;
+end
+
+function addon:GetPetItemsUtilityMenuData()
+	if(type(addon.GetPetItemCategoryMenuData) == "function") then
+		return addon:GetPetItemCategoryMenuData(false);
+	end
+	return {};
+end
+
 function addon:GetPrimaryMenuData()
 	local sharedMediaFonts = {};
-	for index, font in ipairs(LibSharedMedia:List("font")) do
+	for index, font in ipairs(addon:ListMedia("font")) do
 		tinsert(sharedMediaFonts, {
 			text = font,
 			func = function()
@@ -199,7 +367,7 @@ function addon:GetPrimaryMenuData()
 	end
 	
 	local sharedMediaBarTextures = {};
-	for index, statusbar in ipairs(LibSharedMedia:List("statusbar")) do
+	for index, statusbar in ipairs(addon:ListMedia("statusbar")) do
 		tinsert(sharedMediaBarTextures, {
 			text = statusbar,
 			func = function() self.db.global.barTexture = statusbar; addon:RefreshMedia(); end,
@@ -283,7 +451,13 @@ function addon:GetPrimaryMenuData()
 		},
 		{
 			text = "Always resummon companion",
-			func = function() self.db.global.AutoSummonPet = not self.db.global.AutoSummonPet; addon:UpdateDatabrokerText(); CloseMenus(); end,
+			func = function()
+				self.db.global.AutoSummonPet = not self.db.global.AutoSummonPet;
+				addon:UpdateDatabrokerText();
+				if(self.db.global.AutoSummonPet) then
+					addon:UpdateAutoResummon(true);
+				end
+			end,
 			checked = function() return self.db.global.AutoSummonPet; end,
 			isNotRadio = true,
 			hasArrow = true,
@@ -374,28 +548,55 @@ function addon:GetPrimaryMenuData()
 			isNotRadio = true,
 		},
 		{
+			text = "Show welcome message on login",
+			func = function()
+				self.db.global.ShowWelcomeMessage = not self.db.global.ShowWelcomeMessage;
+			end,
+			checked = function() return self.db.global.ShowWelcomeMessage; end,
+			isNotRadio = true,
+		},
+		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,
 		},
 		{
 			text = "Pet Utility", isTitle = true, notCheckable = true,
 		},
 		{
-			text = "Hide utility menu",
-			func = function() self.db.global.PetUtilityMenuState = 0; addon:RestoreSavedSettings(); end,
-			checked = function() return self.db.global.PetUtilityMenuState == 0 end,
-			disabled = C_PetBattles.IsInBattle(),
-		},
-		{
 			text = "Show pet related items",
-			func = function() self.db.global.PetUtilityMenuState = 1; addon:RestoreSavedSettings(); end,
-			checked = function() return self.db.global.PetUtilityMenuState == 1 end,
+			func = function()
+				local state = NormalizeUtilityMenuState(self.db.global.PetUtilityMenuState);
+				local hasItems = (state == 1 or state == 3);
+				if(hasItems) then state = state - 1; else state = state + 1; end
+				self.db.global.PetUtilityMenuState = state;
+				addon:RestoreSavedSettings();
+			end,
+			checked = function()
+				local state = NormalizeUtilityMenuState(self.db.global.PetUtilityMenuState);
+				return state == 1 or state == 3;
+			end,
+			isNotRadio = true,
+			hasArrow = true,
+			menuList = addon:GetPetItemsUtilityMenuData(),
 			disabled = C_PetBattles.IsInBattle(),
+			keepShownOnClick = true,
 		},
 		{
 			text = "Show pet loadouts menu",
-			func = function() self.db.global.PetUtilityMenuState = 2; addon:RestoreSavedSettings(); end,
-			checked = function() return self.db.global.PetUtilityMenuState == 2 end,
+			func = function()
+				local state = tonumber(self.db.global.PetUtilityMenuState) or 0;
+				state = math.floor(state);
+				if(state < 0 or state > 3) then state = 0; end
+				local hasLoadouts = (state == 2 or state == 3);
+				if(hasLoadouts) then state = state - 2; else state = state + 2; end
+				self.db.global.PetUtilityMenuState = state;
+				addon:RestoreSavedSettings();
+			end,
+			checked = function()
+				local state = tonumber(self.db.global.PetUtilityMenuState) or 0;
+				return state == 2 or state == 3;
+			end,
 			disabled = C_PetBattles.IsInBattle(),
+			isNotRadio = true,
 		},
 		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,
@@ -459,15 +660,93 @@ end
 function addon:OpenContextMenu(contextMenuData, parentframe, anchor, point, relativePoint)
 	
 	if(not addon.ContextMenu) then
-		addon.ContextMenu = CreateFrame("Frame", "PetBuddyContextMenuFrame", PetBuddyFrame, "UIDropDownMenuTemplate");
+		addon.ContextMenu = CreateFrame("Frame", "PetBuddyContextMenuFrame", UIParent, "UIDropDownMenuTemplate");
+		addon.ContextMenu:SetFrameStrata("DIALOG");
 	end
 	
 	if(not contextMenuData) then
 		contextMenuData = addon:GetPrimaryMenuData();
 	end
 	
+	addon.ContextMenu:ClearAllPoints();
 	addon.ContextMenu:SetPoint(point or "TOPLEFT", parentframe or PetBuddyFrame, relativePoint or "CENTER", 0, 5);
-	EasyMenu(contextMenuData, addon.ContextMenu, anchor or "cursor", 0, 0, "MENU", 5);
+	addon:OpenDropDownMenu(contextMenuData, addon.ContextMenu, anchor or "cursor", 0, 0, "MENU", 5);
+end
+
+local function TryLoadDropDownAPI()
+	if(type(EasyMenu) == "function") then
+		return true;
+	end
+
+	local loadAddon = nil;
+	if(C_AddOns and type(C_AddOns.LoadAddOn) == "function") then
+		loadAddon = C_AddOns.LoadAddOn;
+	elseif(type(LoadAddOn) == "function") then
+		loadAddon = LoadAddOn;
+	end
+
+	if(loadAddon) then
+		pcall(loadAddon, "Blizzard_UIDropDownMenu");
+		pcall(loadAddon, "Blizzard_Deprecated");
+	end
+
+	return type(EasyMenu) == "function";
+end
+
+local function ApplyMenuKeepShown(menuData)
+	if(type(menuData) ~= "table") then
+		return;
+	end
+
+	for _, info in ipairs(menuData) do
+		if(type(info) == "table") then
+			if(type(info.menuList) == "table") then
+				ApplyMenuKeepShown(info.menuList);
+			end
+
+			if(info.keepShownOnClick == nil) then
+				local isToggleEntry = (info.isNotRadio == true) or (type(info.checked) == "function");
+				local isClickableEntry = (type(info.func) == "function") and not info.isTitle and not info.disabled and not info.hasArrow;
+				if(isToggleEntry and isClickableEntry) then
+					info.keepShownOnClick = true;
+				end
+			end
+		end
+	end
+end
+
+function addon:OpenDropDownMenu(menuData, menuFrame, anchor, x, y, displayMode, autoHideDelay)
+	if(type(menuData) ~= "table" or not menuFrame) then
+		return false;
+	end
+
+	ApplyMenuKeepShown(menuData);
+
+	if(type(EasyMenu) == "function" or TryLoadDropDownAPI()) then
+		EasyMenu(menuData, menuFrame, anchor or "cursor", x or 0, y or 0, displayMode or "MENU", autoHideDelay or 5);
+		return true;
+	end
+
+	if(type(UIDropDownMenu_Initialize) == "function" and type(UIDropDownMenu_AddButton) == "function" and type(ToggleDropDownMenu) == "function") then
+		UIDropDownMenu_Initialize(menuFrame, function(_, level, list)
+			level = level or 1;
+			local currentList = list;
+			if(type(currentList) ~= "table") then
+				currentList = menuData;
+			end
+
+			for _, info in ipairs(currentList) do
+				UIDropDownMenu_AddButton(info, level);
+			end
+		end, displayMode or "MENU");
+		ToggleDropDownMenu(1, nil, menuFrame, anchor or "cursor", x or 0, y or 0, menuData, nil, autoHideDelay or 5);
+		return true;
+	end
+
+	if(type(addon.PrintMessage) == "function") then
+		addon:PrintMessage("|cffff5555Dropdown menu API unavailable on this client.|r");
+	end
+	return false;
 end
 
 
