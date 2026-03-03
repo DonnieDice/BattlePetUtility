@@ -1,0 +1,32 @@
+## Interface: 120001
+## Title: Better Pet Buddy
+## Notes: Comprehensive battle pet companion with HUD, loadouts, and utility menus.
+## Version: v4.1.0
+## Author: DonnieDice (original addon by Sonaza)
+## OptionalDeps: Ace3, BattlePetBreedID, Rematch
+## SavedVariables: PetBuddyDB
+## DefaultState: enabled
+
+compat.lua
+
+#@no-lib-strip@
+libs\LibStub\LibStub.lua
+libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+libs\AceAddon-3.0\AceAddon-3.0.xml
+libs\AceDB-3.0\AceDB-3.0.xml
+libs\AceEvent-3.0\AceEvent-3.0.xml
+libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
+libs\AceTimer-3.0\AceTimer-3.0.xml
+libs\AceHook-3.0\AceHook-3.0.xml
+libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+#@end-no-lib-strip@
+
+core.lua
+options.lua
+databroker.lua
+itembuttons.lua
+pethealer.lua
+petloadouts.lua
+
+PetBuddyTemplates.xml
+PetBuddyFrame.xml
