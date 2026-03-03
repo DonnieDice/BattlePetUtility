@@ -56,7 +56,7 @@ local BATTLE_PET_COUNTERS = { -- Weak / Strong
 function addon:GetDatabrokerMenuData()
 	return {
 		{
-			text = "Better Pet Buddy", isTitle = true, notCheckable = true,
+			text = "PetBuddy2", isTitle = true, notCheckable = true,
 		},
 		{
 			text = "Show wounded pets",
@@ -104,7 +104,7 @@ function addon:GetDatabrokerMenuData()
 			text = "", isTitle = true, notCheckable = true, disabled = true,
 		},
 		{
-			text = "Better Pet Buddy Options",
+			text = "PetBuddy2 Options",
 			notCheckable = true,
 			hasArrow = true,
 			menuList = addon:GetPrimaryMenuData(),
@@ -115,8 +115,8 @@ end
 function addon:InitializeDatabroker()
 	addon.databroker = LDB:NewDataObject(ADDON_NAME, {
 		type = "data source",
-		label = "Better Pet Buddy",
-		text = "Better Pet Buddy",
+		label = "PetBuddy2",
+		text = "PetBuddy2",
 		icon = PET_BUDDY_ICON,
 		OnClick = function(frame, button)
 			if(button == "LeftButton") then
@@ -128,7 +128,7 @@ function addon:InitializeDatabroker()
 		end,
 		OnTooltipShow = function(tooltip)
 			if not tooltip or not tooltip.AddLine then return end
-			tooltip:AddLine(TEX_PET_BUDDY_ICON .. " Better Pet Buddy")
+			tooltip:AddLine(TEX_PET_BUDDY_ICON .. " PetBuddy2")
 			
 			tooltip:AddLine(" ");
 			tooltip:AddLine("Active Pets");
@@ -209,7 +209,7 @@ function addon:InitializeDatabroker()
 				tooltip:AddLine(" ");
 			end
 			
-			tooltip:AddLine("Left-Click |cffffffffToggle Better Pet Buddy|h");
+			tooltip:AddLine("Left-Click |cffffffffToggle PetBuddy2|h");
 			tooltip:AddLine("Right-Click |cffffffffShow options|h");
 			
 			-- addon.tooltip_open = true;
@@ -246,8 +246,9 @@ function addon:UpdateDatabrokerText()
 	end
 	
 	if(#strings == 0) then
-		tinsert(strings, "Better Pet Buddy");
+		tinsert(strings, "PetBuddy2");
 	end
 	
 	addon.databroker.text = table.concat(strings, "  ");
 end
+

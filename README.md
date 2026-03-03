@@ -1,8 +1,8 @@
-# Better Pet Buddy
+# PetBuddy2
 Modern maintenance fork of PetBuddy for World of Warcraft Retail (Midnight).
 
 ## What It Does
-Better Pet Buddy is a battle pet utility panel focused on fast team management while questing and pet battling.
+PetBuddy2 is a battle pet utility panel focused on fast team management while questing and pet battling.
 
 Core features:
 - Team HUD with pet health and experience bars
@@ -18,7 +18,7 @@ Core features:
 ## Commands
 - `/pb`
 - `/petbuddy`
-- `/betterpetbuddy`
+- `/petbuddy2`
 - `/bpb`
 
 ## Compatibility
@@ -28,8 +28,8 @@ Core features:
 
 ## Installation
 1. Copy the addon folder into `World of Warcraft/_retail_/Interface/AddOns`.
-2. Ensure the folder name is `BetterPetBuddy`.
-3. Launch/reload WoW and enable **Better Pet Buddy**.
+2. Ensure the folder name is `PetBuddy2`.
+3. Launch/reload WoW and enable **PetBuddy2**.
 
 ## Packaging and Releases
 This repository includes:
@@ -37,4 +37,5 @@ This repository includes:
 - `.github/workflows/release.yml` for tagged release packaging
 
 To publish to CurseForge/WoWInterface from CI, add the required project IDs/tokens in your TOC/secrets before tagging releases.
+
 

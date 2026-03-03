@@ -15,8 +15,8 @@ local AceDB = LibStub("AceDB-3.0");
 local LibSharedMedia = LibStub("LibSharedMedia-3.0");
 
 -- Adding default media to LibSharedMedia if they're not already added
-LibSharedMedia:Register("font", "DorisPP", [[Interface\AddOns\BetterPetBuddy\Media\DORISPP.ttf]]);
-LibSharedMedia:Register("statusbar", "RenAscensionL", [[Interface\AddOns\BetterPetBuddy\Media\RenAscensionL.tga]]);
+LibSharedMedia:Register("font", "DorisPP", [[Interface\AddOns\PetBuddy2\Media\DORISPP.ttf]]);
+LibSharedMedia:Register("statusbar", "RenAscensionL", [[Interface\AddOns\PetBuddy2\Media\RenAscensionL.tga]]);
 
 E.VISIBILITY_MODE = {
 	DO_NOTHING 	= 0x1,
@@ -209,10 +209,10 @@ function addon:GetPrimaryMenuData()
 	
 	local data = {
 		{
-			text = "Better Pet Buddy Options", isTitle = true, notCheckable = true,
+			text = "PetBuddy2 Options", isTitle = true, notCheckable = true,
 		},
 		{
-			text = "Lock Better Pet Buddy",
+			text = "Lock PetBuddy2",
 			func = function() self.db.global.IsFrameLocked = not self.db.global.IsFrameLocked; end,
 			checked = function() return self.db.global.IsFrameLocked; end,
 			isNotRadio = true,
@@ -437,7 +437,7 @@ function addon:GetPrimaryMenuData()
 	
 	if(PetBuddyFrame:IsShown()) then
 		tinsert(data, {
-			text = "Hide Better Pet Buddy",
+			text = "Hide PetBuddy2",
 			func = function()
 				PetBuddyFrame:Hide(); CloseMenus();
 			end,
@@ -445,7 +445,7 @@ function addon:GetPrimaryMenuData()
 		});
 	else
 		tinsert(data, {
-			text = "Show Better Pet Buddy",
+			text = "Show PetBuddy2",
 			func = function()
 				PetBuddyFrame:Show(); CloseMenus();
 			end,
@@ -469,4 +469,5 @@ function addon:OpenContextMenu(contextMenuData, parentframe, anchor, point, rela
 	addon.ContextMenu:SetPoint(point or "TOPLEFT", parentframe or PetBuddyFrame, relativePoint or "CENTER", 0, 5);
 	EasyMenu(contextMenuData, addon.ContextMenu, anchor or "cursor", 0, 0, "MENU", 5);
 end
+
 

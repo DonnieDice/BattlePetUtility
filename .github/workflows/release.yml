@@ -49,7 +49,7 @@ jobs:
         id: version
         shell: bash
         run: |
-          version="$(grep -oP '^## Version:\s*\K(.*)' BetterPetBuddy.toc)"
+          version="$(grep -oP '^## Version:\s*\K(.*)' PetBuddy2.toc)"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Validate tagged release version
@@ -59,7 +59,7 @@ jobs:
           tag="${GITHUB_REF#refs/tags/}"
           toc_version="${{ steps.version.outputs.version }}"
           if [[ -z "$toc_version" ]]; then
-            echo "::error::Could not read version from BetterPetBuddy.toc"
+            echo "::error::Could not read version from PetBuddy2.toc"
             exit 1
           fi
           if [[ "$tag" != "$toc_version" ]]; then
@@ -71,4 +71,5 @@ jobs:
         uses: BigWigsMods/packager@master
         with:
           release-type: ${{ steps.release_type.outputs.type }}
+
 

@@ -11,11 +11,11 @@ local addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceE
 _G[ADDON_NAME] = addon;
 
 addon.E = {};
-addon.ADDON_TITLE = "Better Pet Buddy";
+addon.ADDON_TITLE = "PetBuddy2";
 local E = addon.E;
 
 BINDING_HEADER_PETBUDDY = addon.ADDON_TITLE;
-_G["BINDING_NAME_CLICK PetBuddyFrameToggler:LeftButton"] = "Toggle Better Pet Buddy";
+_G["BINDING_NAME_CLICK PetBuddyFrameToggler:LeftButton"] = "Toggle PetBuddy2";
 _G["BINDING_NAME_PETBUDDY_TOGGLE_BUTTONS"] = "Show Pet Related Items Menu";
 _G["BINDING_NAME_PETBUDDY_TOGGLE_LOADOUTS"] = "Show Pet Loadouts Menu";
 _G["BINDING_NAME_PETBUDDY_SEARCH_LOADOUTS"] = "Search Pet Loadouts";
@@ -935,7 +935,7 @@ end
 
 function TogglePetBuddy()
 	if(InCombatLockdown()) then
-		DEFAULT_CHAT_FRAME:AddMessage("|cffcc22Better Pet Buddy:|r Cannot toggle in combat");
+		DEFAULT_CHAT_FRAME:AddMessage("|cffcc22PetBuddy2:|r Cannot toggle in combat");
 		return;
 	end
 	
@@ -951,7 +951,7 @@ end
 function addon:OnInitialize()
 	SLASH_PETBUDDY1	= "/pb";
 	SLASH_PETBUDDY2	= "/petbuddy";
-	SLASH_PETBUDDY3	= "/betterpetbuddy";
+	SLASH_PETBUDDY3	= "/petbuddy2";
 	SLASH_PETBUDDY4	= "/bpb";
 	SlashCmdList["PETBUDDY"] = function(command)
 		TogglePetBuddy();
@@ -972,3 +972,4 @@ end
 function addon:OnDisable()
 		
 end
+

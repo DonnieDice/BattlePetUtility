@@ -695,7 +695,7 @@ end
 
 function PetBuddyLoadoutsSaveButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\BetterPetBuddy\\Media\\SaveButtonIcon",
+		iconTexture = "Interface\\AddOns\\PetBuddy2\\Media\\SaveButtonIcon",
 		-- count = "S",
 		tooltipTitle = "Save Loadout",
 		tooltipDescription = "Save current pets and abilities so that they can later be restored (disabled when Rematch controls loadouts)",
@@ -713,7 +713,7 @@ end
 
 function PetBuddyLoadoutsToggleButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\BetterPetBuddy\\Media\\ToggleButtonIconDown",
+		iconTexture = "Interface\\AddOns\\PetBuddy2\\Media\\ToggleButtonIconDown",
 		tooltipTitle = "Toggle Loadout List",
 		tooltipDescription = "Show/hide the list of existing loadouts",
 		func = function(self)
@@ -733,9 +733,9 @@ function PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
 	if(showstate) then
 		PetBuddyFrameLoadouts_UpdateList();
 		HybridScrollFrame_SetOffset(PetBuddyFrameLoadouts.scrollFrame, 0);
-		button.icon:SetTexture("Interface\\AddOns\\BetterPetBuddy\\Media\\ToggleButtonIconUp");
+		button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\Media\\ToggleButtonIconUp");
 	else
-		button.icon:SetTexture("Interface\\AddOns\\BetterPetBuddy\\Media\\ToggleButtonIconDown");
+		button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\Media\\ToggleButtonIconDown");
 	end
 end
 
@@ -804,4 +804,5 @@ function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
 	PetBuddyFrameLoadouts.ContextMenu:SetPoint("TOPLEFT", relativeFrame, "CENTER", 0, 5);
 	EasyMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
 end
+
 

@@ -5,7 +5,7 @@
 * PetBuddy local save/rename/delete loadout actions are disabled while Rematch is active.
 
 ## 4.0.0
-* Rebranded addon to Better Pet Buddy.
+* Rebranded addon to PetBuddy2.
 * Updated TOC for WoW Retail Midnight (120001).
 * Added compatibility shims for namespaced spell and gossip APIs.
 * Added safer Pet Journal refresh and search-box handling for modern Blizzard UI.
@@ -60,3 +60,4 @@
 
 ## 1.1.0
 * First public release.
+

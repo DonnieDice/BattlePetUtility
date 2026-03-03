@@ -1,4 +1,4 @@
-package-as: BetterPetBuddy
+package-as: PetBuddy2
 
 enable-nolib-creation: no
 
@@ -11,4 +11,5 @@ ignore:
 manual-changelog:
   filename: CHANGELOG.md
   markup-type: markdown
+
 
