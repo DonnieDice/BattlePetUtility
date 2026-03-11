@@ -1,3 +1,8 @@
+## v1.1.0 (2026-03-10)
+* Added a dedicated minimize button that collapses the PetBuddy2 HUD to just the header, keeping the close button for hide/toggle duties.
+* Updated the frame title to `RGX | PetBuddy2` and added right-click support on the title bar to open the context menu without hunting for the main frame.
+* Documented a BLU-style release workflow (including tagging/push steps) so future releases stay consistent.
+
 ## v1.0.0 (2026-03-03)
 * Reset PetBuddy2 release baseline versioning to `v1.0.0`.
 * Reworked project layout into structured folders (`data/`, `ui/`, `media/`, `docs/`).

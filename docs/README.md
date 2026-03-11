@@ -2,11 +2,12 @@
 
 Documentation index for PetBuddy2.
 
-Current addon version: `v1.0.0`
+Current addon version: `v1.1.0`
 
 ## Files
 
 - `CHANGES.md` - Release notes and version history.
+- `RELEASING.md` - BLU-style release workflow (bump, commit, tag, push).
 - `ROADMAP.md` - Planned maintenance and improvement tracks.
 - `README.md` - This docs index.
 

@@ -163,6 +163,7 @@ function addon:InitializeDatabase()
 			WindowScale = 1.0,
 			
 			IsFrameLocked = false,
+			IsMinimized = false,
 			
 			PetBattleVisiblityMode = E.VISIBILITY_MODE.SHOW,
 			
@@ -276,6 +277,7 @@ function addon:RestoreSavedSettings()
 	end
 	
 	addon:SetWindowScale(self.db.global.WindowScale);
+	addon:UpdateMinimizeState();
 end
 
 function addon:RefreshMedia(font, barTexture)
@@ -748,5 +750,4 @@ function addon:OpenDropDownMenu(menuData, menuFrame, anchor, x, y, displayMode, 
 	end
 	return false;
 end
-
 

@@ -751,16 +751,31 @@ function PetBuddyLoadoutsToggleButton_OnLoad(self)
 end
 
 function PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
+	local minimized = addon and addon:IsFrameMinimized();
+	if(minimized) then
+		showstate = false;
+	end
+
 	PetBuddyFrameLoadoutsScrollFrame:SetShown(showstate);
-	
+
 	local button = PetBuddyFrameLoadouts.toggleButton;
-	
+	if(button) then
+		button:SetEnabled(not minimized);
+		if(button.icon) then
+			button.icon:SetDesaturated(minimized);
+		end
+	end
+
 	if(showstate) then
 		PetBuddyFrameLoadouts_UpdateList();
 		HybridScrollFrame_SetOffset(PetBuddyFrameLoadouts.scrollFrame, 0);
-		button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconUp");
+		if(button and button.icon) then
+			button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconUp");
+		end
 	else
-		button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconDown");
+		if(button and button.icon) then
+			button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconDown");
+		end
 	end
 end
 
@@ -836,5 +851,4 @@ function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
 		EasyMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
 	end
 end
-
 

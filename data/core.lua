@@ -26,6 +26,9 @@ local PET_TYPE_TEXTURE_SUFFIX = {
 	[10] = "Mechanical",
 };
 
+local FRAME_DEFAULT_HEIGHT = 208;
+local FRAME_MINIMIZED_PADDING = 6;
+
 local function GetPetTypeTexturePath(petType)
 	if(type(GetPetTypeTexture) == "function") then
 		local texturePath = GetPetTypeTexture(petType);
@@ -210,6 +213,102 @@ local function TryLoadCollectionsUI()
 	end
 end
 
+function addon:IsFrameMinimized()
+	if(not self.db or not self.db.global) then
+		return false;
+	end
+
+	return self.db.global.IsMinimized == true;
+end
+
+function addon:UpdateMinimizeState()
+	if(not self.db or not PetBuddyFrame or InCombatLockdown()) then
+		return;
+	end
+
+	local minimized = self:IsFrameMinimized();
+	PetBuddyFrame.minimized = minimized;
+
+	if(not self.ExpandedFrameHeight or self.ExpandedFrameHeight <= 0) then
+		self.ExpandedFrameHeight = FRAME_DEFAULT_HEIGHT;
+	end
+
+	if(not minimized) then
+		local currentHeight = PetBuddyFrame:GetHeight();
+		if(type(currentHeight) == "number" and currentHeight > 0) then
+			self.ExpandedFrameHeight = math.max(FRAME_DEFAULT_HEIGHT, currentHeight);
+		end
+	end
+
+	local titleHeight = 24;
+	if(PetBuddyFrameTitle and type(PetBuddyFrameTitle.GetHeight) == "function") then
+		titleHeight = PetBuddyFrameTitle:GetHeight() or titleHeight;
+	end
+
+	if(minimized) then
+		PetBuddyFrame:SetHeight(titleHeight + FRAME_MINIMIZED_PADDING);
+	else
+		PetBuddyFrame:SetHeight(self.ExpandedFrameHeight or FRAME_DEFAULT_HEIGHT);
+	end
+
+	for i = 1, 3 do
+		local petFrame = _G["PetBuddyFramePet" .. i];
+		if(petFrame and minimized) then
+			petFrame:Hide();
+		end
+	end
+
+	if(not minimized) then
+		self:UpdatePets();
+	end
+
+	if(minimized and PetBuddyFrame.spellSelect) then
+		PetBuddyFrame.spellSelect:Hide();
+		if(type(PetBuddyPetFrame_ResetAbilitySwitches) == "function") then
+			PetBuddyPetFrame_ResetAbilitySwitches();
+		end
+	end
+
+	if(PetBuddyFrameLoadouts and PetBuddyFrameLoadouts.toggleButton) then
+		local toggleButton = PetBuddyFrameLoadouts.toggleButton;
+		toggleButton:SetEnabled(not minimized);
+		if(toggleButton.icon) then
+			toggleButton.icon:SetDesaturated(minimized);
+		end
+	end
+
+	local minimizeButton = PetBuddyFrameTitle and PetBuddyFrameTitle.minimizeButton;
+	if(minimizeButton) then
+		if(minimized) then
+			minimizeButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MaximizeButton-Up");
+			minimizeButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MaximizeButton-Down");
+		else
+			minimizeButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up");
+			minimizeButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down");
+		end
+		minimizeButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD");
+	end
+end
+
+function addon:SetFrameMinimized(shouldMinimize)
+	if(not self.db or InCombatLockdown()) then
+		return;
+	end
+
+	local targetState = shouldMinimize and true or false;
+	if(self.db.global.IsMinimized == targetState) then
+		return;
+	end
+
+	self.db.global.IsMinimized = targetState;
+	self:UpdateMinimizeState();
+	self:UpdateUtilityMenuState();
+end
+
+function addon:ToggleFrameMinimized()
+	self:SetFrameMinimized(not self:IsFrameMinimized());
+end
+
 function addon:OnEnable()
 	TryLoadCollectionsUI();
 	
@@ -355,6 +454,7 @@ end
 function addon:UpdateUtilityMenuState()
 	if(InCombatLockdown()) then return end
 
+	local minimized = addon:IsFrameMinimized();
 	local menuState = tonumber(addon.db.global.PetUtilityMenuState) or 0;
 	menuState = math.floor(menuState);
 	if(menuState < 0 or menuState > 3) then
@@ -379,14 +479,14 @@ function addon:UpdateUtilityMenuState()
 		PetBuddyFrameLoadouts:SetPoint("TOPLEFT", PetBuddyFramePet3, "BOTTOMLEFT", 0, 0);
 	end
 
-	if(showItems) then
+	if(showItems and not minimized) then
 		PetBuddyFrameButtons:Show();
 		addon:UpdateItemButtons();
 	else
 		PetBuddyFrameButtons:Hide();
 	end
 
-	if(showLoadouts) then
+	if(showLoadouts and not minimized) then
 		PetBuddyFrameLoadouts:Show();
 		PetBuddyFrameLoadouts_UpdateList();
 	else
@@ -394,7 +494,7 @@ function addon:UpdateUtilityMenuState()
 	end
 
 	if(type(PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
-		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showLoadoutList);
+		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showLoadoutList and not minimized);
 	end
 end
 
@@ -630,6 +730,7 @@ end
 function addon:UpdatePets()
 	if(InCombatLockdown()) then return end
 	
+	local minimized = self:IsFrameMinimized();
 	if(not PetsBattleData and C_PetBattles.IsInBattle()) then
 		addon:UpdateBattleData();
 	end
@@ -782,7 +883,7 @@ function addon:UpdatePets()
 					
 					petFrame.slotInfoText:Show();
 					
-					if(self.db.global.ShowPetItems) then
+					if(self.db.global.ShowPetItems and not minimized) then
 						PetBuddyFrameButtons:Show();
 					end
 					
@@ -804,7 +905,11 @@ function addon:UpdatePets()
 				end
 			end
 			
-			petFrame:Show();
+			if(minimized) then
+				petFrame:Hide();
+			else
+				petFrame:Show();
+			end
 		else
 			petFrame:Hide();
 		end
@@ -1127,6 +1232,44 @@ function PetBuddyFrame_OnClick(self, button, ...)
 
 		addon:OpenContextMenu();
 	end
+end
+
+function PetBuddyFrameTitle_OnMouseDown(self, button)
+	if(button == "LeftButton") then
+		PetBuddyFrame_StartMoving(button);
+	end
+end
+
+function PetBuddyFrameTitle_OnMouseUp(self, button)
+	if(button == "LeftButton") then
+		PetBuddyFrame_StopMoving(button);
+	elseif(button == "RightButton") then
+		addon:OpenContextMenu();
+	end
+end
+
+function PetBuddyFrameMinimizeButton_OnClick(self)
+	if(not addon) then return end
+	addon:ToggleFrameMinimized();
+end
+
+function PetBuddyFrameMinimizeButton_OnEnter(self)
+	if(not addon) then return end
+
+	GameTooltip:SetOwner(self, "ANCHOR_LEFT");
+	GameTooltip:ClearLines();
+	if(addon:IsFrameMinimized()) then
+		GameTooltip:AddLine("Restore PetBuddy2");
+		GameTooltip:AddLine("Show the full battle pet HUD.", 0.9, 0.9, 0.9, true);
+	else
+		GameTooltip:AddLine("Minimize PetBuddy2");
+		GameTooltip:AddLine("Collapse to the title bar.", 0.9, 0.9, 0.9, true);
+	end
+	GameTooltip:Show();
+end
+
+function PetBuddyFrameMinimizeButton_OnLeave(self)
+	GameTooltip:Hide();
 end
 
 function PetBuddyFrame_OnShow(self)
@@ -1459,4 +1602,3 @@ bootstrapFrame:SetScript("OnEvent", function(_, event, arg1)
 		bootstrapFrame:UnregisterEvent("PLAYER_LOGIN");
 	end
 end);
-

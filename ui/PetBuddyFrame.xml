@@ -22,7 +22,7 @@
 			<Anchor point="CENTER" x="0" y="0"/>
 		</Anchors>
 		<Frames>
-			<Frame name="$parentTitle">
+			<Frame name="$parentTitle" enableMouse="true">
 				<Size>
 					<AbsDimension x="208" y="24"/>
 				</Size>
@@ -31,14 +31,22 @@
 				</Anchors>
 				<Layers>
 					<Layer level="ARTWORK" textureSubLevel="1">
-						<FontString name="$parentTitleText" inherits="PetBuddyFontNormal" justifyH="LEFT" justifyV="BOTTOM" parentKey="titleText" text="PetBuddy2">
-							<Size x="100" y="24"/>
+						<FontString name="$parentTitleText" inherits="PetBuddyFontNormal" justifyH="LEFT" justifyV="BOTTOM" parentKey="titleText" text="RGX | PetBuddy2">
+							<Size x="150" y="24"/>
 							<Anchors>
 								<Anchor point="BOTTOMLEFT" relativeTo="$parent" x="2" y="5"/>
 							</Anchors>
 						</FontString>
 					</Layer>
 				</Layers>
+				<Scripts>
+					<OnMouseDown>
+						PetBuddyFrameTitle_OnMouseDown(self, button);
+					</OnMouseDown>
+					<OnMouseUp>
+						PetBuddyFrameTitle_OnMouseUp(self, button);
+					</OnMouseUp>
+				</Scripts>
 				<Frames>
 					<Button parentKey="closeButton" inherits="SecureHandlerClickTemplate">
 						<Size x="32" y="32"/>
@@ -54,6 +62,26 @@
 								SecureHandlerSetFrameRef(self, "PetBuddyFrame", self:GetParent():GetParent());
 							</OnLoad>
 						</Scripts>
+						<NormalTexture file="Interface\Buttons\UI-Panel-CloseButton-Up"/>
+						<PushedTexture file="Interface\Buttons\UI-Panel-CloseButton-Down"/>
+						<HighlightTexture file="Interface\Buttons\UI-Panel-CloseButton-Highlight" alphaMode="ADD"/>
+					</Button>
+					<Button parentKey="minimizeButton">
+						<Size x="32" y="32"/>
+						<Anchors>
+							<Anchor point="RIGHT" relativeKey="$parent.closeButton" relativePoint="LEFT" x="-2" y="0"/>
+						</Anchors>
+						<Scripts>
+							<OnClick>
+								PetBuddyFrameMinimizeButton_OnClick(self);
+							</OnClick>
+							<OnEnter>
+								PetBuddyFrameMinimizeButton_OnEnter(self);
+							</OnEnter>
+							<OnLeave>
+								PetBuddyFrameMinimizeButton_OnLeave(self);
+							</OnLeave>
+						</Scripts>
 						<NormalTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Up"/>
 						<PushedTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Down"/>
 						<HighlightTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Highlight" alphaMode="ADD"/>
@@ -61,7 +89,7 @@
 					<PlayerModel name="$parentPepeFrame" parentKey="pepeFrame">
 						<Size x="50" y="50"/>
 						<Anchors>
-							<Anchor point="BOTTOM" relativePoint="TOP" relativeKey="$parent.closeButton" x="1" y="-21"/>
+							<Anchor point="BOTTOM" relativePoint="TOP" relativeKey="$parent.minimizeButton" x="1" y="-21"/>
 						</Anchors>
 						<Scripts>
 							<OnLoad>
@@ -75,7 +103,7 @@
 					<Frame name="$parentPetCharms" mixin="PetBuddy_PetCharmsMixin">
 						<Size x="46" y="20"/>
 						<Anchors>
-							<Anchor point="RIGHT" relativeKey="$parent.closeButton" relativePoint="LEFT" x="0" y="0"/>
+							<Anchor point="RIGHT" relativeKey="$parent.minimizeButton" relativePoint="LEFT" x="0" y="0"/>
 						</Anchors>
 						<Layers>
 							<Layer level="ARTWORK">
@@ -317,4 +345,3 @@
 		</Scripts>
 	</Button>
 </Ui>
-
