@@ -3,11 +3,14 @@ on:
   push:
     tags:
       - 'v*'
-      - '*'
     branches:
       - alpha
       - main
       - master
+
+permissions:
+  contents: write
+
 env:
   CF_API_KEY: ${{ secrets.CF_API_KEY }}
   WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
@@ -67,8 +70,6 @@ jobs:
           fi
       - name: Package Addon
         uses: BigWigsMods/packager@master
-        with:
-          pandoc: true
         if: steps.set_release_type.outputs.release_type != 'none'
       - name: Send Discord Release Notification
         if: success() && steps.set_release_type.outputs.release_type == 'release'
