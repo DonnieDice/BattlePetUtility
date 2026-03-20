@@ -1,3 +1,10 @@
+## v1.2.0 (2026-03-20)
+* Fixed `compat.lua` crash: `C_Spell.GetSpellCooldown` returns `isEnabled` as a protected secret boolean in WoW 11.x; wrapped the boolean test in `pcall` to prevent the taint error and the cascade that was blocking pet summoning.
+* Fixed auto-summon not firing reliably after combat: added a 0.5s delay in `PLAYER_REGEN_ENABLED` before calling `UpdateAutoResummon` so `InCombatLockdown()` has fully released before the attempt.
+* Fixed `Dismount` hook setting the summon-block timer during combat (forced dismounts from combat mechanics no longer delay post-combat pet resummon).
+* Rebranded accent color from green (`#58be81`) to purple (`#b07fff`) across all in-game text, TOC title, and notes.
+* Button bar order confirmed: title → charms → expand/minimize → X (close).
+
 ## v1.1.0 (2026-03-10)
 * Added a dedicated minimize button that collapses the PetBuddy2 HUD to just the header, keeping the close button for hide/toggle duties.
 * Updated the frame title to `RGX | PetBuddy2` and added right-click support on the title bar to open the context menu without hunting for the main frame.

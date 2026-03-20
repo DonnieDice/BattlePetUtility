@@ -5,7 +5,7 @@
 
 [![WoW Retail](https://img.shields.io/badge/WoW-Retail%20Midnight-58be81?style=for-the-badge&logo=worldofwarcraft)](https://worldofwarcraft.com)
 [![Interface](https://img.shields.io/badge/Interface-120000%2C120001-4ecdc4?style=for-the-badge)](#compatibility)
-[![Version](https://img.shields.io/badge/Version-v1.1.0-7598b6?style=for-the-badge)](./docs/CHANGES.md)
+[![Version](https://img.shields.io/badge/Version-v1.2.0-7598b6?style=for-the-badge)](./docs/CHANGES.md)
 [![Discord](https://img.shields.io/badge/Discord-RGX%20Mods-7289da?style=for-the-badge&logo=discord)](https://discord.gg/rgxmods)
 
 [![GitHub release](https://img.shields.io/github/v/release/donniedice/PetBuddy2?style=flat-square&logo=github)](https://github.com/donniedice/PetBuddy2/releases)
@@ -85,7 +85,7 @@ Additional aliases currently available:
 |--------|-------|
 | WoW Client | Retail Midnight |
 | Interface | `120000,120001` |
-| Addon Version | `v1.1.0` |
+| Addon Version | `v1.2.0` |
 | Required External Libraries | None |
 | Optional Addons | `Rematch`, `BattlePetBreedID`, `LibDataBroker-1.1` |
 

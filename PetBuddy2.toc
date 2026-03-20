@@ -1,7 +1,7 @@
 ## Interface: 120000,120001
-## Title: |cff58be81P|r|cffffffffet|r |cff58be81B|r|cffffffffuddy|r|cff58be812|r
-## Notes: Battle pet HUD, utility items, and loadouts for Midnight.|nType |cff58be81/petbuddy|r for options.|n|cff8B1538[RGX]|r |cff58be81By DonnieDice|r
-## Version: v1.1.0
+## Title: |cffb07fffP|r|cffffffffet|r |cffb07fffB|r|cffffffffuddy|r|cffb07fff2|r
+## Notes: Battle pet HUD, utility items, and loadouts for Midnight.|nType |cffb07fff/petbuddy|r for options.|n|cff8B1538[RGX]|r |cffb07fffBy DonnieDice|r
+## Version: v1.2.0
 ## Author: DonnieDice
 ## Email: donniedice@protonmail.com
 ## SavedVariables: PetBuddyDB

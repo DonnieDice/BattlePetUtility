@@ -29,7 +29,8 @@ if type(GetSpellCooldown) ~= "function" and C_Spell and type(C_Spell.GetSpellCoo
 			return 0, 0, 0, 1;
 		end
 
-		local enabled = cooldownInfo.isEnabled and 1 or 0;
+		local enabled = 1;
+		pcall(function() enabled = cooldownInfo.isEnabled and 1 or 0; end);
 		return cooldownInfo.startTime or 0, cooldownInfo.duration or 0, enabled, cooldownInfo.modRate or 1;
 	end
 end

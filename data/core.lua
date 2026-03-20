@@ -145,7 +145,7 @@ function addon:CancelAllTimers()
 	end
 end
 
-addon.CHAT_PREFIX = "|TInterface\\Icons\\INV_PandarenSerpentPet:16:16:0:0|t - [|cff58be81PB2|r] ";
+addon.CHAT_PREFIX = "|TInterface\\Icons\\INV_PandarenSerpentPet:16:16:0:0|t - [|cffb07fffPB2|r] ";
 
 local function GetAddonVersion()
 	if(C_AddOns and type(C_AddOns.GetAddOnMetadata) == "function") then
@@ -169,7 +169,7 @@ end
 function addon:ShowWelcomeMessage()
 	if(not self.db or self.db.global.ShowWelcomeMessage == false) then return end
 
-	self:PrintMessage("Welcome! Use |cff58be81/petbuddy|r to toggle, and |cff58be81/petbuddy help|r for commands.");
+	self:PrintMessage("Welcome! Use |cffb07fff/petbuddy|r to toggle, and |cffb07fff/petbuddy help|r for commands.");
 	self:PrintMessage("|cffffff00Version:|r |cff7598b6" .. GetAddonVersion() .. "|r");
 end
 
@@ -186,10 +186,10 @@ end
 
 function addon:PrintHelp()
 	self:PrintMessage("|cffffff00PetBuddy2 Commands:|r");
-	self:PrintMessage(" |cff58be81/petbuddy|r - Toggle PetBuddy2");
-	self:PrintMessage(" |cff58be81/petbuddy help|r - Show command help");
-	self:PrintMessage(" |cff58be81/petbuddy welcome|r - Toggle login welcome message");
-	self:PrintMessage(" |cff58be81/petbuddy version|r - Show current version");
+	self:PrintMessage(" |cffb07fff/petbuddy|r - Toggle PetBuddy2");
+	self:PrintMessage(" |cffb07fff/petbuddy help|r - Show command help");
+	self:PrintMessage(" |cffb07fff/petbuddy welcome|r - Toggle login welcome message");
+	self:PrintMessage(" |cffb07fff/petbuddy version|r - Show current version");
 end
 
 local PetsBattleData = {};
@@ -1326,7 +1326,9 @@ function addon:PLAYER_REGEN_ENABLED()
 	
 	self.db.global.Visible = PetBuddyFrame:IsShown();
 	addon:UpdateUtilityMenuState();
-	addon:UpdateAutoResummon(false);
+	addon:ScheduleTimer(function()
+		addon:UpdateAutoResummon(false);
+	end, 0.5);
 end
 
 function addon:CURSOR_UPDATE()
@@ -1368,7 +1370,9 @@ local AUTOSUMMON_BLOCK_AFTER_LOGIN = 4.0;
 
 addon.SummonDisabledTimer = 0;
 hooksecurefunc("Dismount", function()
-	addon.SummonDisabledTimer = GetTime();
+	if(not InCombatLockdown()) then
+		addon.SummonDisabledTimer = GetTime();
+	end
 end)
 
 function addon:HandleAutoSummonTrigger(event, ...)
@@ -1555,7 +1559,7 @@ function addon:OnInitialize()
 		elseif(command == "version") then
 			addon:PrintMessage("|cffffff00Version:|r |cff7598b6" .. GetAddonVersion() .. "|r");
 		else
-			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cff58be81/petbuddy help|r.");
+			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cffb07fff/petbuddy help|r.");
 		end
 	end
 	
