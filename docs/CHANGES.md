@@ -1,3 +1,9 @@
+## v1.2.1 (2026-03-24)
+* Fixed cooldown taint errors in `data/itembuttons.lua` by deferring cooldown widget updates onto a safe timer path instead of calling `SetCooldown` directly from tainted button/event flows.
+* Fixed PetBuddy2 utility/loadout controls not responding reliably by explicitly registering click handlers for the bottom button bar.
+* Fixed PetBuddy2 loadouts and utility sections not restoring correctly on initial frame show by reapplying utility state, minimize state, and pet refresh logic in the frame `OnShow` path.
+* Fixed the in-game PetBuddy2 title styling to use branded colors and improved minimize button layering/placement so it remains visible beside the close button.
+
 ## v1.2.0 (2026-03-20)
 * Fixed `compat.lua` crash: `C_Spell.GetSpellCooldown` returns `isEnabled` as a protected secret boolean in WoW 11.x; wrapped the boolean test in `pcall` to prevent the taint error and the cascade that was blocking pet summoning.
 * Fixed auto-summon not firing reliably after combat: added a 0.5s delay in `PLAYER_REGEN_ENABLED` before calling `UpdateAutoResummon` so `InCombatLockdown()` has fully released before the attempt.

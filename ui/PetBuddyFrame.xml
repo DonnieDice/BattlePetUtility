@@ -31,7 +31,7 @@
 				</Anchors>
 				<Layers>
 					<Layer level="ARTWORK" textureSubLevel="1">
-						<FontString name="$parentTitleText" inherits="PetBuddyFontNormal" justifyH="LEFT" justifyV="BOTTOM" parentKey="titleText" text="RGX | PetBuddy2">
+						<FontString name="$parentTitleText" inherits="PetBuddyFontNormal" justifyH="LEFT" justifyV="BOTTOM" parentKey="titleText" text="|cff8b4b5cR|r|cff8b4b5cG|r|cff8b4b5cX|r |cff3598db||r |cff2dc26bP|r|cffffffffet|r|cff2dc26bB|r|cffffffffuddy|r|cff2dc26b2|r">
 							<Size x="150" y="24"/>
 							<Anchors>
 								<Anchor point="BOTTOMLEFT" relativeTo="$parent" x="2" y="5"/>
@@ -48,7 +48,7 @@
 					</OnMouseUp>
 				</Scripts>
 				<Frames>
-					<Button parentKey="closeButton" inherits="SecureHandlerClickTemplate">
+					<Button parentKey="closeButton" inherits="SecureHandlerClickTemplate" frameLevel="8">
 						<Size x="32" y="32"/>
 						<Anchors>
 							<Anchor point="TOPRIGHT" x="3" y="2"/>
@@ -66,12 +66,16 @@
 						<PushedTexture file="Interface\Buttons\UI-Panel-CloseButton-Down"/>
 						<HighlightTexture file="Interface\Buttons\UI-Panel-CloseButton-Highlight" alphaMode="ADD"/>
 					</Button>
-					<Button parentKey="minimizeButton">
+					<Button parentKey="minimizeButton" frameLevel="9">
 						<Size x="32" y="32"/>
 						<Anchors>
-							<Anchor point="RIGHT" relativeKey="$parent.closeButton" relativePoint="LEFT" x="-2" y="0"/>
+							<Anchor point="TOPRIGHT" relativeKey="$parent.closeButton" relativePoint="TOPLEFT" x="-6" y="0"/>
 						</Anchors>
 						<Scripts>
+							<OnLoad>
+								self:SetFrameStrata("HIGH");
+								self:SetFrameLevel(self:GetParent():GetFrameLevel() + 8);
+							</OnLoad>
 							<OnClick>
 								PetBuddyFrameMinimizeButton_OnClick(self);
 							</OnClick>

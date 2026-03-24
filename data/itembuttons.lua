@@ -385,6 +385,25 @@ local function EnsureFlyoutBorder(button)
 	return border;
 end
 
+local function ApplyCooldownSafely(button, start, duration)
+	if(not button or not button.cooldown or type(button.cooldown.SetCooldown) ~= "function") then
+		return;
+	end
+
+	if(button._cooldownTimer and type(button._cooldownTimer.Cancel) == "function") then
+		button._cooldownTimer:Cancel();
+		button._cooldownTimer = nil;
+	end
+
+	button._cooldownTimer = C_Timer.NewTimer(0, function()
+		button._cooldownTimer = nil;
+		if(not button.cooldown or type(button.cooldown.SetCooldown) ~= "function") then
+			return;
+		end
+		button.cooldown:SetCooldown(start or 0, duration or 0);
+	end);
+end
+
 function addon:CheckSameItems(oldItems, newItems)
 	for cid, items in pairs(newItems) do
 		if(not oldItems[cid]) then
@@ -530,6 +549,7 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 	end
 
 	self:Show();
+	self:RegisterForClicks("LeftButtonUp", "RightButtonUp");
 	
 	-- self.icon:SetTexCoord("0.055", "0.945", "0.055", "0.945")
 	
@@ -579,7 +599,7 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 		end
 		
 		local start, duration = GetSpellCooldown(self.actionData);
-		self.cooldown:SetCooldown(start, duration);
+		ApplyCooldownSafely(self, start, duration);
 		
 		self:RegisterEvent("SPELL_UPDATE_COOLDOWN");
 	elseif(self.actionType == "item") then
@@ -616,7 +636,7 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 		end
 		
 		local start, duration = GetItemCooldown(self.actionData);
-		self.cooldown:SetCooldown(start, duration);
+		ApplyCooldownSafely(self, start, duration);
 		
 		self:RegisterEvent("BAG_UPDATE_DELAYED");
 		self:RegisterEvent("BAG_UPDATE_COOLDOWN");
@@ -753,7 +773,7 @@ end
 function PetBuddyFrameButton_OnEvent(self, event, ...)
 	if(event == "SPELL_UPDATE_COOLDOWN") then
 		local start, duration = GetSpellCooldown(self.actionData);
-		self.cooldown:SetCooldown(start, duration)
+		ApplyCooldownSafely(self, start, duration)
 	elseif(event == "BAG_UPDATE_DELAYED" and self.actionType == "item") then
 		local itemCount = GetItemCount(self.actionData);
 		if(IsConsumableItem(self.actionData)) then
@@ -771,7 +791,7 @@ function PetBuddyFrameButton_OnEvent(self, event, ...)
 		end
 	elseif(event == "BAG_UPDATE_COOLDOWN" and self.actionType == "item") then
 		local start, duration = GetItemCooldown(self.actionData);
-		self.cooldown:SetCooldown(start, duration);
+		ApplyCooldownSafely(self, start, duration);
 	end
 end
 

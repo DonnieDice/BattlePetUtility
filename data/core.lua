@@ -1287,7 +1287,10 @@ function PetBuddyFrame_OnShow(self)
 	addon:RegisterEvent("UPDATE_SUMMONPETS_ACTION");
 	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
 	
+	addon:UpdateUtilityMenuState();
 	addon:RefreshMedia();
+	addon:UpdateMinimizeState();
+	addon:UpdatePets();
 	
 	PetBuddyPetFrame_ResetAbilitySwitches();
 	PetBuddyFrameTitlePetCharms:OnShow();
