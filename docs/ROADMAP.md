@@ -23,3 +23,4 @@ PetBuddy2 is currently in a stability and UX-polish phase for Retail Midnight.
 5. Release hygiene
 - Keep TOC metadata, README, and docs synchronized per release.
 - Keep changelog entries concise and behavior-focused.
+- Replace the placeholder addon icon with a proper PetBuddy2 icon asset and update TOC metadata to use it.
