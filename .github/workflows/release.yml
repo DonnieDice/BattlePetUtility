@@ -120,7 +120,7 @@ jobs:
                 "fields": [
                   {
                     "name": "📥 Downloads",
-                    "value": "[GitHub Releases](https://github.com/DonnieDice/PetBuddy2/releases)",
+                    "value": "[CurseForge](https://www.curseforge.com/wow/addons/petbuddy2)\n[GitHub Releases](https://github.com/DonnieDice/PetBuddy2/releases)",
                     "inline": true
                   },
                   {
@@ -181,7 +181,7 @@ jobs:
                 "fields": [
                   {
                     "name": "📥 Download Beta",
-                    "value": "[GitHub Releases](https://github.com/DonnieDice/PetBuddy2/releases)"
+                    "value": "[CurseForge](https://www.curseforge.com/wow/addons/petbuddy2)\n[GitHub Releases](https://github.com/DonnieDice/PetBuddy2/releases)"
                   }
                 ],
                 "footer": {
