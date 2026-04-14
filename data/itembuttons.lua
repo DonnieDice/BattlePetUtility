@@ -376,7 +376,7 @@ local function EnsureFlyoutBorder(button)
 	local border = GetFlyoutBorder(button);
 	if(not border) then
 		border = button:CreateTexture(nil, "OVERLAY", nil, 5);
-		border:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\Border");
+		border:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\border");
 		border:SetPoint("TOPLEFT", button, "TOPLEFT", -11, 11);
 		border:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 11, -11);
 	end

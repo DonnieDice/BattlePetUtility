@@ -33,4 +33,9 @@ git push origin vX.Y.Z
 2. Select the new tag, give it the version title, and paste the matching `docs/CHANGES.md` entry.
 3. Attach the packaged zip if needed, then publish.
 
+## 5. Workflow reruns
+1. Use the `Package and Release` workflow on `main` for docs/workflow-only follow-ups.
+2. Use `workflow_dispatch` when you need to resend release notifications or retry the packager without cutting a new feature tag.
+3. For manual reruns tied to an existing release, pass the original tag name (for example `v2.0.0`) through the workflow inputs so Discord links and release references stay correct.
+
 Following these steps keeps PetBuddy2’s release hygiene identical to BLU, with clean history and reproducible tags.

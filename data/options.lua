@@ -9,9 +9,9 @@
 local ADDON_NAME, addon = ...;
 local E = addon.E;
 local DEFAULT_FONT_NAME = "DorisPP";
-local DEFAULT_FONT_PATH = [[Interface\AddOns\PetBuddy2\Media\DORISPP.TTF]];
+local DEFAULT_FONT_PATH = [[Interface\AddOns\PetBuddy2\media\dorispp.ttf]];
 local DEFAULT_STATUSBAR_NAME = "RenAscensionL";
-local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\Media\RenAscensionL.tga]];
+local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]];
 
 addon.Media = addon.Media or {
 	font = {},
@@ -134,10 +134,10 @@ addon:RegisterMedia("statusbar", DEFAULT_STATUSBAR_NAME, DEFAULT_STATUSBAR_PATH)
 addon:RegisterMedia("statusbar", "Blizzard", "Interface\\TargetingFrame\\UI-StatusBar");
 addon:RegisterMedia("statusbar", "Smooth", "Interface\\RaidFrame\\Raid-Bar-Hp-Fill");
 addon:RegisterMedia("statusbar", "Flat", "Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar");
-addon:RegisterMedia("statusbar", "Glamour", "Interface\\AddOns\\PetBuddy2\\Media\\RenAscensionL.tga");
+addon:RegisterMedia("statusbar", "Glamour", "Interface\\AddOns\\PetBuddy2\\media\\renascensionl.tga");
 addon:RegisterMedia("statusbar", "Minimalist", "Interface\\Tooltips\\UI-Tooltip-Background");
 addon:RegisterMedia("statusbar", "Perl", "Interface\\TargetingFrame\\UI-StatusBar");
-addon:RegisterMedia("statusbar", "Smoother", "Interface\\AddOns\\PetBuddy2\\Media\\Backdrop.tga");
+addon:RegisterMedia("statusbar", "Smoother", "Interface\\AddOns\\PetBuddy2\\media\\backdrop.tga");
 ImportExternalSharedMedia();
 
 E.VISIBILITY_MODE = {

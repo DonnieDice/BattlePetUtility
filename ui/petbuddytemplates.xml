@@ -162,7 +162,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="BORDER" textureSubLevel="-1">
-				<Texture name="$parentIconBackdrop" file="Interface\AddOns\PetBuddy2\media\Backdrop">
+				<Texture name="$parentIconBackdrop" file="Interface\AddOns\PetBuddy2\media\backdrop">
 					<Size x="62" y="62"/>
 					<Anchors>
 						<Anchor point="CENTER" relativeTo="$parentIcon" x="0" y="0"/>
@@ -170,7 +170,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK" textureSubLevel="-1">
-				<Texture name="$parentIconGloss" file="Interface\AddOns\PetBuddy2\media\Gloss" alphaMode="ADD">
+				<Texture name="$parentIconGloss" file="Interface\AddOns\PetBuddy2\media\gloss" alphaMode="ADD">
 					<Size x="56" y="56"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon" x="0" y="0"/>
@@ -179,7 +179,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK">
-				<Texture name="$parentIconBorder" parentKey="iconBorder" file="Interface\AddOns\PetBuddy2\media\Border">
+				<Texture name="$parentIconBorder" parentKey="iconBorder" file="Interface\AddOns\PetBuddy2\media\border">
 					<Size x="62" y="62"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon"/>
@@ -316,7 +316,7 @@
 								</FontString>
 							</Layer>
 						</Layers>
-						<BarTexture file="Interface\AddOns\PetBuddy2\media\RenAscensionL"/>
+						<BarTexture file="Interface\AddOns\PetBuddy2\media\renascensionl"/>
 						<BarColor r="0.22" g="1.0" b="0.08"/>
 						<Scripts>
 							<OnLoad>
@@ -347,7 +347,7 @@
 								</FontString>
 							</Layer>
 						</Layers>
-						<BarTexture file="Interface\AddOns\PetBuddy2\media\RenAscensionL"/>
+						<BarTexture file="Interface\AddOns\PetBuddy2\media\renascensionl"/>
 						<BarColor r="0.2" g="0.7" b="1.0"/>
 						<Scripts>
 							<OnLoad>
@@ -448,7 +448,7 @@
 				if(self.SetBackdrop) then
 					self:SetBackdrop({
 						bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-						edgeFile = "Interface\\AddOns\\PetBuddy2\\media\\FrameBorder",
+						edgeFile = "Interface\\AddOns\\PetBuddy2\\media\\frameborder",
 						tile = true,
 						tileSize = 16,
 						edgeSize = 16,
@@ -509,7 +509,7 @@
 				</FontString>
 			</Layer>
 			<Layer level="OVERLAY" textureSubLevel="1">
-				<Texture name="$parentIconGloss" file="Interface\AddOns\PetBuddy2\media\Gloss" alphaMode="ADD">
+				<Texture name="$parentIconGloss" file="Interface\AddOns\PetBuddy2\media\gloss" alphaMode="ADD">
 					<Size x="38" y="38"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon" x="0" y="0"/>
@@ -540,14 +540,14 @@
 				PetBuddyFrameButton_OnLeave(self);
 			</OnLeave>
 		</Scripts>
-		<NormalTexture name="$parentNormalTexture" parentKey="NormalTexture" file="Interface\AddOns\PetBuddy2\media\Border">
+		<NormalTexture name="$parentNormalTexture" parentKey="NormalTexture" file="Interface\AddOns\PetBuddy2\media\border">
 			<Anchors>
 				<Anchor point="TOPLEFT" x="-3" y="3"/>
 				<Anchor point="BOTTOMRIGHT" x="3" y="-3"/>
 			</Anchors>
 			<Color r="0.05" g="0.05" b="0.05"/>
 		</NormalTexture>
-		<PushedTexture file="Interface\AddOns\PetBuddy2\media\Border">
+		<PushedTexture file="Interface\AddOns\PetBuddy2\media\border">
 			<Anchors>
 				<Anchor point="TOPLEFT" x="-2" y="2"/>
 				<Anchor point="BOTTOMRIGHT" x="2" y="-2"/>
@@ -588,7 +588,7 @@
 		</Scripts>
 	</Frame>
 	
-	<Texture name="PetBuddyButtonHighlightTextureTemplate" file="Interface\AddOns\PetBuddy2\media\LoadoutButtonHighlight" alphaMode="ADD" virtual="true">
+	<Texture name="PetBuddyButtonHighlightTextureTemplate" file="Interface\AddOns\PetBuddy2\media\loadoutbuttonhighlight" alphaMode="ADD" virtual="true">
 		<TexCoords left="0" right="0.8125" top="0" bottom="0.71875"/>
 	</Texture>
 	
@@ -605,7 +605,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="BORDER" textureSubLevel="-1">
-				<Texture name="$parentIconBackdrop" file="Interface\AddOns\PetBuddy2\media\Backdrop">
+				<Texture name="$parentIconBackdrop" file="Interface\AddOns\PetBuddy2\media\backdrop">
 					<Size x="62" y="62"/>
 					<Anchors>
 						<Anchor point="CENTER" relativeTo="$parentIcon" x="0" y="0"/>
@@ -613,7 +613,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK" textureSubLevel="-1">
-				<Texture name="$parentIconGloss" file="Interface\AddOns\PetBuddy2\media\Gloss" alphaMode="ADD">
+				<Texture name="$parentIconGloss" file="Interface\AddOns\PetBuddy2\media\gloss" alphaMode="ADD">
 					<Size x="56" y="56"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon" x="0" y="0"/>
@@ -622,7 +622,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK">
-				<Texture name="$parentIconBorder" parentKey="iconBorder" file="Interface\AddOns\PetBuddy2\media\Border">
+				<Texture name="$parentIconBorder" parentKey="iconBorder" file="Interface\AddOns\PetBuddy2\media\border">
 					<Size x="62" y="62"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon"/>
@@ -695,7 +695,7 @@
 		<Scripts>
 			<OnValueChanged function="HybridScrollFrame_OnValueChanged"/>
 		</Scripts>
-		<ThumbTexture name="$parentThumbTexture" inherits="HybridScrollBarButton" file="Interface\AddOns\PetBuddy2\media\SliderThumb" parentKey="thumbTexture" alphaMode="ADD">
+		<ThumbTexture name="$parentThumbTexture" inherits="HybridScrollBarButton" file="Interface\AddOns\PetBuddy2\media\sliderthumb" parentKey="thumbTexture" alphaMode="ADD">
 			<Size x="16" y="16"/>
 			<TexCoords left="0" right="1" top="0" bottom="1"/>
 			<!-- <TexCoords left="0.1875" right="0.8125" top="0" bottom="1"/> -->
@@ -709,7 +709,7 @@
 				<Texture parentKey="background" atlas="PetList-ButtonBackground"/>
 			</Layer>
 			<Layer level="BACKGROUND" textureSubLevel="1">
-				<Texture parentKey="backgroundError" file="Interface\AddOns\PetBuddy2\media\Error" hidden="true">
+				<Texture parentKey="backgroundError" file="Interface\AddOns\PetBuddy2\media\error" hidden="true">
 					<Size x="52" y="44"/>
 					<Anchors>
 						<Anchor point="LEFT" x="1" y="0"/>
@@ -767,5 +767,4 @@
 	</Button>
 	
 </Ui>
-
 

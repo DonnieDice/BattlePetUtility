@@ -1,5 +1,14 @@
 # Changes
 
+## v2.0.1
+
+- Normalized non-documentation asset and UI file paths to lower case, including the `media/` directory and XML layout filenames, while intentionally leaving documentation files and the addon manifest naming alone.
+- Updated in-repo asset references to match the lower-case path cleanup so TOC, XML, Lua media registration, and button/icon paths stay in sync.
+- Hardened the release workflow Discord notification path so webhook responses are awaited and validated instead of failing silently.
+- Added `workflow_dispatch` support plus manual release inputs to the release workflow so Discord notifications and packager runs can be retried without cutting a new feature tag.
+- Updated release workflow notifications to include the CurseForge download link directly in Discord.
+- Polished README / changelog / releasing docs so they reflect the current Rematch flow, rerun workflow, and post-release troubleshooting guidance more accurately.
+
 ## v2.0.0
 
 - Replaced `EasyMenu` with native `UIDropDownMenu` API for reliable dropdown behavior (same pattern used by BLU addon).
@@ -23,11 +32,11 @@
 - Added more font options (Arial Narrow, Morpheus, Skurri, Expressway) and bar texture options (Flat, Glamour, Minimalist, Perl, Smoother) to Frame Options menu.
 - Moved "Lock PetBuddy2" to the top of the options menu.
 - Moved "When starting pet battle" to the top of the Automation section.
-- Fixed team selection not loading after reload — restored `PetJournal_UpdatePetLoadOut` call to properly refresh Blizzard's loadout UI.
+- Fixed team selection not loading after reload by restoring the Blizzard loadout refresh path during startup without reintroducing the older intrusive hook behavior.
 - Removed the empty "Other Options" section.
 - Fixed "Show missing pets list" being greyed out — it is now always toggleable.
 - Removed redundant "Hide PetBuddy2" / "Show PetBuddy2" dropdown option — the close (X) button already handles this.
-- Removed `PetJournal_UpdatePetLoadOut` hooks and calls that could interfere with the collections UI — now uses BLU's read-only approach with `C_PetJournal` API only.
+- Removed the older intrusive `PetJournal_UpdatePetLoadOut` hook behavior that could interfere with the collections UI, keeping PB2 closer to BLU's safer read-only approach for normal updates.
 - Replaced placeholder addon icon with a proper PetBuddy2 icon asset and updated TOC metadata.
 - Fixed the in-game header branding so the title now shows the logo and purple `P`, `B`, and `2` styling consistently.
 - Replaced the broken minimize and close art with explicit header buttons so the controls render reliably.

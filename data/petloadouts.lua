@@ -773,7 +773,7 @@ end
 
 function PetBuddyLoadoutsSaveButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\SaveButtonIcon",
+		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\savebuttonicon",
 		-- count = "S",
 		tooltipTitle = "Save Loadout",
 		tooltipDescription = "Save current pets and abilities to PetBuddy loadouts, or open Rematch Save Team when Rematch is available",
@@ -792,7 +792,7 @@ end
 
 function PetBuddyLoadoutsToggleButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconDown",
+		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\togglebuttonicondown",
 		tooltipTitle = "Toggle Loadout List",
 		tooltipDescription = "Show/hide the list of existing loadouts",
 		func = function(self)
@@ -825,11 +825,11 @@ function PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
 		PetBuddyFrameLoadouts_UpdateList();
 		HybridScrollFrame_SetOffset(PetBuddyFrameLoadouts.scrollFrame, 0);
 		if(button and button.icon) then
-			button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconUp");
+			button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\togglebuttoniconup");
 		end
 	else
 		if(button and button.icon) then
-			button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\ToggleButtonIconDown");
+			button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\togglebuttonicondown");
 		end
 	end
 end

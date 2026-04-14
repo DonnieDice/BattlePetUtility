@@ -31,7 +31,7 @@
 				</Anchors>
 				<Layers>
 					<Layer level="ARTWORK" textureSubLevel="2">
-						<Texture name="$parentLogo" parentKey="logo" file="Interface\AddOns\PetBuddy2\Media\logo.tga">
+						<Texture name="$parentLogo" parentKey="logo" file="Interface\AddOns\PetBuddy2\media\logo.tga">
 							<Size x="20" y="20"/>
 							<Anchors>
 								<Anchor point="LEFT" x="4" y="0"/>

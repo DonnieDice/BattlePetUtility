@@ -39,7 +39,7 @@
 <!-- WoW Compatibility -->
 [![WoW Retail](https://img.shields.io/badge/WoW-Retail%20Midnight-58be81?style=flat-square&logo=worldofwarcraft)](https://worldofwarcraft.com)
 [![Interface](https://img.shields.io/badge/Interface-120000%2C120001-4ecdc4?style=flat-square)](https://github.com/donniedice/PetBuddy2)
-[![Version](https://img.shields.io/badge/Version-v2.0.0-7598b6?style=flat-square)](https://github.com/donniedice/PetBuddy2/releases)
+[![Version](https://img.shields.io/badge/Version-v2.0.1-7598b6?style=flat-square)](https://github.com/donniedice/PetBuddy2/releases)
 
 [Features](#features) • [Quick Start](#quick-start) • [Commands](#command-reference) • [Compatibility](#compatibility) • [Installation](#installation) • [Support](#support)
 
@@ -195,6 +195,11 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 <details>
 <summary><strong><span style="color:#58be81">🎉 Click to see the latest updates!</span></strong></summary>
 
+### <span style="color:#4ecdc4">v2.0.1 - Patch Release</span>
+- <span style="color:#2dc26b">✅ **Lower-case Asset Cleanup**</span> <span style="color:#e67e23">to keep media and UI file paths consistent outside documentation files</span>
+- <span style="color:#58be81">✅ **Release Workflow Fixes**</span> <span style="color:#e67e23">for Discord notifications, manual reruns, and CurseForge-friendly retry flow</span>
+- <span style="color:#ff6b6b">✅ **Docs Polish**</span> <span style="color:#e67e23">to keep changelog, release notes, and workflow guidance aligned with live behavior</span>
+
 ### <span style="color:#4ecdc4">v2.0.0 - Live Release</span>
 - <span style="color:#2dc26b">✅ **Zone Pet Tracker**</span> <span style="color:#e67e23">with native PB2 zone data, completion progress, and missing-pet visibility</span>
 - <span style="color:#58be81">✅ **Account-wide Native Loadouts**</span> <span style="color:#e67e23">with reliable realtime refresh across characters</span>
@@ -236,7 +241,7 @@ _<span style="color:#e67e23">See</span> [<span style="color:#58be81">docs/CHANGE
 
 ## <span style="color:#58be81">🐛 Known Issues</span>
 
-- <span style="color:#e67e23">Behavior may look stale immediately after addon updates — run</span> `/reload` <span style="color:#e67e23">to refresh</span>
+- <span style="color:#e67e23">Behavior may look stale immediately after addon updates or addon toggles — run</span> `/reload` <span style="color:#e67e23">to refresh</span>
 - <span style="color:#e67e23">Duplicate</span> `PetBuddy2` <span style="color:#e67e23">folders in AddOns can cause unexpected behavior — keep only one copy</span>
 
 ---
