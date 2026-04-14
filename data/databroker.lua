@@ -64,6 +64,15 @@ local BATTLE_PET_COUNTERS = { -- Weak / Strong
 	[10] = {7, 6}, -- Mechanical
 }
 
+local function GetSafeRarityColor(rarity)
+	local normalized = tonumber(rarity) or 1;
+	if(normalized < 1) then
+		normalized = 1;
+	end
+
+	return ITEM_QUALITY_COLORS[normalized - 1] or ITEM_QUALITY_COLORS[1] or NORMAL_FONT_COLOR;
+end
+
 function addon:GetDatabrokerMenuData()
 	return {
 		{
@@ -158,70 +167,56 @@ function addon:InitializeDatabroker()
 			
 			for slotIndex=1, 3 do
 				local petID, ability1, ability2, ability3, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
-				local speciesID, customName, level, xp, maxXp, _, _, speciesName, icon, petType = C_PetJournal.GetPetInfoByPetID(petID);
-				local health, maxHealth, power, speed, rarity = C_PetJournal.GetPetStats(petID);
-				
-				local isHurt = health < maxHealth;
-				
-				local rarityColor = ITEM_QUALITY_COLORS[rarity-1];
-				
-				local petTypeIcon = PET_TYPE_ICON_PATTERN:format(PET_TYPE_SUFFIX[petType]);
-			
-				local ability1_name = C_PetJournal.GetPetAbilityInfo(ability1);
-				local ability2_name = C_PetJournal.GetPetAbilityInfo(ability2);
-				local ability3_name = C_PetJournal.GetPetAbilityInfo(ability3);
-				
-				-- local name, subname = customName or speciesName;
-				-- if(customName) then subname = string.format(" |cff999999(%s)|r", speciesName); end
-				
-				tooltip:AddDoubleLine(
-					string.format("%s %s[%d] %s|r", ICON_PATTERN_16:format(icon), rarityColor.hex, level, customName or speciesName),
-					string.format("|cffffffff%s|r %s", _G["BATTLE_PET_NAME_"..petType], petTypeIcon)
-				);
-				
-				local weakType = BATTLE_PET_COUNTERS[petType][1];
-				local strongType = BATTLE_PET_COUNTERS[petType][2];
-				
-				local statsLine = "";
-				
-				if(not isHurt) then
-					statsLine = string.format("%s |cffffffff%d|r %s |cffffffff%d|r %s |cffffffff%d|r", TEX_HEALTH_ICON, maxHealth, TEX_POWER_ICON, power, TEX_SPEED_ICON, speed);
+				if(locked) then
+					tooltip:AddDoubleLine(string.format("Slot %d", slotIndex), "|cffffee00Locked|r");
+				elseif(not petID) then
+					tooltip:AddDoubleLine(string.format("Slot %d", slotIndex), "|cffffee00Empty|r");
 				else
-					statsLine = string.format("%s |cffff5555%d|r %s |cffffffff%d|r %s |cffffffff%d|r", TEX_HEALTH_ICON, health, TEX_POWER_ICON, power, TEX_SPEED_ICON, speed);
+					local speciesID, customName, level, _, _, _, _, speciesName, icon, petType = C_PetJournal.GetPetInfoByPetID(petID);
+					local health, maxHealth, power, speed, rarity = C_PetJournal.GetPetStats(petID);
+					local displayName = customName or speciesName or "Unknown Pet";
+					local displayIcon = icon or PET_BUDDY_ICON;
+					local typeIndex = petType or 1;
+					local typeSuffix = PET_TYPE_SUFFIX[typeIndex] or PET_TYPE_SUFFIX[1];
+					local petTypeName = _G["BATTLE_PET_NAME_" .. tostring(typeIndex)] or "Unknown";
+					local petTypeIcon = PET_TYPE_ICON_PATTERN:format(typeSuffix);
+					local isHurt = (tonumber(health) or 0) < (tonumber(maxHealth) or 0);
+					local rarityColor = GetSafeRarityColor(rarity);
+					local counters = BATTLE_PET_COUNTERS[typeIndex] or BATTLE_PET_COUNTERS[1];
+					local weakType = counters[1];
+					local strongType = counters[2];
+					local statsLine = "";
+
+					tooltip:AddDoubleLine(
+						string.format("%s %s[%d] %s|r", ICON_PATTERN_16:format(displayIcon), rarityColor.hex or "|cffffffff", tonumber(level) or 0, displayName),
+						string.format("|cffffffff%s|r %s", petTypeName, petTypeIcon)
+					);
+
+					if(not isHurt) then
+						statsLine = string.format("%s |cffffffff%d|r %s |cffffffff%d|r %s |cffffffff%d|r", TEX_HEALTH_ICON, tonumber(maxHealth) or 0, TEX_POWER_ICON, tonumber(power) or 0, TEX_SPEED_ICON, tonumber(speed) or 0);
+					else
+						statsLine = string.format("%s |cffff5555%d|r %s |cffffffff%d|r %s |cffffffff%d|r", TEX_HEALTH_ICON, tonumber(health) or 0, TEX_POWER_ICON, tonumber(power) or 0, TEX_SPEED_ICON, tonumber(speed) or 0);
+					end
+
+					tooltip:AddDoubleLine(
+						statsLine,
+						string.format("%s%s %s%s",
+							TEX_WEAK_ICON, PET_TYPE_ICON_PATTERN:format(PET_TYPE_SUFFIX[weakType] or PET_TYPE_SUFFIX[1]),
+							TEX_STRONG_ICON, PET_TYPE_ICON_PATTERN:format(PET_TYPE_SUFFIX[strongType] or PET_TYPE_SUFFIX[1])
+						)
+					);
 				end
-				
-				tooltip:AddDoubleLine(
-					statsLine,
-					string.format("%s%s %s%s",
-						TEX_WEAK_ICON, PET_TYPE_ICON_PATTERN:format(PET_TYPE_SUFFIX[weakType]),
-						TEX_STRONG_ICON, PET_TYPE_ICON_PATTERN:format(PET_TYPE_SUFFIX[strongType])
-					));
-				
-				-- if(level < 25) then
-				-- 	tooltip:AddDoubleLine(
-				-- 		"|cff6fd509HP|r / |cff49daf3XP|r",
-				-- 		string.format("|cff6fd509%d/%d|r / |cff49daf3%d/%d|r", health, maxHealth, xp, maxXp)
-				-- 	);
-				-- else
-				-- 	tooltip:AddDoubleLine(
-				-- 		"|cff6fd509HP|r",
-				-- 		string.format("|cff6fd509%d/%d|r", health, maxHealth)
-				-- 	);
-				-- end
-
-				-- tooltip:AddLine(string.format("%s / %s / %s", ability1_name, ability2_name, ability3_name));
-
 			end
-				tooltip:AddLine(" ");
+			tooltip:AddLine(" ");
 			
 			if(addon.db.global.AutoSummonPet) then
 				if(addon.db.char.AutoSummonLastPetID) then
 					local speciesID, customName, level, _, _, _, _, speciesName = C_PetJournal.GetPetInfoByPetID(addon.db.char.AutoSummonLastPetID);
 					if(speciesID) then
 						local _, _, _, _, rarity = C_PetJournal.GetPetStats(addon.db.char.AutoSummonLastPetID);
-						local rarityColor = ITEM_QUALITY_COLORS[rarity-1];
+						local rarityColor = GetSafeRarityColor(rarity);
 						
-						tooltip:AddDoubleLine("Current Auto Summon Companion", string.format("%s[%d] %s|r", rarityColor.hex, level, customName or speciesName));
+						tooltip:AddDoubleLine("Current Auto Summon Companion", string.format("%s[%d] %s|r", rarityColor.hex or "|cffffffff", tonumber(level) or 0, customName or speciesName or "Unknown Pet"));
 					else
 						self.db.char.AutoSummonLastPetID = nil;
 						tooltip:AddDoubleLine("Current Auto Summon Companion", "|cffff5555No companion|r");
@@ -274,4 +269,3 @@ function addon:UpdateDatabrokerText()
 	
 	addon.databroker.text = table.concat(strings, "  ");
 end
-

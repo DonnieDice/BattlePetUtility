@@ -9,9 +9,9 @@
 local ADDON_NAME, addon = ...;
 local E = addon.E;
 local DEFAULT_FONT_NAME = "DorisPP";
-local DEFAULT_FONT_PATH = [[Interface\AddOns\PetBuddy2\media\DORISPP.ttf]];
+local DEFAULT_FONT_PATH = [[Interface\AddOns\PetBuddy2\Media\DORISPP.TTF]];
 local DEFAULT_STATUSBAR_NAME = "RenAscensionL";
-local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\media\RenAscensionL.tga]];
+local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\Media\RenAscensionL.tga]];
 
 addon.Media = addon.Media or {
 	font = {},
@@ -91,9 +91,12 @@ function addon:ListMedia(mediaType)
 		return {};
 	end
 
-	local list = {};
-	for name in pairs(mediaTable) do
-		tinsert(list, name);
+	local list, seen = {}, {};
+	for name, path in pairs(mediaTable) do
+		if(type(name) == "string" and name ~= "" and not seen[name]) then
+			seen[name] = true;
+			tinsert(list, name);
+		end
 	end
 	table.sort(list);
 	return list;
@@ -123,8 +126,18 @@ end
 
 addon:RegisterMedia("font", DEFAULT_FONT_NAME, DEFAULT_FONT_PATH);
 addon:RegisterMedia("font", "Friz Quadrata", STANDARD_TEXT_FONT or DEFAULT_FONT_PATH);
+addon:RegisterMedia("font", "Arial Narrow", "Fonts\\ARIALN.TTF");
+addon:RegisterMedia("font", "Morpheus", "Fonts\\MORPHEUS.TTF");
+addon:RegisterMedia("font", "Skurri", "Fonts\\SKURRI.TTF");
+addon:RegisterMedia("font", "Expressway", "Fonts\\EXPRESSW.TTF");
 addon:RegisterMedia("statusbar", DEFAULT_STATUSBAR_NAME, DEFAULT_STATUSBAR_PATH);
 addon:RegisterMedia("statusbar", "Blizzard", "Interface\\TargetingFrame\\UI-StatusBar");
+addon:RegisterMedia("statusbar", "Smooth", "Interface\\RaidFrame\\Raid-Bar-Hp-Fill");
+addon:RegisterMedia("statusbar", "Flat", "Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar");
+addon:RegisterMedia("statusbar", "Glamour", "Interface\\AddOns\\PetBuddy2\\Media\\RenAscensionL.tga");
+addon:RegisterMedia("statusbar", "Minimalist", "Interface\\Tooltips\\UI-Tooltip-Background");
+addon:RegisterMedia("statusbar", "Perl", "Interface\\TargetingFrame\\UI-StatusBar");
+addon:RegisterMedia("statusbar", "Smoother", "Interface\\AddOns\\PetBuddy2\\Media\\Backdrop.tga");
 ImportExternalSharedMedia();
 
 E.VISIBILITY_MODE = {
@@ -164,6 +177,7 @@ function addon:InitializeDatabase()
 			
 			IsFrameLocked = false,
 			IsMinimized = false,
+			HideMainGUI = false,
 			
 			PetBattleVisiblityMode = E.VISIBILITY_MODE.SHOW,
 			
@@ -171,6 +185,8 @@ function addon:InitializeDatabase()
 			
 			ShowPetTooltips = true,
 			ShowPetCharms = true,
+			ShowZoneTracker = true,
+			ShowZoneTrackerPetList = true,
 			
 			PetStatsText = {
 				Enabled = true,
@@ -182,6 +198,7 @@ function addon:InitializeDatabase()
 			PetUtilityMenuState = 1,
 			
 			ShowPepe = true,
+			PepeOnLeft = false,
 			ShowWelcomeMessage = true,
 			
 			ShowPetItems = true,
@@ -248,7 +265,8 @@ end
 
 function addon:RestoreSavedSettings()
 	if(InCombatLockdown()) then return end
-	
+
+	addon:SyncUtilityMenuState();
 	addon:UpdateUtilityMenuState();
 	
 	PetBuddyFrameTitlePetCharms:SetShown(self.db.global.ShowPetCharms);
@@ -260,6 +278,7 @@ function addon:RestoreSavedSettings()
 	end
 	
 	addon:RefreshMedia();
+	addon:RefreshHeaderArt();
 	
 	if(self.db.global.ShowPepe) then
 		PetBuddyFrameTitle.pepeFrame:Show();
@@ -268,6 +287,7 @@ function addon:RestoreSavedSettings()
 	end
 	
 	local position = self.db.global.Position;
+	PetBuddyFrame:ClearAllPoints();
 	PetBuddyFrame:SetPoint(position.Point, UIParent, position.RelativePoint, position.x, position.y);
 	
 	if(self.db.global.Visible) then
@@ -278,6 +298,20 @@ function addon:RestoreSavedSettings()
 	
 	addon:SetWindowScale(self.db.global.WindowScale);
 	addon:UpdateMinimizeState();
+
+	if(PetBuddyFrame:IsShown()) then
+		addon:UpdateUtilityMenuState();
+		addon:UpdatePets();
+		addon:ScheduleTimer(function()
+			if(PetBuddyFrame and PetBuddyFrame:IsShown()) then
+				addon:UpdateUtilityMenuState();
+				addon:UpdatePets();
+				if(type(addon.RefreshZoneTracker) == "function") then
+					addon:RefreshZoneTracker();
+				end
+			end
+		end, 0.5);
+	end
 end
 
 function addon:RefreshMedia(font, barTexture)
@@ -308,6 +342,22 @@ function addon:RefreshMedia(font, barTexture)
 		petFrame.stats.petHealth:SetStatusBarTexture(statusBarPath);
 		petFrame.stats.petExperience:SetStatusBarTexture(statusBarPath);
 	end
+
+	if(PetBuddyFrameZoneTracker and PetBuddyFrameZoneTracker.bar) then
+		PetBuddyFrameZoneTracker.bar:SetStatusBarTexture(statusBarPath);
+		local qualityBars = PetBuddyFrameZoneTracker.bar.qualityBars;
+		if(type(qualityBars) == "table") then
+			for _, qBar in pairs(qualityBars) do
+				if(qBar and qBar.SetStatusBarTexture) then
+					qBar:SetStatusBarTexture(statusBarPath);
+				end
+			end
+		end
+	end
+
+	if(type(self.RefreshZoneTracker) == "function") then
+		self:RefreshZoneTracker();
+	end
 end
 
 function addon:SetWindowScale(scale)
@@ -318,16 +368,96 @@ end
 function addon:GetWindowScaleMenu()
 	local windowScales = { 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, };
 	local menu = {};
-	
+
 	for index, scale in ipairs(windowScales) do
 		tinsert(menu, {
 			text = string.format("%d%%", scale * 100),
-			func = function() addon:SetWindowScale(scale); end,
+			func = function()
+				addon:SetWindowScale(scale);
+				RefreshDropdownMenu(addon.ContextMenu);
+			end,
 			checked = function() return self.db.global.WindowScale == scale end,
 		});
 	end
-	
+
 	return menu;
+end
+
+local function TryLoadDropDownAPI()
+	if(type(UIDropDownMenu_Initialize) == "function" and type(UIDropDownMenu_AddButton) == "function") then
+		return true;
+	end
+
+	local loadAddon = nil;
+	if(C_AddOns and type(C_AddOns.LoadAddOn) == "function") then
+		loadAddon = C_AddOns.LoadAddOn;
+	elseif(type(LoadAddOn) == "function") then
+		loadAddon = LoadAddOn;
+	end
+
+	if(loadAddon) then
+		pcall(loadAddon, "Blizzard_UIDropDownMenu");
+		pcall(loadAddon, "Blizzard_Deprecated");
+	end
+
+	return type(UIDropDownMenu_Initialize) == "function" and type(UIDropDownMenu_AddButton) == "function";
+end
+
+local function RefreshDropdownMenu(menuFrame)
+	if(not menuFrame) then
+		if(type(addon) == "table" and addon.ContextMenu) then
+			menuFrame = addon.ContextMenu;
+		end
+	end
+
+	if(type(UIDropDownMenu_Refresh) == "function" and menuFrame) then
+		UIDropDownMenu_Refresh(menuFrame);
+	elseif(type(CloseDropDownMenus) == "function") then
+		CloseDropDownMenus();
+	end
+end
+
+-- Recursively convert menuData (array of info tables) into UIDropDownMenu-compatible info objects
+local function CreateMenuInfo(entry)
+	if(type(entry) ~= "table") then
+		return entry;
+	end
+
+	local info;
+	if(type(UIDropDownMenu_CreateInfo) == "function") then
+		info = UIDropDownMenu_CreateInfo();
+	else
+		info = {};
+	end
+
+	for k, v in pairs(entry) do
+		info[k] = v;
+	end
+
+	return info;
+end
+
+-- Initialize a single level of the dropdown menu
+local function InitializeMenuLevel(self, level, menuList)
+	level = level or 1;
+	local currentList;
+
+	if(type(menuList) == "table") then
+		currentList = menuList;
+	else
+		currentList = self._pbMenuData;
+	end
+
+	if(type(currentList) ~= "table") then
+		return;
+	end
+
+	for _, entry in ipairs(currentList) do
+		if(type(entry) == "table") then
+			local info = CreateMenuInfo(entry);
+			UIDropDownMenu_AddButton(info, level);
+		end
+	end
 end
 
 local function NormalizeUtilityMenuState(state)
@@ -340,40 +470,63 @@ local function NormalizeUtilityMenuState(state)
 end
 
 function addon:GetPetItemsUtilityMenuData()
+	local menu = {};
+	tinsert(menu, { text = "Pet Items Options", isTitle = true, notCheckable = true });
+
 	if(type(addon.GetPetItemCategoryMenuData) == "function") then
-		return addon:GetPetItemCategoryMenuData(false);
+		local categories = addon:GetPetItemCategoryMenuData(false);
+		if(type(categories) == "table") then
+			for _, entry in ipairs(categories) do
+				tinsert(menu, entry);
+			end
+		end
 	end
-	return {};
+	return menu;
 end
 
 function addon:GetPrimaryMenuData()
 	local sharedMediaFonts = {};
-	for index, font in ipairs(addon:ListMedia("font")) do
+	for _, font in ipairs(addon:ListMedia("font")) do
+		local fontName = font;
 		tinsert(sharedMediaFonts, {
-			text = font,
+			text = fontName,
 			func = function()
-				self.db.global.fontFace = font;
+				self.db.global.fontFace = fontName;
 				addon:RefreshMedia();
+				RefreshDropdownMenu(addon.ContextMenu);
 			end,
-			checked = function() return self.db.global.fontFace == font; end,
+			checked = function() return self.db.global.fontFace == fontName; end,
+			keepShownOnClick = true,
 		});
 	end
-	
+
 	local fontSizes = {};
 	for size = 8, 16 do
+		local value = size;
 		tinsert(fontSizes, {
-			text = tostring(size),
-			func = function() self.db.global.fontSize = size; addon:RefreshMedia(); end,
-			checked = function() return self.db.global.fontSize == size; end,
+			text = tostring(value),
+			func = function()
+				self.db.global.fontSize = value;
+				addon:RefreshMedia();
+				RefreshDropdownMenu(addon.ContextMenu);
+			end,
+			checked = function() return self.db.global.fontSize == value; end,
+			keepShownOnClick = true,
 		});
 	end
-	
+
 	local sharedMediaBarTextures = {};
-	for index, statusbar in ipairs(addon:ListMedia("statusbar")) do
+	for _, statusbar in ipairs(addon:ListMedia("statusbar")) do
+		local barName = statusbar;
 		tinsert(sharedMediaBarTextures, {
-			text = statusbar,
-			func = function() self.db.global.barTexture = statusbar; addon:RefreshMedia(); end,
-			checked = function() return self.db.global.barTexture == statusbar; end,
+			text = barName,
+			func = function()
+				self.db.global.barTexture = barName;
+				addon:RefreshMedia();
+				RefreshDropdownMenu(addon.ContextMenu);
+			end,
+			checked = function() return self.db.global.barTexture == barName; end,
+			keepShownOnClick = true,
 		});
 	end
 	
@@ -386,70 +539,64 @@ function addon:GetPrimaryMenuData()
 			func = function() self.db.global.IsFrameLocked = not self.db.global.IsFrameLocked; end,
 			checked = function() return self.db.global.IsFrameLocked; end,
 			isNotRadio = true,
+			keepShownOnClick = true,
 		},
 		{
-			text = "", isTitle = true, notCheckable = true, disabled = true,
-		},
-		{
-			text = "Toggle Displays", isTitle = true, notCheckable = true,
-		},
-		{
-			text = "Show pet tooltips",
-			func = function() self.db.global.ShowPetTooltips = not self.db.global.ShowPetTooltips; end,
-			checked = function() return self.db.global.ShowPetTooltips; end,
+			text = "Hide when entering combat",
+			func = function() self.db.global.HideInCombat = not self.db.global.HideInCombat; end,
+			checked = function() return self.db.global.HideInCombat; end,
 			isNotRadio = true,
+			keepShownOnClick = true,
 		},
 		{
-			text = "Show pet charms",
-			func = function() self.db.global.ShowPetCharms = not self.db.global.ShowPetCharms; addon:RestoreSavedSettings() end,
-			checked = function() return self.db.global.ShowPetCharms; end,
+			text = "Show welcome message on login",
+			func = function()
+				self.db.global.ShowWelcomeMessage = not self.db.global.ShowWelcomeMessage;
+			end,
+			checked = function() return self.db.global.ShowWelcomeMessage; end,
 			isNotRadio = true,
-		},
-		{
-			text = "Show pet health and experience text",
-			func = function() self.db.global.PetStatsText.Enabled = not self.db.global.PetStatsText.Enabled; addon:RestoreSavedSettings() end,
-			checked = function() return self.db.global.PetStatsText.Enabled; end,
-			isNotRadio = true,
-			hasArrow = true,
-			menuList = {
-				{
-					text = "Health Text", notCheckable = true, isTitle = true,
-				},
-				{
-					text = "Show percentage",
-					func = function() self.db.global.PetStatsText.ShowHealthPercentage = not self.db.global.PetStatsText.ShowHealthPercentage; addon:UpdatePets() end,
-					checked = function() return self.db.global.PetStatsText.ShowHealthPercentage; end,
-					isNotRadio = true,
-				},
-				{
-					text = "", isTitle = true, notCheckable = true, disabled = true,
-				},
-				{
-					text = "Experience Text", notCheckable = true, isTitle = true,
-				},
-				{
-					text = "Show percentage",
-					func = function() self.db.global.PetStatsText.ShowExperiencePercentage = not self.db.global.PetStatsText.ShowExperiencePercentage; addon:UpdatePets() end,
-					checked = function() return self.db.global.PetStatsText.ShowExperiencePercentage; end,
-					isNotRadio = true,
-				},
-				{
-					text = "Display current experience",
-					func = function() self.db.global.PetStatsText.RemainingExperience = false; addon:UpdatePets() end,
-					checked = function() return not self.db.global.PetStatsText.RemainingExperience; end,
-				},
-				{
-					text = "Display experience to level",
-					func = function() self.db.global.PetStatsText.RemainingExperience = true; addon:UpdatePets() end,
-					checked = function() return self.db.global.PetStatsText.RemainingExperience; end,
-				},
-			},
+			keepShownOnClick = true,
 		},
 		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,
 		},
 		{
 			text = "Automation", isTitle = true, notCheckable = true,
+		},
+		{
+			text = "When starting pet battle",
+			notCheckable = true,
+			hasArrow = true,
+			keepShownOnClick = true,
+			menuList = {
+				{
+					text = "Show",
+					func = function()
+						self.db.global.PetBattleVisiblityMode = E.VISIBILITY_MODE.SHOW;
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
+					checked = function() return self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.SHOW; end,
+					keepShownOnClick = true,
+				},
+				{
+					text = "Hide",
+					func = function()
+						self.db.global.PetBattleVisiblityMode = E.VISIBILITY_MODE.HIDE;
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
+					checked = function() return self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.HIDE; end,
+					keepShownOnClick = true,
+				},
+				{
+					text = "Do nothing",
+					func = function()
+						self.db.global.PetBattleVisiblityMode = E.VISIBILITY_MODE.DO_NOTHING;
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
+					checked = function() return self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.DO_NOTHING; end,
+					keepShownOnClick = true,
+				},
+			},
 		},
 		{
 			text = "Always resummon companion",
@@ -462,6 +609,7 @@ function addon:GetPrimaryMenuData()
 			end,
 			checked = function() return self.db.global.AutoSummonPet; end,
 			isNotRadio = true,
+			keepShownOnClick = true,
 			hasArrow = true,
 			menuList = {
 				{
@@ -469,18 +617,33 @@ function addon:GetPrimaryMenuData()
 				},
 				{
 					text = "Last used pet",
-					func = function() self.db.global.AutoSummonMode = E.AUTO_SUMMON_MODE.LAST_PET; addon:UpdateAutoResummon(true); end,
+					func = function()
+						self.db.global.AutoSummonMode = E.AUTO_SUMMON_MODE.LAST_PET;
+						addon:UpdateAutoResummon(true);
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
 					checked = function() return self.db.global.AutoSummonMode == E.AUTO_SUMMON_MODE.LAST_PET; end,
+					keepShownOnClick = true,
 				},
 				{
 					text = "Random favorite pet",
-					func = function() self.db.global.AutoSummonMode = E.AUTO_SUMMON_MODE.FAVORITE; addon:UpdateAutoResummon(true); end,
+					func = function()
+						self.db.global.AutoSummonMode = E.AUTO_SUMMON_MODE.FAVORITE;
+						addon:UpdateAutoResummon(true);
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
 					checked = function() return self.db.global.AutoSummonMode == E.AUTO_SUMMON_MODE.FAVORITE; end,
+					keepShownOnClick = true,
 				},
 				{
 					text = "Any random pet",
-					func = function() self.db.global.AutoSummonMode = E.AUTO_SUMMON_MODE.ANY; addon:UpdateAutoResummon(true); end,
+					func = function()
+						self.db.global.AutoSummonMode = E.AUTO_SUMMON_MODE.ANY;
+						addon:UpdateAutoResummon(true);
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
 					checked = function() return self.db.global.AutoSummonMode == E.AUTO_SUMMON_MODE.ANY; end,
+					keepShownOnClick = true,
 				},
 			},
 		},
@@ -489,6 +652,7 @@ function addon:GetPrimaryMenuData()
 			func = function() self.db.global.AutoHealPets = not self.db.global.AutoHealPets; AutoHealButton_OnShow(PetBuddyAutoHealButton) end,
 			checked = function() return self.db.global.AutoHealPets; end,
 			isNotRadio = true,
+			keepShownOnClick = true,
 			hasArrow = true,
 			menuList = {
 				{
@@ -499,6 +663,7 @@ function addon:GetPrimaryMenuData()
 					func = function() self.db.global.AutoHealPetsFee = not self.db.global.AutoHealPetsFee; end,
 					checked = function() return self.db.global.AutoHealPetsFee; end,
 					isNotRadio = true,
+					keepShownOnClick = true,
 				},
 			}
 		},
@@ -506,40 +671,13 @@ function addon:GetPrimaryMenuData()
 			text = "", isTitle = true, notCheckable = true, disabled = true,
 		},
 		{
-			text = "Visibility Options", isTitle = true, notCheckable = true,
-		},
-		{
-			text = "When starting pet battle",
-			notCheckable = true,
-			hasArrow = true,
-			menuList = {
-				{
-					text = "Show",
-					func = function() self.db.global.PetBattleVisiblityMode = E.VISIBILITY_MODE.SHOW; end,
-					checked = function() return self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.SHOW; end,
-				},
-				{
-					text = "Hide",
-					func = function() self.db.global.PetBattleVisiblityMode = E.VISIBILITY_MODE.HIDE; end,
-					checked = function() return self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.HIDE; end,
-				},
-				{
-					text = "Do nothing",
-					func = function() self.db.global.PetBattleVisiblityMode = E.VISIBILITY_MODE.DO_NOTHING; end,
-					checked = function() return self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.DO_NOTHING; end,
-				},
-			},
-		},
-		{
-			text = "Hide when entering combat",
-			func = function() self.db.global.HideInCombat = not self.db.global.HideInCombat; end,
-			checked = function() return self.db.global.HideInCombat; end,
-			isNotRadio = true,
+			text = "Displays", isTitle = true, notCheckable = true,
 		},
 		{
 			text = "Enable cuteness",
 			func = function()
 				self.db.global.ShowPepe = not self.db.global.ShowPepe;
+				addon:RefreshHeaderArt();
 				if(self.db.global.ShowPepe) then
 					PetBuddyFrameTitle.pepeFrame:Show();
 				else
@@ -548,39 +686,96 @@ function addon:GetPrimaryMenuData()
 			end,
 			checked = function() return self.db.global.ShowPepe; end,
 			isNotRadio = true,
+			hasArrow = true,
+			keepShownOnClick = true,
+			menuList = {
+				{
+					text = "Cuteness Position", notCheckable = true, isTitle = true,
+				},
+				{
+					text = "Right side",
+					func = function()
+						self.db.global.PepeOnLeft = false;
+						addon:RefreshHeaderArt();
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
+					checked = function() return not self.db.global.PepeOnLeft; end,
+					keepShownOnClick = true,
+				},
+				{
+					text = "Left side",
+					func = function()
+						self.db.global.PepeOnLeft = true;
+						addon:RefreshHeaderArt();
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
+					checked = function() return self.db.global.PepeOnLeft; end,
+					keepShownOnClick = true,
+				},
+			},
 		},
 		{
-			text = "Show welcome message on login",
+			text = "Show pet charms",
 			func = function()
-				self.db.global.ShowWelcomeMessage = not self.db.global.ShowWelcomeMessage;
-			end,
-			checked = function() return self.db.global.ShowWelcomeMessage; end,
-			isNotRadio = true,
-		},
-		{
-			text = "", isTitle = true, notCheckable = true, disabled = true,
-		},
-		{
-			text = "Pet Utility", isTitle = true, notCheckable = true,
-		},
-		{
-			text = "Show pet related items",
-			func = function()
-				local state = NormalizeUtilityMenuState(self.db.global.PetUtilityMenuState);
-				local hasItems = (state == 1 or state == 3);
-				if(hasItems) then state = state - 1; else state = state + 1; end
-				self.db.global.PetUtilityMenuState = state;
+				self.db.global.ShowPetCharms = not self.db.global.ShowPetCharms;
 				addon:RestoreSavedSettings();
 			end,
-			checked = function()
-				local state = NormalizeUtilityMenuState(self.db.global.PetUtilityMenuState);
-				return state == 1 or state == 3;
-			end,
+			checked = function() return self.db.global.ShowPetCharms; end,
 			isNotRadio = true,
-			hasArrow = true,
-			menuList = addon:GetPetItemsUtilityMenuData(),
-			disabled = C_PetBattles.IsInBattle(),
 			keepShownOnClick = true,
+		},
+		{
+			text = "Show pet health and experience text",
+			func = function() self.db.global.PetStatsText.Enabled = not self.db.global.PetStatsText.Enabled; addon:RestoreSavedSettings() end,
+			checked = function() return self.db.global.PetStatsText.Enabled; end,
+			isNotRadio = true,
+			keepShownOnClick = true,
+			hasArrow = true,
+			menuList = {
+				{
+					text = "Health Text", notCheckable = true, isTitle = true,
+				},
+				{
+					text = "Show percentage",
+					func = function() self.db.global.PetStatsText.ShowHealthPercentage = not self.db.global.PetStatsText.ShowHealthPercentage; addon:UpdatePets() end,
+					checked = function() return self.db.global.PetStatsText.ShowHealthPercentage; end,
+					isNotRadio = true,
+					keepShownOnClick = true,
+				},
+				{
+					text = "", isTitle = true, notCheckable = true, disabled = true,
+				},
+				{
+					text = "Experience Text", notCheckable = true, isTitle = true,
+				},
+				{
+					text = "Show percentage",
+					func = function() self.db.global.PetStatsText.ShowExperiencePercentage = not self.db.global.PetStatsText.ShowExperiencePercentage; addon:UpdatePets() end,
+					checked = function() return self.db.global.PetStatsText.ShowExperiencePercentage; end,
+					isNotRadio = true,
+					keepShownOnClick = true,
+				},
+				{
+					text = "Display current experience",
+					func = function()
+						self.db.global.PetStatsText.RemainingExperience = false;
+						addon:UpdatePets();
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
+					checked = function() return not self.db.global.PetStatsText.RemainingExperience; end,
+					keepShownOnClick = true,
+				},
+				{
+					text = "Display experience to level",
+					func = function()
+						self.db.global.PetStatsText.RemainingExperience = true;
+						addon:UpdatePets();
+						RefreshDropdownMenu(addon.ContextMenu);
+					end,
+					checked = function() return self.db.global.PetStatsText.RemainingExperience; end,
+					keepShownOnClick = true,
+				},
+			},
 		},
 		{
 			text = "Show pet loadouts menu",
@@ -599,6 +794,73 @@ function addon:GetPrimaryMenuData()
 			end,
 			disabled = C_PetBattles.IsInBattle(),
 			isNotRadio = true,
+			keepShownOnClick = true,
+		},
+		{
+			text = "Show pet related items",
+			func = function()
+				local state = NormalizeUtilityMenuState(self.db.global.PetUtilityMenuState);
+				local hasItems = (state == 1 or state == 3);
+				if(hasItems) then state = state - 1; else state = state + 1; end
+				self.db.global.PetUtilityMenuState = state;
+				addon:RestoreSavedSettings();
+			end,
+			checked = function()
+				local state = NormalizeUtilityMenuState(self.db.global.PetUtilityMenuState);
+				return state == 1 or state == 3;
+			end,
+			isNotRadio = true,
+			hasArrow = true,
+			keepShownOnClick = true,
+			disabled = C_PetBattles.IsInBattle(),
+			menuList = addon:GetPetItemsUtilityMenuData(),
+		},
+		{
+			text = "Show pet tooltips",
+			func = function() self.db.global.ShowPetTooltips = not self.db.global.ShowPetTooltips; end,
+			checked = function() return self.db.global.ShowPetTooltips; end,
+			isNotRadio = true,
+			keepShownOnClick = true,
+		},
+		{
+			text = "", isTitle = true, notCheckable = true, disabled = true,
+		},
+		{
+			text = "Zone Tracker", isTitle = true, notCheckable = true,
+		},
+		{
+			text = "Hide main GUI body",
+			func = function()
+				self.db.global.HideMainGUI = not self.db.global.HideMainGUI;
+				addon:UpdateMinimizeState();
+			end,
+			checked = function() return self.db.global.HideMainGUI; end,
+			isNotRadio = true,
+			keepShownOnClick = true,
+		},
+		{
+			text = "Show zone pet tracker",
+			func = function()
+				self.db.global.ShowZoneTracker = not self.db.global.ShowZoneTracker;
+				addon:RestoreSavedSettings();
+			end,
+			checked = function() return self.db.global.ShowZoneTracker; end,
+			isNotRadio = true,
+			hasArrow = true,
+			keepShownOnClick = true,
+			menuList = {
+				{ text = "Zone Tracker Options", isTitle = true, notCheckable = true },
+				{
+					text = "Show missing pets list",
+					func = function()
+						self.db.global.ShowZoneTrackerPetList = not self.db.global.ShowZoneTrackerPetList;
+						addon:RefreshZoneTracker();
+					end,
+					checked = function() return self.db.global.ShowZoneTrackerPetList; end,
+					isNotRadio = true,
+					keepShownOnClick = true,
+				},
+			},
 		},
 		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,
@@ -607,9 +869,16 @@ function addon:GetPrimaryMenuData()
 			text = "Frame Options", isTitle = true, notCheckable = true, disabled = true,
 		},
 		{
+			text = "Bar texture",
+			notCheckable = true,
+			hasArrow = true,
+			menuList = sharedMediaBarTextures,
+		},
+		{
 			text = string.format("Change scale (%d%%)", self.db.global.WindowScale * 100),
 			notCheckable = true,
 			hasArrow = true,
+			keepShownOnClick = true,
 			menuList = addon:GetWindowScaleMenu(),
 		},
 		{
@@ -624,97 +893,25 @@ function addon:GetPrimaryMenuData()
 			hasArrow = true,
 			menuList = fontSizes,
 		},
-		{
-			text = "Bar texture",
-			notCheckable = true,
-			hasArrow = true,
-			menuList = sharedMediaBarTextures,
-		},
-		{
-			text = "", isTitle = true, notCheckable = true, disabled = true,
-		},
-		{
-			text = "Other Options", isTitle = true, notCheckable = true,
-		},
 	};
-	
-	if(PetBuddyFrame:IsShown()) then
-		tinsert(data, {
-			text = "Hide PetBuddy2",
-			func = function()
-				PetBuddyFrame:Hide(); CloseMenus();
-			end,
-			notCheckable = true,
-		});
-	else
-		tinsert(data, {
-			text = "Show PetBuddy2",
-			func = function()
-				PetBuddyFrame:Show(); CloseMenus();
-			end,
-			notCheckable = true,
-		});
-	end
-	
+
 	return data;
 end
 
 function addon:OpenContextMenu(contextMenuData, parentframe, anchor, point, relativePoint)
-	
+
 	if(not addon.ContextMenu) then
 		addon.ContextMenu = CreateFrame("Frame", "PetBuddyContextMenuFrame", UIParent, "UIDropDownMenuTemplate");
 		addon.ContextMenu:SetFrameStrata("DIALOG");
 	end
-	
+
 	if(not contextMenuData) then
 		contextMenuData = addon:GetPrimaryMenuData();
 	end
-	
+
 	addon.ContextMenu:ClearAllPoints();
 	addon.ContextMenu:SetPoint(point or "TOPLEFT", parentframe or PetBuddyFrame, relativePoint or "CENTER", 0, 5);
 	addon:OpenDropDownMenu(contextMenuData, addon.ContextMenu, anchor or "cursor", 0, 0, "MENU", 5);
-end
-
-local function TryLoadDropDownAPI()
-	if(type(EasyMenu) == "function") then
-		return true;
-	end
-
-	local loadAddon = nil;
-	if(C_AddOns and type(C_AddOns.LoadAddOn) == "function") then
-		loadAddon = C_AddOns.LoadAddOn;
-	elseif(type(LoadAddOn) == "function") then
-		loadAddon = LoadAddOn;
-	end
-
-	if(loadAddon) then
-		pcall(loadAddon, "Blizzard_UIDropDownMenu");
-		pcall(loadAddon, "Blizzard_Deprecated");
-	end
-
-	return type(EasyMenu) == "function";
-end
-
-local function ApplyMenuKeepShown(menuData)
-	if(type(menuData) ~= "table") then
-		return;
-	end
-
-	for _, info in ipairs(menuData) do
-		if(type(info) == "table") then
-			if(type(info.menuList) == "table") then
-				ApplyMenuKeepShown(info.menuList);
-			end
-
-			if(info.keepShownOnClick == nil) then
-				local isToggleEntry = (info.isNotRadio == true) or (type(info.checked) == "function");
-				local isClickableEntry = (type(info.func) == "function") and not info.isTitle and not info.disabled and not info.hasArrow;
-				if(isToggleEntry and isClickableEntry) then
-					info.keepShownOnClick = true;
-				end
-			end
-		end
-	end
 end
 
 function addon:OpenDropDownMenu(menuData, menuFrame, anchor, x, y, displayMode, autoHideDelay)
@@ -722,32 +919,23 @@ function addon:OpenDropDownMenu(menuData, menuFrame, anchor, x, y, displayMode, 
 		return false;
 	end
 
-	ApplyMenuKeepShown(menuData);
-
-	if(type(EasyMenu) == "function" or TryLoadDropDownAPI()) then
-		EasyMenu(menuData, menuFrame, anchor or "cursor", x or 0, y or 0, displayMode or "MENU", autoHideDelay or 5);
-		return true;
+	if(not TryLoadDropDownAPI()) then
+		if(type(addon.PrintMessage) == "function") then
+			addon:PrintMessage("|cffff5555Dropdown menu API unavailable on this client.|r");
+		end
+		return false;
 	end
 
-	if(type(UIDropDownMenu_Initialize) == "function" and type(UIDropDownMenu_AddButton) == "function" and type(ToggleDropDownMenu) == "function") then
-		UIDropDownMenu_Initialize(menuFrame, function(_, level, list)
-			level = level or 1;
-			local currentList = list;
-			if(type(currentList) ~= "table") then
-				currentList = menuData;
-			end
+	-- Store menu data on the frame for the init function to access
+	menuFrame._pbMenuData = menuData;
 
-			for _, info in ipairs(currentList) do
-				UIDropDownMenu_AddButton(info, level);
-			end
-		end, displayMode or "MENU");
+	-- Initialize using the native UIDropDownMenu API (same pattern BLU uses)
+	UIDropDownMenu_Initialize(menuFrame, InitializeMenuLevel, displayMode or "MENU");
+
+	-- Open the dropdown
+	if(type(ToggleDropDownMenu) == "function") then
 		ToggleDropDownMenu(1, nil, menuFrame, anchor or "cursor", x or 0, y or 0, menuData, nil, autoHideDelay or 5);
-		return true;
 	end
 
-	if(type(addon.PrintMessage) == "function") then
-		addon:PrintMessage("|cffff5555Dropdown menu API unavailable on this client.|r");
-	end
-	return false;
+	return true;
 end
-

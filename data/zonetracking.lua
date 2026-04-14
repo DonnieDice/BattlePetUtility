@@ -1,0 +1,761 @@
+local ADDON_NAME, addon = ...;
+
+local ZONE_TRACKER_TITLE = "Zone Pets";
+local MAX_TRACKED_PET_NAMES = 3;
+local MAX_TOOLTIP_PET_LINES = 30;
+local MAX_VISIBLE_ZONE_LINES = 4;
+local TOOLTIP_ICON_SIZE = 12;
+
+PetBuddy_ZoneTrackerMixin = {};
+
+local function GetMapName(mapID)
+	if(not mapID or mapID == 0 or not C_Map or type(C_Map.GetMapInfo) ~= "function") then
+		return nil;
+	end
+
+	local mapInfo = C_Map.GetMapInfo(mapID);
+	return mapInfo and mapInfo.name or nil;
+end
+
+local function GetPetTrackerSnapshotForMap(mapID)
+	local petTracker = rawget(_G, "PetTracker");
+	local maps = petTracker and petTracker.Maps;
+	if(type(maps) ~= "table" or type(maps.GetProgressIn) ~= "function") then
+		return nil;
+	end
+
+	local ok, progress = pcall(maps.GetProgressIn, maps, mapID);
+	if(not ok or type(progress) ~= "table") then
+		return nil;
+	end
+
+	local total = tonumber(progress.total) or 0;
+	if(total <= 0) then
+		return nil;
+	end
+
+	local missingBucket = type(progress[0]) == "table" and progress[0] or {};
+	local missing = tonumber(missingBucket.total) or 0;
+	local owned = math.max(0, total - missing);
+	local qualityCounts = { [1] = 0, [2] = 0, [3] = 0, [4] = 0 };
+	local missingNames, allNames = {}, {};
+
+	local maxQuality = tonumber(petTracker.MaxPlayerQuality or 4) or 4;
+	for quality = 0, maxQuality do
+		local bucket = type(progress[quality]) == "table" and progress[quality] or nil;
+		if(bucket) then
+			for level = 0, 25 do
+				local speciesAtLevel = bucket[level];
+				if(type(speciesAtLevel) == "table") then
+					for _, species in ipairs(speciesAtLevel) do
+						local name = nil;
+						local icon = nil;
+						local sourceIcon = nil;
+						if(type(species) == "table" and type(species.GetInfo) == "function") then
+							local ok, speciesName, speciesIcon = pcall(species.GetInfo, species);
+							if(ok) then
+								name = speciesName;
+								icon = speciesIcon;
+							end
+						end
+
+						if(type(species) == "table" and type(species.GetSourceIcon) == "function") then
+							local ok, source = pcall(species.GetSourceIcon, species);
+							if(ok) then
+								sourceIcon = source;
+							end
+						end
+
+						name = name or "Unknown";
+						allNames[#allNames + 1] = {
+							name = name,
+							quality = quality,
+							icon = icon,
+							sourceIcon = sourceIcon,
+						};
+
+						if(quality <= 0) then
+							missingNames[#missingNames + 1] = name;
+						else
+							local clampedQuality = math.max(1, math.min(4, quality));
+							qualityCounts[clampedQuality] = (qualityCounts[clampedQuality] or 0) + 1;
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return {
+		mapID = mapID,
+		mapName = GetMapName(mapID),
+		total = total,
+		owned = owned,
+		missing = missing,
+		percent = total > 0 and (owned / total) or 0,
+		qualityCounts = qualityCounts,
+		missingNames = missingNames,
+		allNames = allNames,
+		provider = "PetTracker",
+	};
+end
+
+local function GetSpeciesName(speciesID)
+	if(not speciesID or not C_PetJournal or type(C_PetJournal.GetPetInfoBySpeciesID) ~= "function") then
+		return "Unknown";
+	end
+
+	local name = C_PetJournal.GetPetInfoBySpeciesID(speciesID);
+	return name or ("Species " .. tostring(speciesID));
+end
+
+local function GetSpeciesIcon(speciesID)
+	if(not speciesID or not C_PetJournal or type(C_PetJournal.GetPetInfoBySpeciesID) ~= "function") then
+		return nil;
+	end
+
+	local _, icon = C_PetJournal.GetPetInfoBySpeciesID(speciesID);
+	return icon;
+end
+
+local function BuildSpeciesQualityMap()
+	local qualityBySpecies = {};
+	if(not C_PetJournal or type(C_PetJournal.GetNumPets) ~= "function" or type(C_PetJournal.GetPetInfoByIndex) ~= "function") then
+		return qualityBySpecies;
+	end
+
+	local resetFiltering = type(addon.ResetJournalFiltering) == "function";
+	local restoreFiltering = type(addon.RestoreJournalFiltering) == "function";
+	if(resetFiltering and restoreFiltering) then
+		addon:ResetJournalFiltering();
+	end
+
+	local totalPets = C_PetJournal.GetNumPets();
+	totalPets = tonumber(totalPets) or 0;
+	for index = 1, totalPets do
+		local petID, speciesID, isOwned = C_PetJournal.GetPetInfoByIndex(index);
+		if(isOwned and petID and speciesID) then
+			local _, _, _, _, quality = C_PetJournal.GetPetStats(petID);
+			quality = math.max(1, math.min(4, tonumber(quality) or 1));
+			if(not qualityBySpecies[speciesID] or quality > qualityBySpecies[speciesID]) then
+				qualityBySpecies[speciesID] = quality;
+			end
+		end
+	end
+
+	if(resetFiltering and restoreFiltering) then
+		addon:RestoreJournalFiltering();
+	end
+
+	return qualityBySpecies;
+end
+
+local function GetSpeciesCollectionCount(speciesID)
+	if(not speciesID or not C_PetJournal or type(C_PetJournal.GetNumCollectedInfo) ~= "function") then
+		return 0;
+	end
+
+	local _, numCollected = C_PetJournal.GetNumCollectedInfo(speciesID);
+	return tonumber(numCollected) or 0;
+end
+
+local function GetNativeProgressForMap(mapID)
+	local speciesList = addon.ZoneSpeciesByMap and addon.ZoneSpeciesByMap[mapID];
+	if(type(speciesList) ~= "table" or #speciesList == 0) then
+		return nil;
+	end
+
+	local total = #speciesList;
+	local owned = 0;
+	local qualityBySpecies = BuildSpeciesQualityMap();
+	local qualityCounts = { [1] = 0, [2] = 0, [3] = 0, [4] = 0 };
+	local missingNames = {};
+	local allNames = {};
+	for _, speciesID in ipairs(speciesList) do
+		local name = GetSpeciesName(speciesID);
+		local icon = GetSpeciesIcon(speciesID);
+		local quality = qualityBySpecies[speciesID];
+		if(quality and quality > 0 and GetSpeciesCollectionCount(speciesID) > 0) then
+			owned = owned + 1;
+			qualityCounts[quality] = (qualityCounts[quality] or 0) + 1;
+			allNames[#allNames + 1] = {
+				name = name,
+				quality = quality,
+				speciesID = speciesID,
+				icon = icon,
+			};
+		else
+			missingNames[#missingNames + 1] = name;
+			allNames[#allNames + 1] = {
+				name = name,
+				quality = 0,
+				speciesID = speciesID,
+				icon = icon,
+			};
+		end
+	end
+
+	return {
+		mapID = mapID,
+		mapName = GetMapName(mapID),
+		total = total,
+		owned = owned,
+		missing = math.max(0, total - owned),
+		percent = total > 0 and (owned / total) or 0,
+		qualityCounts = qualityCounts,
+		missingNames = missingNames,
+		allNames = allNames,
+		provider = "native",
+	};
+end
+
+local function EnsureQualityBars(frame)
+	if(not frame or not frame.bar) then
+		return nil;
+	end
+
+	local container = frame.bar;
+	if(container.qualityBars) then
+		return container.qualityBars;
+	end
+
+	container.qualityBars = {};
+	for quality = 1, 4 do
+		local bar = CreateFrame("StatusBar", nil, container);
+		bar:SetAllPoints(container);
+		bar:SetFrameLevel(container:GetFrameLevel() + quality);
+		local color = ITEM_QUALITY_COLORS[quality - 1] and ITEM_QUALITY_COLORS[quality - 1].color or NORMAL_FONT_COLOR;
+		bar:SetStatusBarColor(color.r, color.g, color.b);
+		container.qualityBars[quality] = bar;
+	end
+
+	if(not container.textOverlay) then
+		local overlay = CreateFrame("Frame", nil, container);
+		overlay:SetAllPoints(container);
+		overlay:SetFrameLevel(container:GetFrameLevel() + 10);
+		container.textOverlay = overlay;
+
+		if(container.text) then
+			container.text:SetParent(overlay);
+			container.text:SetDrawLayer("OVERLAY", 7);
+		end
+	end
+
+	return container.qualityBars;
+end
+
+local function ApplyProgressBarTexture(frame)
+	if(not frame or not frame.bar) then
+		return;
+	end
+
+	local texturePath = "Interface\\TargetingFrame\\UI-StatusBar";
+	if(type(addon.FetchMedia) == "function" and addon.db and addon.db.global) then
+		texturePath = addon:FetchMedia("statusbar", addon.db.global.barTexture) or texturePath;
+	end
+
+	if(frame.bar.SetStatusBarTexture) then
+		frame.bar:SetStatusBarTexture(texturePath);
+	end
+
+	local bars = EnsureQualityBars(frame);
+	if(bars) then
+		for _, bar in ipairs(bars) do
+			bar:SetStatusBarTexture(texturePath);
+		end
+	end
+end
+
+local function UpdateQualityBars(frame, snapshot)
+	if(not frame or not frame.bar) then
+		return;
+	end
+
+	local bars = EnsureQualityBars(frame);
+	if(not bars) then
+		return;
+	end
+
+	local total = math.max(1, tonumber(snapshot.total) or 1);
+	local qualityCounts = snapshot.qualityCounts or {};
+	local runningTotal = 0;
+
+	for quality = 4, 1, -1 do
+		runningTotal = runningTotal + (tonumber(qualityCounts[quality]) or 0);
+		bars[quality]:SetMinMaxValues(0, total);
+		bars[quality]:SetValue(runningTotal);
+		bars[quality]:SetShown(snapshot.state == "ready");
+	end
+end
+
+local function GetPetSummaryText(snapshot)
+	if(snapshot.state ~= "ready") then
+		return nil;
+	end
+
+	local missingNames = snapshot.missingNames or {};
+	if(#missingNames == 0) then
+		return "All zone pets collected";
+	end
+
+	local shown = {};
+	for index = 1, math.min(MAX_TRACKED_PET_NAMES, #missingNames) do
+		shown[#shown + 1] = missingNames[index];
+	end
+
+	local summary = table.concat(shown, ", ");
+	if(#missingNames > MAX_TRACKED_PET_NAMES) then
+		summary = summary .. ", +" .. tostring(#missingNames - MAX_TRACKED_PET_NAMES) .. " more";
+	end
+
+	return summary;
+end
+
+local function AddTooltipPetLines(tooltip, snapshot)
+	local allNames = snapshot.allNames or {};
+	if(#allNames == 0) then
+		return;
+	end
+
+	local missingEntries, collectedEntries = {}, {};
+	for _, petInfo in ipairs(allNames) do
+		if((tonumber(petInfo.quality) or 0) <= 0) then
+			missingEntries[#missingEntries + 1] = petInfo;
+		else
+			collectedEntries[#collectedEntries + 1] = petInfo;
+		end
+	end
+
+	local function FormatHex(r, g, b)
+		return string.format("|cff%02x%02x%02x", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5));
+	end
+
+	local shown = 0;
+	if(#missingEntries > 0) then
+		GameTooltip:AddLine(" ");
+		GameTooltip:AddLine("Missing", 1.0, 0.82, 0.0);
+		for _, petInfo in ipairs(missingEntries) do
+			if(shown >= MAX_TOOLTIP_PET_LINES) then break end
+			local iconMarkup = petInfo.icon and ("|T" .. tostring(petInfo.icon) .. ":" .. TOOLTIP_ICON_SIZE .. ":" .. TOOLTIP_ICON_SIZE .. ":0:0|t ") or "";
+			local name = petInfo.name or "Unknown";
+			GameTooltip:AddLine(iconMarkup .. "|cffff5555" .. name .. "|r", 1, 1, 1);
+			shown = shown + 1;
+		end
+	end
+
+	if(#collectedEntries > 0 and shown < MAX_TOOLTIP_PET_LINES) then
+		GameTooltip:AddLine(" ");
+		GameTooltip:AddLine("Collected", 1.0, 0.82, 0.0);
+		for _, petInfo in ipairs(collectedEntries) do
+			if(shown >= MAX_TOOLTIP_PET_LINES) then break end
+			local quality = tonumber(petInfo.quality) or 0;
+			local qIndex = math.max(0, math.min(4, quality - 1));
+			local qualityColor = ITEM_QUALITY_COLORS[qIndex] and ITEM_QUALITY_COLORS[qIndex].color;
+			local hex;
+			if(qualityColor and qualityColor.GenerateHexColorMarkup) then
+				hex = qualityColor:GenerateHexColorMarkup();
+			elseif(qualityColor) then
+				hex = FormatHex(qualityColor.r, qualityColor.g, qualityColor.b);
+			else
+				hex = "|cffffffff";
+			end
+			local iconMarkup = petInfo.icon and ("|T" .. tostring(petInfo.icon) .. ":" .. TOOLTIP_ICON_SIZE .. ":" .. TOOLTIP_ICON_SIZE .. ":0:0|t ") or "";
+			local name = petInfo.name or "Unknown";
+			local rarityText = _G["ITEM_QUALITY" .. qIndex .. "_DESC"] or "";
+			local rarityMarkup = rarityText ~= "" and (" " .. hex .. "(" .. rarityText .. ")|r") or "";
+			GameTooltip:AddLine(iconMarkup .. hex .. name .. "|r" .. rarityMarkup, 1, 1, 1);
+			shown = shown + 1;
+		end
+	end
+
+	if(#allNames > shown) then
+		GameTooltip:AddLine("+" .. tostring(#allNames - shown) .. " more", 0.84, 0.84, 0.90);
+	end
+end
+
+local function EnsureSpeciesLines(frame)
+	if(not frame) then
+		return nil;
+	end
+
+	frame.speciesLines = frame.speciesLines or {};
+	for index = 1, MAX_VISIBLE_ZONE_LINES do
+		if(not frame.speciesLines[index]) then
+			local line = CreateFrame("Frame", nil, frame);
+			line:SetSize(182, 14);
+			if(index == 1) then
+				line:SetPoint("TOPLEFT", frame.bar, "BOTTOMLEFT", 0, -4);
+				line:SetPoint("TOPRIGHT", frame.bar, "BOTTOMRIGHT", 0, -4);
+			else
+				line:SetPoint("TOPLEFT", frame.speciesLines[index - 1], "BOTTOMLEFT", 0, -2);
+				line:SetPoint("TOPRIGHT", frame.speciesLines[index - 1], "BOTTOMRIGHT", 0, -2);
+			end
+
+			line.icon = line:CreateTexture(nil, "ARTWORK");
+			line.icon:SetSize(14, 14);
+			line.icon:SetPoint("LEFT", line, "LEFT", 0, 0);
+
+			line.subIcon = line:CreateTexture(nil, "OVERLAY");
+			line.subIcon:SetSize(10, 10);
+			line.subIcon:SetPoint("BOTTOMRIGHT", line.icon, "BOTTOMRIGHT", 1, -1);
+
+			line.text = line:CreateFontString(nil, "OVERLAY", "PetBuddyFontSmall");
+			line.text:SetPoint("LEFT", line.icon, "RIGHT", 4, 0);
+			line.text:SetPoint("RIGHT", line, "RIGHT", 0, 0);
+			line.text:SetJustifyH("LEFT");
+			line.text:SetWordWrap(false);
+
+			frame.speciesLines[index] = line;
+		end
+	end
+
+	return frame.speciesLines;
+end
+
+local function HideSpeciesLines(frame)
+	if(not frame or not frame.speciesLines) then
+		return;
+	end
+
+	for _, line in ipairs(frame.speciesLines) do
+		line:Hide();
+	end
+end
+
+local function GetDisplaySpeciesEntries(snapshot)
+	local allNames = snapshot.allNames or {};
+	local prioritized, fallback = {}, {};
+
+	for _, petInfo in ipairs(allNames) do
+		if((tonumber(petInfo.quality) or 0) <= 0) then
+			prioritized[#prioritized + 1] = petInfo;
+		else
+			fallback[#fallback + 1] = petInfo;
+		end
+	end
+
+	if(#prioritized == 0) then
+		prioritized = fallback;
+	end
+
+	return prioritized;
+end
+
+local function UpdateSpeciesLines(frame, snapshot)
+	local lines = EnsureSpeciesLines(frame);
+	if(not lines) then
+		return 0;
+	end
+
+	HideSpeciesLines(frame);
+	if(snapshot.state ~= "ready") then
+		return 0;
+	end
+
+	local entries = GetDisplaySpeciesEntries(snapshot);
+	local shownCount = math.min(MAX_VISIBLE_ZONE_LINES, #entries);
+	for index = 1, shownCount do
+		local entry = entries[index];
+		local line = lines[index];
+		local quality = tonumber(entry.quality) or 0;
+		local color = quality > 0 and ITEM_QUALITY_COLORS[quality - 1] and ITEM_QUALITY_COLORS[quality - 1].color or nil;
+
+		line.icon:SetTexture(entry.icon or GetSpeciesIcon(entry.speciesID) or "Interface\\Icons\\INV_Misc_QuestionMark");
+		line.subIcon:SetShown(entry.sourceIcon ~= nil);
+		if(entry.sourceIcon) then
+			line.subIcon:SetTexture(entry.sourceIcon);
+		end
+
+		line.text:SetText(entry.name or "Unknown");
+		if(color) then
+			line.text:SetTextColor(color.r, color.g, color.b);
+		else
+			line.text:SetTextColor(1.0, 0.78, 0.78);
+		end
+		line:Show();
+	end
+
+	if(#entries > shownCount and shownCount > 0) then
+		local line = lines[shownCount];
+		line.text:SetText((line.text:GetText() or "") .. " +" .. tostring(#entries - shownCount) .. " more");
+	end
+
+	return shownCount;
+end
+
+local function ResolveZoneProgress()
+	if(not C_Map or type(C_Map.GetBestMapForUnit) ~= "function") then
+		return {
+			state = "unavailable",
+			title = ZONE_TRACKER_TITLE,
+			detail = "Map data unavailable on this client.",
+			provider = nil,
+		};
+	end
+
+	local currentMapID = C_Map.GetBestMapForUnit("player");
+	if(not currentMapID) then
+		return {
+			state = "unavailable",
+			title = ZONE_TRACKER_TITLE,
+			detail = "Current zone is unavailable right now.",
+			provider = nil,
+		};
+	end
+
+	local mapID = currentMapID;
+	local bestKnownMapName = GetMapName(currentMapID) or ZONE_TRACKER_TITLE;
+	while(mapID and mapID > 0) do
+		local data = GetPetTrackerSnapshotForMap(mapID) or GetNativeProgressForMap(mapID);
+		if(data) then
+			data.state = "ready";
+			data.title = data.mapName or bestKnownMapName;
+			return data;
+		end
+
+		local mapInfo = C_Map.GetMapInfo(mapID);
+		local parentMapID = mapInfo and mapInfo.parentMapID;
+		if(not parentMapID or parentMapID == 0 or parentMapID == mapID) then
+			break;
+		end
+		mapID = parentMapID;
+	end
+
+	if(addon.ZoneSpeciesByMap and addon.ZoneSpeciesByMap[currentMapID]) then
+		return {
+			state = "empty",
+			title = bestKnownMapName,
+			detail = "No trackable wild pets found for this zone.",
+			provider = "native",
+		};
+	end
+
+	if(GetPetTrackerSnapshotForMap(currentMapID)) then
+		return {
+			state = "empty",
+			title = bestKnownMapName,
+			detail = "No trackable wild pets found for this zone.",
+			provider = "PetTracker",
+		};
+	end
+
+	return {
+		state = "unavailable",
+		title = bestKnownMapName,
+		detail = "No zone pet data is available for this zone yet.",
+		provider = nil,
+	};
+end
+
+function addon:GetZoneTrackerSnapshot()
+	return ResolveZoneProgress();
+end
+
+function addon:GetZoneTrackerAnchorTarget()
+	if(addon and addon.db and addon.db.global.HideMainGUI == true) then
+		return PetBuddyFrameTitle;
+	end
+
+	local utilityState = tonumber(addon.db.global.PetUtilityMenuState) or 0;
+	local showItems = (utilityState == 1 or utilityState == 3);
+	local showLoadouts = (utilityState == 2 or utilityState == 3);
+
+	if(showLoadouts and PetBuddyFrameLoadouts) then
+		local scrollFrame = PetBuddyFrameLoadouts.scrollFrame or rawget(_G, "PetBuddyFrameLoadoutsScrollFrame");
+		if(scrollFrame and scrollFrame:IsShown()) then
+			return scrollFrame;
+		end
+
+		return PetBuddyFrameLoadouts;
+	end
+
+	if(showItems and PetBuddyFrameButtons) then
+		return PetBuddyFrameButtons;
+	end
+
+	return PetBuddyFramePet3;
+end
+
+function addon:RefreshZoneTrackerAnchor()
+	local frame = PetBuddyFrameZoneTracker;
+	if(not frame) then
+		return;
+	end
+
+	local anchorTarget = self:GetZoneTrackerAnchorTarget();
+	if(not anchorTarget) then
+		return;
+	end
+
+	frame:ClearAllPoints();
+
+	-- Anchor below the element that is actually visible:
+	-- title bar, expanded loadout list, bottom utility row, or Pet3.
+	local utilityState = tonumber(addon.db.global.PetUtilityMenuState) or 0;
+	local showItems = (utilityState == 1 or utilityState == 3);
+	local showLoadouts = (utilityState == 2 or utilityState == 3);
+	local hideMain = addon and addon.db and addon.db.global.HideMainGUI == true;
+
+	local yOffset;
+	if(hideMain) then
+		yOffset = -2;
+	elseif(anchorTarget == (PetBuddyFrameLoadouts and PetBuddyFrameLoadouts.scrollFrame) or anchorTarget == rawget(_G, "PetBuddyFrameLoadoutsScrollFrame")) then
+		yOffset = 10;
+	elseif(showItems or showLoadouts) then
+		yOffset = 10;
+	else
+		yOffset = -2;
+	end
+
+	frame:SetPoint("TOPLEFT", anchorTarget, "BOTTOMLEFT", 0, yOffset);
+end
+
+function addon:RefreshZoneTracker()
+	-- Debounce: prevent calls from firing too rapidly
+	local now = GetTime();
+	if(self._lastZoneTrackerRefresh and (now - self._lastZoneTrackerRefresh) < 0.1) then
+		return;
+	end
+	self._lastZoneTrackerRefresh = now;
+
+	local frame = PetBuddyFrameZoneTracker;
+	if(not frame or not self.db or not self.db.global) then
+		return;
+	end
+
+	self:RefreshZoneTrackerAnchor();
+
+	local minimized = self:IsFrameMinimized();
+	local hideMain = self.db.global.HideMainGUI == true;
+
+	-- Hide zone tracker when minimized (minimize hides everything except title bar)
+	local shouldShow = self.db.global.ShowZoneTracker and not minimized;
+	if(not shouldShow) then
+		frame:Hide();
+		return;
+	end
+
+	local snapshot = self:GetZoneTrackerSnapshot();
+	frame.snapshot = snapshot;
+	frame.label:SetText(snapshot.title or ZONE_TRACKER_TITLE);
+	ApplyProgressBarTexture(frame);
+	if(frame.bar and frame.bar.text) then
+		frame.bar.text:SetText("");
+		frame.bar.text:Show();
+	end
+	if(frame.hint) then
+		frame.hint:SetText("");
+		frame.hint:Hide();
+	end
+	if(frame.petsText) then
+		frame.petsText:SetText("");
+		frame.petsText:Hide();
+	end
+	local visibleLines = 0;
+
+	if(snapshot.state == "ready") then
+		frame.value:SetFormattedText("%d / %d", snapshot.owned or 0, snapshot.total or 1);
+		frame.bar:Show();
+		frame.bar:SetMinMaxValues(0, math.max(1, snapshot.total or 1));
+		frame.bar:SetValue(math.max(0, snapshot.owned or 0));
+		if(frame.bar.text) then
+			frame.bar.text:SetFormattedText("%d%% complete", math.floor((snapshot.percent or 0) * 100 + 0.5));
+		end
+		frame.bar:SetStatusBarColor(0.20, 0.20, 0.24, 1.0);
+		UpdateQualityBars(frame, snapshot);
+		-- When main GUI is hidden, zone tracker shows compact view (no species list)
+		local hideMain = addon and addon.db and addon.db.global.HideMainGUI == true;
+		if(not hideMain and self.db.global.ShowZoneTrackerPetList ~= false) then
+			visibleLines = UpdateSpeciesLines(frame, snapshot);
+		else
+			HideSpeciesLines(frame);
+		end
+	elseif(snapshot.state == "empty") then
+		frame.value:SetText("0 / 0");
+		frame.bar:Show();
+		frame.bar:SetMinMaxValues(0, 1);
+		frame.bar:SetValue(0);
+		if(frame.bar.text) then
+			frame.bar.text:SetText("No zone pets");
+		end
+		frame.bar:SetStatusBarColor(0.36, 0.36, 0.42, 1.0);
+		UpdateQualityBars(frame, snapshot);
+		HideSpeciesLines(frame);
+	else
+		frame.value:SetText("--");
+		frame.bar:Show();
+		frame.bar:SetMinMaxValues(0, 1);
+		frame.bar:SetValue(0);
+		if(frame.bar.text) then
+			frame.bar.text:SetText("Unavailable");
+		end
+		frame.bar:SetStatusBarColor(0.30, 0.30, 0.36, 1.0);
+		UpdateQualityBars(frame, snapshot);
+		HideSpeciesLines(frame);
+	end
+
+	local zoneHeight = 30 + (visibleLines > 0 and (visibleLines * 16 + 2) or 0);
+	frame:SetHeight(zoneHeight);
+
+	-- Update main frame height to accommodate zone tracker expansion
+	if(PetBuddyFrame and type(PetBuddyFrame.SetHeight) == "function") then
+		local minimized = addon and addon:IsFrameMinimized();
+		local hideMain = addon and addon.db and addon.db.global.HideMainGUI == true;
+		if(hideMain) then
+			local titleHeight = 24;
+			if(PetBuddyFrameTitle and type(PetBuddyFrameTitle.GetHeight) == "function") then
+				titleHeight = PetBuddyFrameTitle:GetHeight() or titleHeight;
+			end
+			PetBuddyFrame:SetHeight(titleHeight + zoneHeight + 6);
+		elseif(minimized) then
+			-- Minimized: zone tracker is hidden, just use title height
+			local titleHeight = 24;
+			if(PetBuddyFrameTitle and type(PetBuddyFrameTitle.GetHeight) == "function") then
+				titleHeight = PetBuddyFrameTitle:GetHeight() or titleHeight;
+			end
+			PetBuddyFrame:SetHeight(titleHeight + 6);
+		else
+			-- For expanded state, recalculate using the stored expanded height
+			if(addon and addon.ExpandedFrameHeight) then
+				local zoneExtra = zoneHeight - 30;
+				PetBuddyFrame:SetHeight(addon.ExpandedFrameHeight + zoneExtra);
+			end
+		end
+	end
+
+	frame:Show();
+end
+
+function PetBuddy_ZoneTrackerMixin:OnEnter()
+	local snapshot = self.snapshot or addon:GetZoneTrackerSnapshot();
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+	GameTooltip:ClearLines();
+	local logoPath = addon.LOGO_TEXTURE or "Interface\\AddOns\\PetBuddy2\\Media\\logo.tga";
+	GameTooltip:AddLine("|T" .. logoPath .. ":18:18:0:0|t |cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r  |cffb07fff" .. ZONE_TRACKER_TITLE .. "|r");
+
+	if(snapshot.state == "ready") then
+		GameTooltip:AddDoubleLine("Zone", snapshot.title or "-", 1, 1, 1, 0.9, 0.9, 0.9);
+		GameTooltip:AddDoubleLine("Collected", string.format("%d / %d", snapshot.owned or 0, snapshot.total or 0), 1, 1, 1, 0.9, 0.9, 0.9);
+		GameTooltip:AddDoubleLine("Progress", string.format("%d%%", math.floor((snapshot.percent or 0) * 100 + 0.5)), 1, 1, 1, 0.9, 0.9, 0.9);
+		AddTooltipPetLines(GameTooltip, snapshot);
+	elseif(snapshot.state == "empty") then
+		GameTooltip:AddDoubleLine("Zone", snapshot.title or "-", 1, 1, 1, 0.9, 0.9, 0.9);
+		GameTooltip:AddLine(snapshot.detail or "", 0.9, 0.9, 0.9, true);
+	elseif(snapshot.detail) then
+		GameTooltip:AddDoubleLine("Zone", snapshot.title or "-", 1, 1, 1, 0.9, 0.9, 0.9);
+		GameTooltip:AddLine(snapshot.detail, 0.9, 0.9, 0.9, true);
+	end
+
+	GameTooltip:Show();
+end
+
+function PetBuddy_ZoneTrackerMixin:OnLeave()
+	GameTooltip:Hide();
+end
+
+function PetBuddy_ZoneTrackerMixin:OnMouseUp(button)
+	if(button == "RightButton" and type(addon.OpenContextMenu) == "function") then
+		GameTooltip:Hide();
+		addon:OpenContextMenu(nil, self, "cursor", "TOPLEFT", "CENTER");
+	end
+end

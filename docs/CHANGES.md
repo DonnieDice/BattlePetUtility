@@ -1,130 +1,48 @@
-## v1.2.1 (2026-03-24)
-* Fixed cooldown taint errors in `data/itembuttons.lua` by deferring cooldown widget updates onto a safe timer path instead of calling `SetCooldown` directly from tainted button/event flows.
-* Fixed PetBuddy2 utility/loadout controls not responding reliably by explicitly registering click handlers for the bottom button bar.
-* Fixed PetBuddy2 loadouts and utility sections not restoring correctly on initial frame show by reapplying utility state, minimize state, and pet refresh logic in the frame `OnShow` path.
-* Fixed the in-game PetBuddy2 title styling to use branded colors and improved minimize button layering/placement so it remains visible beside the close button.
+# Changes
 
-## v1.2.0 (2026-03-20)
-* Fixed `compat.lua` crash: `C_Spell.GetSpellCooldown` returns `isEnabled` as a protected secret boolean in WoW 11.x; wrapped the boolean test in `pcall` to prevent the taint error and the cascade that was blocking pet summoning.
-* Fixed auto-summon not firing reliably after combat: added a 0.5s delay in `PLAYER_REGEN_ENABLED` before calling `UpdateAutoResummon` so `InCombatLockdown()` has fully released before the attempt.
-* Fixed `Dismount` hook setting the summon-block timer during combat (forced dismounts from combat mechanics no longer delay post-combat pet resummon).
-* Rebranded accent color from green (`#58be81`) to purple (`#b07fff`) across all in-game text, TOC title, and notes.
-* Button bar order confirmed: title → charms → expand/minimize → X (close).
+## v2.0.0
 
-## v1.1.0 (2026-03-10)
-* Added a dedicated minimize button that collapses the PetBuddy2 HUD to just the header, keeping the close button for hide/toggle duties.
-* Updated the frame title to `RGX | PetBuddy2` and added right-click support on the title bar to open the context menu without hunting for the main frame.
-* Documented a BLU-style release workflow (including tagging/push steps) so future releases stay consistent.
-
-## v1.0.0 (2026-03-03)
-* Reset PetBuddy2 release baseline versioning to `v1.0.0`.
-* Reworked project layout into structured folders (`data/`, `ui/`, `media/`, `docs/`).
-* Removed embedded external `libs/` dependency requirement.
-* Updated slash command messaging and welcome text formatting to RGX suite style.
-* Added Retail API compatibility guards for spell, aura, gossip, and dropdown usage.
-* Fixed multiple Midnight runtime/UI issues in templates, action button handling, and menu behavior.
-* Made PetBuddy native loadouts work independently of Rematch.
-* Added Rematch save-dialog support as an optional helper path (`Shift-Click` on Save).
-* Cleaned up utility options structure and submenu behavior.
-* Refreshed TOC metadata and documentation styling to align with BLU/CCU/SQP presentation patterns.
-
-## v4.2.3 (2026-03-03)
-* Fixed `securecall` nil crash during addon enable by adding safe `LoadAddOn` fallback logic.
-* Made addon event registration robust against removed/unknown events (guards around `RegisterEvent`/`UnregisterEvent`).
-* Added cursor-event fallback (`CURSOR_UPDATE` -> `CURSOR_CHANGED`) for Midnight API differences.
-* Added `GetPetTypeTexture` compatibility shim for clients where Blizzard removed the global function.
-* Removed unsupported XML backdrop block and set backdrop at runtime in `OnLoad` to stop parser warnings.
-
-## v4.2.2 (2026-03-03)
-* Fixed Midnight runtime error in `PetBuddyTemplates.xml` by adding safe backdrop guards and `BackdropTemplate` inheritance for pet frames.
-* Reworked item/flyout button visual handling for modern ActionButtonTemplate fields:
-  * Added compatibility fallback from `FlyoutArrow` to `Arrow`.
-  * Added safe flyout border/arrow creation when template fields are absent.
-  * Prevented template `OnLoad` initialization from running with nil action type.
-* Updated backdrop XML sizing syntax to remove the `AbsValue` parser warning on line 159.
-
-## v4.2.1 (2026-03-03)
-* Added RGX-style two-line login welcome message (welcome + version) with colored prefix.
-* Added slash subcommands:
-  * `/petbuddy2 help`
-  * `/petbuddy2 welcome`
-  * `/petbuddy2 version`
-* Added `ShowWelcomeMessage` setting and options-menu toggle.
-* Restyled `README.md` to match the presentation pattern used by BLU/CCU/SQP.
-
-## v4.2.0 (2026-03-03)
-* Removed Ace/LibStub/LibDataBroker/LibSharedMedia hard dependencies.
-* Replaced Ace lifecycle/events/timers with native WoW frame event dispatch and `C_Timer`.
-* Replaced AceDB with internal saved-variable defaults merge for `PetBuddyDB`.
-* Replaced LibSharedMedia dependency with built-in media registry (with optional external media import when available).
-* Databroker initialization now gracefully skips when `LibDataBroker-1.1` is not present.
-* Removed embedded `libs` loading from `PetBuddy2.toc`.
-
-## v4.1.1 (2026-03-03)
-* Updated TOC interface targets to `120000,120001` for Midnight compatibility metadata.
-* Bumped addon version to `v4.1.1`.
-* Standardized docs/release structure to use `docs/CHANGES.md` as the manual changelog source.
-* Added `docs/README.md` and `docs/ROADMAP.md`.
-
-## 4.1.0
-* Added Rematch loadout integration.
-* PetBuddy loadout list now reads Rematch teams when Rematch is enabled.
-* Loading a loadout now routes through Rematch for full team compatibility.
-* PetBuddy local save/rename/delete loadout actions are disabled while Rematch is active.
-
-## 4.0.0
-* Rebranded addon to PetBuddy2.
-* Updated TOC for WoW Retail Midnight (120001).
-* Added compatibility shims for namespaced spell and gossip APIs.
-* Added safer Pet Journal refresh and search-box handling for modern Blizzard UI.
-* Added release automation scaffolding (.pkgmeta + GitHub Actions workflow).
-
-## 3.0.2
-* Fixed pet charms indicator.
-
-## 3.0.1
-* Fixed incorrect call to nonexistent function.
-
-## 3.0.0
-* Updated for Battle for Azeroth.
-* Fixed PlaySound issue from forever ago. Oops.
-
-## 2.0.2
-* TOC bump for patch 7.2.5.
-* Disabled auto resummon of pet in Winterspring and Un'Goro Crater if doing the mount quest daily.
-
-## 2.0.1
-* Fixed changed Blizzard dependency name.
-
-## 2.0.0
-* Updated for Legion.
-* Some visual tweaks.
-
-## 1.3.0
-* Fixed a major bug that caused displayed pet info to be incorrect if a pet was dead when starting a pet battle.
-* Disabled toggling pet utility menu while in pet battle.
-* Pet healing utility buttons are now painted dark red when they're unusable (e.g. in Celestial Tournament.)
-
-## 1.2.2
-* More bug fixes and tweaks.
-
-## 1.2.1
-* Minor bug fixes.
-
-## 1.2.0
-* Added two new options for auto companion resummon: random favorite pet and any random pet.
-* Changed number of wounded pets display Data Broker module to count all pets instead of only active pets. Also applies to automatic pet healing.
-* The loadouts search box will now lose focus after restoring a saved loadout.
-
-## 1.1.2
-* Removed the debug text when changing fonts.
-* Attempted fix to fonts and textures not properly updating on frame.
-* Fixed experience text not changing fonts.
-* Added way to hide Pet Buddy when entering pet battle.
-
-## 1.1.1
-* Added options to change font face and bar textures from the pool of SharedMedia and font size.
-* Added cuteness.
-
-## 1.1.0
-* First public release.
+- Replaced `EasyMenu` with native `UIDropDownMenu` API for reliable dropdown behavior (same pattern used by BLU addon).
+- Fixed dropdown menu not staying open after selecting options — all toggle options now properly keep the menu open via `keepShownOnClick = true`.
+- Fixed font/texture/size selection showing multiple checkmarks — these menus now use proper radio button behavior (only one selected at a time) with automatic refresh after selection.
+- Fixed zone pet tracker misalignment when "Show pet related items" or "Show pet loadouts menu" is enabled — zone tracker now dynamically anchors to the bottommost visible element (loadout scroll frame > loadout bar > pet item buttons > pet frames) so it always appears below all content.
+- Fixed expanded frame height calculation — reverted to original calculation that worked correctly, preventing excessive gap between bottom row elements and zone pet tracker.
+- Fixed "Hide main GUI body" not hiding the active pet team — `UpdatePets()` now respects the `HideMainGUI` flag and hides pet frames 1-3.
+- Fixed "Show pet related items" submenu missing heading — added "Pet Items Options" title text.
+- Fixed loadout context menu overlapping the zone tracker — context menu now opens above the loadout item row.
+- Added "Hide main GUI body" toggle option under Zone Tracker — hides pet frames, pet team, pet item buttons, and loadouts while keeping the title bar and zone tracker visible in a compact layout.
+- Fixed minimize behavior — minimizing now hides everything except the title bar (zone tracker is hidden when minimized, shown only when "Hide main GUI body" is enabled).
+- Fixed "Hide main GUI body" not properly hiding pet item buttons and loadout dropdown — both are now correctly hidden along with pet frames.
+- Fixed loadout scroll frame toggle to refresh zone tracker position and frame height when opened or closed.
+- Moved "Show pet charms" from the pet items submenu to a standalone option in the Displays section.
+- **CPU optimization**: Applied BLU's coalescing debounce pattern to UpdatePets and UpdateMinimizeState — first call executes immediately for responsive UI, subsequent calls within 0.15s window are coalesced into single execution.
+- **CPU optimization**: Removed duplicate event registrations in OnShow() that caused handlers to fire 2x for every pet event.
+- **CPU optimization**: PET_JOURNAL_LIST_UPDATE now skips expensive RefreshZoneTracker cascade.
+- Fixed pets not displaying after reload — replaced deferred debounce with immediate execution + coalescing window for responsive UI.
+- Fixed zone pet tracker spacing and anchoring so it stays visually locked under the bottom row while the main GUI is visible, only shifts when the entire bottom row is disabled or the main GUI body is hidden, and keeps the progress text on the bar.
+- Added more font options (Arial Narrow, Morpheus, Skurri, Expressway) and bar texture options (Flat, Glamour, Minimalist, Perl, Smoother) to Frame Options menu.
+- Moved "Lock PetBuddy2" to the top of the options menu.
+- Moved "When starting pet battle" to the top of the Automation section.
+- Fixed team selection not loading after reload — restored `PetJournal_UpdatePetLoadOut` call to properly refresh Blizzard's loadout UI.
+- Removed the empty "Other Options" section.
+- Fixed "Show missing pets list" being greyed out — it is now always toggleable.
+- Removed redundant "Hide PetBuddy2" / "Show PetBuddy2" dropdown option — the close (X) button already handles this.
+- Removed `PetJournal_UpdatePetLoadOut` hooks and calls that could interfere with the collections UI — now uses BLU's read-only approach with `C_PetJournal` API only.
+- Replaced placeholder addon icon with a proper PetBuddy2 icon asset and updated TOC metadata.
+- Fixed the in-game header branding so the title now shows the logo and purple `P`, `B`, and `2` styling consistently.
+- Replaced the broken minimize and close art with explicit header buttons so the controls render reliably.
+- Refined the header controls with smaller, cleaner minimize and close buttons plus updated chat prefix styling.
+- Repositioned the animated bird and added a nested cuteness placement option for left or right header placement.
+- Added a PB2 zone pet tracker frame with a real options toggle, enabled by default, promoted to the top of the options menu, and backed by native PB2 zone data.
+- Improved the zone tracker data path so it prefers richer live data when available, falls back cleanly to PB2-native zone species data, and shows a proper zone pet list in the tooltip with Kaliel-style quality progress colors.
+- Fixed startup restoration so pets populate on load even when the loadout menu is disabled.
+- Synced the utility menu saved state more defensively so item/loadout visibility toggles restore correctly.
+- Decoupled pet rendering from loadout list rebuilding so a loadout UI issue cannot blank the main pet display.
+- Restored combat hide/show behavior after duplicate regen handlers accidentally overwrote it.
+- Kept the improved combat and post-dismount auto-summon timing while merging it back into the main combat event flow.
+- Hardened databroker and loadout UI code against empty slots, missing pets, and missing rarity data.
+- Updated the loadout save flow so Rematch opens by default when it is installed instead of requiring Shift-click.
+- Restored styled TOC title and notes formatting to match the presentation used across the rest of the addon suite.
+- Reintroduced zone tracking in a safer PB2-native form with built-in zone data and cleaner compatibility behavior.
+- Finalized the zone tracker release layout so it keeps a stable anchor under the bottom row when loadouts remain enabled, only repositions when the whole bottom row is gone or the main GUI body is hidden, and restores the progress text on the bar.
+- Fixed tracker media registrations so named bar textures use real statusbar assets instead of placeholder-style fills.

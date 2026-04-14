@@ -28,6 +28,10 @@ local PET_TYPE_TEXTURE_SUFFIX = {
 
 local FRAME_DEFAULT_HEIGHT = 208;
 local FRAME_MINIMIZED_PADDING = 6;
+local ZONE_TRACKER_RESERVED_HEIGHT = 112;
+local AUTOSUMMON_BLOCK_AFTER_DISMOUNT = 3.0;
+local AUTOSUMMON_BLOCK_AFTER_LOGIN = 5.0;
+local AUTOSUMMON_BLOCK_AFTER_COMBAT = 2.0;
 
 local function GetPetTypeTexturePath(petType)
 	if(type(GetPetTypeTexture) == "function") then
@@ -47,6 +51,15 @@ local function GetPetTypeTexturePath(petType)
 	end
 
 	return "Interface\\PetBattles\\PetIcon-" .. suffix;
+end
+
+local function GetSafeRarityColor(rarity)
+	local normalized = tonumber(rarity) or 1;
+	if(normalized < 1) then
+		normalized = 1;
+	end
+
+	return ITEM_QUALITY_COLORS[normalized - 1] or ITEM_QUALITY_COLORS[1] or NORMAL_FONT_COLOR;
 end
 
 addon._eventHandlers = addon._eventHandlers or {};
@@ -145,7 +158,10 @@ function addon:CancelAllTimers()
 	end
 end
 
-addon.CHAT_PREFIX = "|TInterface\\Icons\\INV_PandarenSerpentPet:16:16:0:0|t - [|cffb07fffPB2|r] ";
+addon.CHAT_PREFIX = "|TInterface\\AddOns\\PetBuddy2\\Media\\logo.tga:16:16:0:0|t - |cffffffff[|r|cffb512fcPB2|r|cffffffff]|r ";
+addon.CHAT_DEBUG_PREFIX = "|TInterface\\AddOns\\PetBuddy2\\Media\\logo.tga:16:16:0:0|t - |cffffffff[|r|cffb512fcPB2|r|cffffffff]|r |cff808080[DEBUG]|r ";
+addon.LOGO_TEXTURE = "Interface\\AddOns\\PetBuddy2\\Media\\logo.tga";
+addon.HEADER_TITLE_TEXT = "|cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r";
 
 local function GetAddonVersion()
 	if(C_AddOns and type(C_AddOns.GetAddOnMetadata) == "function") then
@@ -166,11 +182,20 @@ function addon:PrintMessage(message)
 	end
 end
 
+function addon:PrintDebug(message)
+	local line = (self.CHAT_DEBUG_PREFIX or "") .. tostring(message or "");
+	if(DEFAULT_CHAT_FRAME and type(DEFAULT_CHAT_FRAME.AddMessage) == "function") then
+		DEFAULT_CHAT_FRAME:AddMessage(line);
+	else
+		print(line);
+	end
+end
+
 function addon:ShowWelcomeMessage()
 	if(not self.db or self.db.global.ShowWelcomeMessage == false) then return end
 
 	self:PrintMessage("Welcome! Use |cffb07fff/petbuddy|r to toggle, and |cffb07fff/petbuddy help|r for commands.");
-	self:PrintMessage("|cffffff00Version:|r |cff7598b6" .. GetAddonVersion() .. "|r");
+	self:PrintMessage("|cffffff00Version:|r |cff8080ff" .. GetAddonVersion() .. "|r");
 end
 
 function addon:ToggleWelcomeMessage()
@@ -192,7 +217,69 @@ function addon:PrintHelp()
 	self:PrintMessage(" |cffb07fff/petbuddy version|r - Show current version");
 end
 
+local function UpdateHeaderButtonVisual(button, hovered)
+	if(not button or not button.label) then
+		return;
+	end
+
+	local kind = button.buttonKind;
+	if(kind == "close") then
+		if(hovered) then
+			button.label:SetTextColor(1.0, 0.94, 0.98);
+		else
+			button.label:SetTextColor(0.96, 0.87, 1.0);
+		end
+	else
+		if(hovered) then
+			button.label:SetTextColor(0.98, 0.95, 1.0);
+		else
+			button.label:SetTextColor(0.95, 0.90, 1.0);
+		end
+	end
+end
+
+local function UpdatePepePlacement()
+	if(not PetBuddyFrameTitle or not PetBuddyFrameTitle.pepeFrame) then
+		return;
+	end
+
+	local pepeFrame = PetBuddyFrameTitle.pepeFrame;
+	pepeFrame:ClearAllPoints();
+
+	local useLeftSide = addon.db and addon.db.global and addon.db.global.PepeOnLeft == true;
+	if(useLeftSide) then
+		pepeFrame:SetPoint("BOTTOM", PetBuddyFrameTitle.logo, "TOP", 2, -5);
+	else
+		pepeFrame:SetPoint("BOTTOM", PetBuddyFrameTitle.closeButton, "TOP", 0, -7);
+	end
+end
+
+local function RefreshHeaderArt()
+	if(PetBuddyFrameTitle and PetBuddyFrameTitle.logo) then
+		PetBuddyFrameTitle.logo:SetTexture(addon.LOGO_TEXTURE);
+	end
+
+	if(PetBuddyFrameTitle and PetBuddyFrameTitle.titleText) then
+		PetBuddyFrameTitle.titleText:SetText(addon.HEADER_TITLE_TEXT);
+	end
+
+	if(PetBuddyFrameTitle and PetBuddyFrameTitle.closeButton) then
+		UpdateHeaderButtonVisual(PetBuddyFrameTitle.closeButton, false);
+	end
+
+	if(PetBuddyFrameTitle and PetBuddyFrameTitle.minimizeButton) then
+		UpdateHeaderButtonVisual(PetBuddyFrameTitle.minimizeButton, false);
+	end
+
+	UpdatePepePlacement();
+end
+
+function addon:RefreshHeaderArt()
+	RefreshHeaderArt();
+end
+
 local PetsBattleData = {};
+addon.PendingStartupRefreshes = addon.PendingStartupRefreshes or 0;
 
 local function TryLoadCollectionsUI()
 	if(C_AddOns and type(C_AddOns.LoadAddOn) == "function") then
@@ -226,19 +313,26 @@ function addon:UpdateMinimizeState()
 		return;
 	end
 
+	-- Coalescing debounce: immediate execution, then block rapid calls
+	if(self._pendingMinimizeUpdate) then
+		return;
+	end
+	self._pendingMinimizeUpdate = true;
+
+	self:_DoUpdateMinimizeState();
+
+	C_Timer.After(0.1, function()
+		self._pendingMinimizeUpdate = false;
+	end);
+end
+
+function addon:_DoUpdateMinimizeState()
 	local minimized = self:IsFrameMinimized();
 	PetBuddyFrame.minimized = minimized;
 
-	if(not self.ExpandedFrameHeight or self.ExpandedFrameHeight <= 0) then
-		self.ExpandedFrameHeight = FRAME_DEFAULT_HEIGHT;
-	end
-
-	if(not minimized) then
-		local currentHeight = PetBuddyFrame:GetHeight();
-		if(type(currentHeight) == "number" and currentHeight > 0) then
-			self.ExpandedFrameHeight = math.max(FRAME_DEFAULT_HEIGHT, currentHeight);
-		end
-	end
+	-- HideMainGUI: hide everything except title bar + zone tracker (compact)
+	-- Minimized: hide everything except title bar (no zone tracker)
+	local hideMain = self.db.global.HideMainGUI == true;
 
 	local titleHeight = 24;
 	if(PetBuddyFrameTitle and type(PetBuddyFrameTitle.GetHeight) == "function") then
@@ -246,48 +340,145 @@ function addon:UpdateMinimizeState()
 	end
 
 	if(minimized) then
+		-- Minimized: show only title bar, hide everything else including zone tracker
 		PetBuddyFrame:SetHeight(titleHeight + FRAME_MINIMIZED_PADDING);
+	elseif(hideMain) then
+		-- Hide main GUI body: show title bar + compact zone tracker
+		local zoneHeight = 40;
+		if(self.db.global.ShowZoneTracker) then
+			PetBuddyFrame:SetHeight(titleHeight + zoneHeight + FRAME_MINIMIZED_PADDING);
+		else
+			PetBuddyFrame:SetHeight(titleHeight + FRAME_MINIMIZED_PADDING);
+		end
 	else
-		PetBuddyFrame:SetHeight(self.ExpandedFrameHeight or FRAME_DEFAULT_HEIGHT);
+		-- Expanded: full height with pet frames + zone tracker
+		-- Buttons and loadouts are anchored below Pet3 and don't need extra frame height
+		local expandedHeight = FRAME_DEFAULT_HEIGHT;
+		if(self.db.global.ShowZoneTracker) then
+			expandedHeight = expandedHeight + ZONE_TRACKER_RESERVED_HEIGHT;
+		end
+		self.ExpandedFrameHeight = expandedHeight;
+		PetBuddyFrame:SetHeight(self.ExpandedFrameHeight or expandedHeight);
 	end
 
+	-- Hide/show pet frames
 	for i = 1, 3 do
 		local petFrame = _G["PetBuddyFramePet" .. i];
-		if(petFrame and minimized) then
-			petFrame:Hide();
+		if(petFrame) then
+			if(minimized or hideMain) then
+				petFrame:Hide();
+			else
+				petFrame:Show();
+			end
 		end
 	end
 
-	if(not minimized) then
+	if(not minimized and not hideMain) then
 		self:UpdatePets();
 	end
 
-	if(minimized and PetBuddyFrame.spellSelect) then
+	-- Hide spell selection when minimized or hidden
+	if((minimized or hideMain) and PetBuddyFrame.spellSelect) then
 		PetBuddyFrame.spellSelect:Hide();
 		if(type(PetBuddyPetFrame_ResetAbilitySwitches) == "function") then
 			PetBuddyPetFrame_ResetAbilitySwitches();
 		end
 	end
 
-	if(PetBuddyFrameLoadouts and PetBuddyFrameLoadouts.toggleButton) then
-		local toggleButton = PetBuddyFrameLoadouts.toggleButton;
-		toggleButton:SetEnabled(not minimized);
-		if(toggleButton.icon) then
-			toggleButton.icon:SetDesaturated(minimized);
+	-- Hide/show buttons and loadouts
+	if(PetBuddyFrameButtons) then
+		if(minimized or hideMain) then
+			PetBuddyFrameButtons:Hide();
+		else
+			-- Restore button visibility based on utility menu state
+			if(self.db.global.ShowPetItems) then
+				PetBuddyFrameButtons:Show();
+				self:UpdateItemButtons();
+			end
 		end
 	end
 
+	if(PetBuddyFrameLoadouts) then
+		if(minimized or hideMain) then
+			PetBuddyFrameLoadouts:Hide();
+			if(PetBuddyFrameLoadouts.toggleButton) then
+				PetBuddyFrameLoadouts.toggleButton:SetEnabled(false);
+				if(PetBuddyFrameLoadouts.toggleButton.icon) then
+					PetBuddyFrameLoadouts.toggleButton.icon:SetDesaturated(true);
+				end
+			end
+		else
+			-- Restore loadout visibility based on utility menu state
+			if(self.db.global.ShowPetLoadouts) then
+				PetBuddyFrameLoadouts:Show();
+				if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
+					PetBuddyFrameLoadouts_UpdateList();
+				end
+			end
+			if(PetBuddyFrameLoadouts.toggleButton) then
+				PetBuddyFrameLoadouts.toggleButton:SetEnabled(true);
+				if(PetBuddyFrameLoadouts.toggleButton.icon) then
+					PetBuddyFrameLoadouts.toggleButton.icon:SetDesaturated(false);
+				end
+			end
+		end
+	end
+
+	-- Update minimize button icon
 	local minimizeButton = PetBuddyFrameTitle and PetBuddyFrameTitle.minimizeButton;
 	if(minimizeButton) then
 		if(minimized) then
-			minimizeButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MaximizeButton-Up");
-			minimizeButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MaximizeButton-Down");
+			minimizeButton.label:SetText("+");
 		else
-			minimizeButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up");
-			minimizeButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down");
+			minimizeButton.label:SetText("-");
 		end
-		minimizeButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD");
+		UpdateHeaderButtonVisual(minimizeButton, false);
 	end
+
+	if(type(self.RefreshZoneTracker) == "function") then
+		self:RefreshZoneTracker();
+	end
+end
+
+function addon:HasLoadedTeamSelection()
+	if(not C_PetJournal or type(C_PetJournal.GetPetLoadOutInfo) ~= "function") then
+		return false;
+	end
+
+	for slotIndex = 1, 3 do
+		local petID, _, _, _, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
+		if(petID and not locked) then
+			return true;
+		end
+	end
+
+	return false;
+end
+
+function addon:RunStartupRefresh()
+	if(not PetBuddyFrame or not PetBuddyFrame:IsShown()) then
+		return false;
+	end
+
+	self:UpdateUtilityMenuState();
+	self:UpdateMinimizeState();
+	self:UpdatePets();
+	if(type(self.RefreshZoneTracker) == "function") then
+		self:RefreshZoneTracker();
+	end
+
+	return self:HasLoadedTeamSelection();
+end
+
+function addon:QueueStartupRefresh(delay)
+	self.PendingStartupRefreshes = (self.PendingStartupRefreshes or 0) + 1;
+	self:ScheduleTimer(function()
+		local ready = addon:RunStartupRefresh();
+		addon.PendingStartupRefreshes = math.max(0, (addon.PendingStartupRefreshes or 1) - 1);
+		if(not ready and addon.PendingStartupRefreshes == 0) then
+			addon:QueueStartupRefresh(1.0);
+		end
+	end, delay or 0.5);
 end
 
 function addon:SetFrameMinimized(shouldMinimize)
@@ -368,17 +559,8 @@ function addon:OnEnable()
 	addon:HandleAutoSummonTrigger("PLAYER_ENTERING_WORLD");
 	
 	addon:ScheduleRepeatingTimer(function()
-		if(not addon.BlizzHooked and PetJournal_UpdatePetLoadOut) then
-			hooksecurefunc("PetJournal_UpdatePetLoadOut", function()
-				if(not C_PetBattles.IsInBattle()) then
-					addon:UpdatePets();
-				end
-			end);
-			addon.BlizzHooked = true;
-		end
-		
 		addon:UpdateAutoResummon();
-		
+
 		if(GossipFrame:IsShown() and addon.PetHealer and addon.PetHealer.IsGarrisonNPC) then
 			addon:UpdateWoundedText();
 		end
@@ -386,6 +568,7 @@ function addon:OnEnable()
 end
 
 function addon:RefreshPetJournalLoadOut()
+	-- Refresh the Blizzard Pet Journal loadout UI so our selected team is restored
 	if(type(PetJournal_UpdatePetLoadOut) == "function") then
 		PetJournal_UpdatePetLoadOut();
 	else
@@ -455,6 +638,7 @@ function addon:UpdateUtilityMenuState()
 	if(InCombatLockdown()) then return end
 
 	local minimized = addon:IsFrameMinimized();
+	local hideMain = minimized or (addon.db.global.HideMainGUI == true);
 	local menuState = tonumber(addon.db.global.PetUtilityMenuState) or 0;
 	menuState = math.floor(menuState);
 	if(menuState < 0 or menuState > 3) then
@@ -479,14 +663,14 @@ function addon:UpdateUtilityMenuState()
 		PetBuddyFrameLoadouts:SetPoint("TOPLEFT", PetBuddyFramePet3, "BOTTOMLEFT", 0, 0);
 	end
 
-	if(showItems and not minimized) then
+	if(showItems and not minimized and not hideMain) then
 		PetBuddyFrameButtons:Show();
 		addon:UpdateItemButtons();
 	else
 		PetBuddyFrameButtons:Hide();
 	end
 
-	if(showLoadouts and not minimized) then
+	if(showLoadouts and not minimized and not hideMain) then
 		PetBuddyFrameLoadouts:Show();
 		PetBuddyFrameLoadouts_UpdateList();
 	else
@@ -494,8 +678,43 @@ function addon:UpdateUtilityMenuState()
 	end
 
 	if(type(PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
-		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showLoadoutList and not minimized);
+		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showLoadoutList and not minimized and not hideMain);
 	end
+
+	if(type(addon.RefreshZoneTracker) == "function") then
+		addon:RefreshZoneTracker();
+	end
+end
+
+function addon:SyncUtilityMenuState()
+	if(not self.db or not self.db.global) then
+		return 0;
+	end
+
+	local menuState = tonumber(self.db.global.PetUtilityMenuState);
+	if(menuState ~= nil) then
+		menuState = math.floor(menuState);
+	end
+
+	if(menuState == nil or menuState < 0 or menuState > 3) then
+		local showItems = self.db.global.ShowPetItems == true;
+		local showLoadouts = self.db.global.ShowPetLoadouts == true;
+
+		if(showItems and showLoadouts) then
+			menuState = 3;
+		elseif(showLoadouts) then
+			menuState = 2;
+		elseif(showItems) then
+			menuState = 1;
+		else
+			menuState = 0;
+		end
+	end
+
+	self.db.global.PetUtilityMenuState = menuState;
+	self.db.global.ShowPetItems = (menuState == 1 or menuState == 3);
+	self.db.global.ShowPetLoadouts = (menuState == 2 or menuState == 3);
+	return menuState;
 end
 
 function PetBuddyFrame_OnMouseWheel(self, delta)
@@ -729,13 +948,29 @@ end
 
 function addon:UpdatePets()
 	if(InCombatLockdown()) then return end
-	
+
+	-- Immediate execution if no pending update, otherwise coalesce
+	if(self._pendingPetsUpdate) then
+		return;
+	end
+
+	-- First call executes immediately for responsive UI
+	self._pendingPetsUpdate = true;
+	self:_DoUpdatePets();
+
+	-- Subsequent calls within 0.15s window will be coalesced
+	C_Timer.After(0.15, function()
+		self._pendingPetsUpdate = false;
+	end);
+end
+
+function addon:_DoUpdatePets()
 	local minimized = self:IsFrameMinimized();
+	local hideMain = self.db and self.db.global.HideMainGUI == true;
 	if(not PetsBattleData and C_PetBattles.IsInBattle()) then
 		addon:UpdateBattleData();
 	end
 	
-	PetBuddyFrameLoadouts_UpdateList();
 	addon:UpdateDatabrokerText();
 	
 	for slotIndex = 1, 3 do
@@ -793,7 +1028,7 @@ function addon:UpdatePets()
 					end
 				end
 				
-				local rarityColor = ITEM_QUALITY_COLORS[rarity-1];
+				local rarityColor = GetSafeRarityColor(rarity);
 				
 				petFrame.icon:Show();
 				petFrame.icon:SetTexture(icon);
@@ -813,7 +1048,7 @@ function addon:UpdatePets()
 				petFrame.stats.petHealth:SetValue(health);
 				
 				local healthText = "";
-				if(not self.db or not self.db.global.PetStatsText.ShowHealthPercentage) then
+				if(not self.db or not self.db.global.PetStatsText.ShowHealthPercentage or not maxHealth or maxHealth <= 0) then
 					healthText = string.format("%d/%d", health, maxHealth);
 				else
 					healthText = string.format("%d/%d (%d%%)", health, maxHealth, health / maxHealth * 100);
@@ -905,7 +1140,7 @@ function addon:UpdatePets()
 				end
 			end
 			
-			if(minimized) then
+			if(minimized or hideMain) then
 				petFrame:Hide();
 			else
 				petFrame:Show();
@@ -913,6 +1148,17 @@ function addon:UpdatePets()
 		else
 			petFrame:Hide();
 		end
+	end
+
+	if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
+		local ok, err = pcall(PetBuddyFrameLoadouts_UpdateList);
+		if(not ok) then
+			self:PrintDebug("Loadout list refresh failed: " .. tostring(err));
+		end
+	end
+
+	if(type(self.RefreshZoneTracker) == "function") then
+		self:RefreshZoneTracker();
 	end
 end
 
@@ -1253,6 +1499,42 @@ function PetBuddyFrameMinimizeButton_OnClick(self)
 	addon:ToggleFrameMinimized();
 end
 
+function PetBuddyHeaderButton_OnLoad(self, kind)
+	self.buttonKind = kind;
+	self:RegisterForClicks("LeftButtonUp");
+	self:SetFrameStrata("HIGH");
+	self:SetFrameLevel(self:GetParent():GetFrameLevel() + 8);
+	UpdateHeaderButtonVisual(self, false);
+end
+
+function PetBuddyHeaderButton_OnClick(self, button)
+	if(button ~= "LeftButton") then
+		return;
+	end
+
+	if(self.buttonKind == "close") then
+		if(PetBuddyFrame) then
+			PetBuddyFrame:Hide();
+		end
+	else
+		PetBuddyFrameMinimizeButton_OnClick(self);
+	end
+end
+
+function PetBuddyHeaderButton_OnEnter(self)
+	UpdateHeaderButtonVisual(self, true);
+	if(self.buttonKind == "minimize") then
+		PetBuddyFrameMinimizeButton_OnEnter(self);
+	end
+end
+
+function PetBuddyHeaderButton_OnLeave(self)
+	UpdateHeaderButtonVisual(self, false);
+	if(self.buttonKind == "minimize") then
+		PetBuddyFrameMinimizeButton_OnLeave(self);
+	end
+end
+
 function PetBuddyFrameMinimizeButton_OnEnter(self)
 	if(not addon) then return end
 
@@ -1274,24 +1556,20 @@ end
 
 function PetBuddyFrame_OnShow(self)
 	if(not addon.db) then return end
-	
+
 	addon.db.global.Visible = true;
-	
-	addon:RegisterEvent("PET_BATTLE_PET_CHANGED", addon.UpdatePets);
-	addon:RegisterEvent("PET_BATTLE_HEALTH_CHANGED", addon.UpdatePets);
-	addon:RegisterEvent("PET_BATTLE_LEVEL_CHANGED", addon.UpdatePets);
-	addon:RegisterEvent("PET_BATTLE_XP_CHANGED", addon.UpdatePets);
-	
-	addon:RegisterEvent("PET_JOURNAL_NEW_BATTLE_SLOT", addon.UpdatePets);
-	
-	addon:RegisterEvent("UPDATE_SUMMONPETS_ACTION");
-	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
-	
+	RefreshHeaderArt();
+
+	-- Events are registered once in OnEnable() - don't re-register here
+	-- Just trigger initial updates
 	addon:UpdateUtilityMenuState();
 	addon:RefreshMedia();
 	addon:UpdateMinimizeState();
 	addon:UpdatePets();
-	
+	addon.PendingStartupRefreshes = 0;
+	addon:QueueStartupRefresh(0.3);
+	addon:QueueStartupRefresh(1.0);
+
 	PetBuddyPetFrame_ResetAbilitySwitches();
 	PetBuddyFrameTitlePetCharms:OnShow();
 end
@@ -1315,6 +1593,9 @@ function PetBuddyFrame_OnHide(self)
 end
 
 function addon:PLAYER_REGEN_DISABLED()
+	self.CombatExitTimer = 0;
+	self:PrintDebug("Entered combat, summon blocked");
+
 	if(self.db.global.HideInCombat and PetBuddyFrame:IsShown()) then
 		PetBuddyFrame:Hide();
 		addon.CombatHidden = true;
@@ -1322,16 +1603,25 @@ function addon:PLAYER_REGEN_DISABLED()
 end
 
 function addon:PLAYER_REGEN_ENABLED()
+	self.CombatExitTimer = GetTime();
+	self:PrintDebug("Exited combat, will attempt summon in " .. AUTOSUMMON_BLOCK_AFTER_COMBAT .. "s");
+
 	if(self.db.global.HideInCombat and self.CombatHidden) then
 		PetBuddyFrame:Show();
 		addon.CombatHidden = false;
 	end
-	
+
 	self.db.global.Visible = PetBuddyFrame:IsShown();
 	addon:UpdateUtilityMenuState();
 	addon:ScheduleTimer(function()
 		addon:UpdateAutoResummon(false);
 	end, 0.5);
+
+	if(self.db and self.db.global.AutoSummonPet) then
+		self:ScheduleTimer(function()
+			self:HandleAutoSummonTrigger("PLAYER_REGEN_ENABLED");
+		end, AUTOSUMMON_BLOCK_AFTER_COMBAT);
+	end
 end
 
 function addon:CURSOR_UPDATE()
@@ -1368,15 +1658,15 @@ function addon:CURSOR_UPDATE()
 	end, 0.01);
 end
 
-local AUTOSUMMON_BLOCK_AFTER_DISMOUNT = 2.0;
-local AUTOSUMMON_BLOCK_AFTER_LOGIN = 4.0;
+addon.SummonDisabledTimer = addon.SummonDisabledTimer or 0;
+addon.CombatExitTimer = addon.CombatExitTimer or 0;
 
-addon.SummonDisabledTimer = 0;
 hooksecurefunc("Dismount", function()
 	if(not InCombatLockdown()) then
 		addon.SummonDisabledTimer = GetTime();
+		addon:PrintDebug("Dismount detected, blocking summon for " .. AUTOSUMMON_BLOCK_AFTER_DISMOUNT .. "s");
 	end
-end)
+end);
 
 function addon:HandleAutoSummonTrigger(event, ...)
 	if(not self.db or not self.db.global.AutoSummonPet) then
@@ -1468,11 +1758,12 @@ function addon:IsDoingMountQuest()
 end
 
 function addon:CanSafelySummonPet()
-	return not (not HasFullControl() or UnitOnTaxi("player") 
+	return not (not HasFullControl() or UnitOnTaxi("player")
 				or UnitUsingVehicle("player") or UnitIsDeadOrGhost("player")
 				or addon.BarberShopOpen
 				or IsMounted() or IsFalling() or (GetTime()-addon.SummonDisabledTimer) < AUTOSUMMON_BLOCK_AFTER_DISMOUNT
 				or (GetTime()-addon.LoginTime) < AUTOSUMMON_BLOCK_AFTER_LOGIN
+				or (addon.CombatExitTimer > 0 and (GetTime()-addon.CombatExitTimer) < AUTOSUMMON_BLOCK_AFTER_COMBAT)
 				or UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil
 				or IsStealthed()
 				or addon:IsPlayerEating()
@@ -1521,6 +1812,36 @@ function addon:PLAYER_ENTERING_WORLD(event, isInitialLogin, isReloadingUi)
 	end
 
 	addon:HandleAutoSummonTrigger("PLAYER_ENTERING_WORLD");
+	addon.PendingStartupRefreshes = 0;
+	addon:QueueStartupRefresh(0.5);
+	addon:QueueStartupRefresh(1.5);
+end
+
+function addon:ZONE_CHANGED_NEW_AREA()
+	if(type(self.RefreshZoneTracker) == "function") then
+		self:RefreshZoneTracker();
+	end
+end
+
+function addon:ZONE_CHANGED()
+	if(type(self.RefreshZoneTracker) == "function") then
+		self:RefreshZoneTracker();
+	end
+end
+
+function addon:ZONE_CHANGED_INDOORS()
+	if(type(self.RefreshZoneTracker) == "function") then
+		self:RefreshZoneTracker();
+	end
+end
+
+function addon:PET_JOURNAL_LIST_UPDATE()
+	-- Lightweight handler: only update pets and loadout list
+	-- Avoid triggering expensive RefreshZoneTracker cascade
+	self:UpdatePets();
+	if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
+		PetBuddyFrameLoadouts_UpdateList();
+	end
 end
 
 function addon:SPELL_UPDATE_COOLDOWN()
@@ -1557,17 +1878,21 @@ function addon:OnInitialize()
 			TogglePetBuddy();
 		elseif(command == "help") then
 			addon:PrintHelp();
-		elseif(command == "welcome") then
-			addon:ToggleWelcomeMessage();
-		elseif(command == "version") then
-			addon:PrintMessage("|cffffff00Version:|r |cff7598b6" .. GetAddonVersion() .. "|r");
-		else
+			elseif(command == "welcome") then
+				addon:ToggleWelcomeMessage();
+			elseif(command == "version") then
+				addon:PrintMessage("|cffffff00Version:|r |cff8080ff" .. GetAddonVersion() .. "|r");
+			else
 			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cffb07fff/petbuddy help|r.");
 		end
 	end
 	
 	addon:InitializeDatabase();
 	addon:InitializeDatabroker();
+	addon:RegisterEvent("ZONE_CHANGED_NEW_AREA");
+	addon:RegisterEvent("ZONE_CHANGED");
+	addon:RegisterEvent("ZONE_CHANGED_INDOORS");
+	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
 end
 
 function addon:BARBER_SHOP_OPEN()

@@ -30,11 +30,19 @@
 					<Anchor point="TOPLEFT" relativeTo="$parent" x="0" y="0" />
 				</Anchors>
 				<Layers>
-					<Layer level="ARTWORK" textureSubLevel="1">
-						<FontString name="$parentTitleText" inherits="PetBuddyFontNormal" justifyH="LEFT" justifyV="BOTTOM" parentKey="titleText" text="|cff8b4b5cR|r|cff8b4b5cG|r|cff8b4b5cX|r |cff3598db||r |cff2dc26bP|r|cffffffffet|r|cff2dc26bB|r|cffffffffuddy|r|cff2dc26b2|r">
-							<Size x="150" y="24"/>
+					<Layer level="ARTWORK" textureSubLevel="2">
+						<Texture name="$parentLogo" parentKey="logo" file="Interface\AddOns\PetBuddy2\Media\logo.tga">
+							<Size x="20" y="20"/>
 							<Anchors>
-								<Anchor point="BOTTOMLEFT" relativeTo="$parent" x="2" y="5"/>
+								<Anchor point="LEFT" x="4" y="0"/>
+							</Anchors>
+						</Texture>
+					</Layer>
+					<Layer level="ARTWORK" textureSubLevel="1">
+						<FontString name="$parentTitleText" inherits="PetBuddyFontNormal" justifyH="LEFT" justifyV="CENTER" parentKey="titleText" text="|cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r">
+							<Size x="136" y="20"/>
+							<Anchors>
+								<Anchor point="LEFT" relativeTo="$parent" x="28" y="0"/>
 							</Anchors>
 						</FontString>
 					</Layer>
@@ -48,66 +56,83 @@
 					</OnMouseUp>
 				</Scripts>
 				<Frames>
-					<Button parentKey="closeButton" inherits="SecureHandlerClickTemplate" frameLevel="8">
-						<Size x="32" y="32"/>
+					<Button parentKey="closeButton" frameLevel="9">
+						<Size x="14" y="14"/>
 						<Anchors>
-							<Anchor point="TOPRIGHT" x="3" y="2"/>
+							<Anchor point="RIGHT" relativeTo="$parent" x="-6" y="0"/>
 						</Anchors>
+						<Layers>
+							<Layer level="OVERLAY">
+								<FontString parentKey="label" inherits="PetBuddyFontNormal" justifyH="CENTER" justifyV="MIDDLE" text="x">
+									<Anchors>
+										<Anchor point="CENTER" x="0" y="0"/>
+									</Anchors>
+									<Color r="0.96" g="0.87" b="1.0"/>
+								</FontString>
+							</Layer>
+						</Layers>
 						<Scripts>
 							<OnLoad>
-								self:SetAttribute("_onclick", [=[
-									local frame = self:GetFrameRef("PetBuddyFrame");
-									frame:Hide();
-								]=]);
-								SecureHandlerSetFrameRef(self, "PetBuddyFrame", self:GetParent():GetParent());
-							</OnLoad>
-						</Scripts>
-						<NormalTexture file="Interface\Buttons\UI-Panel-CloseButton-Up"/>
-						<PushedTexture file="Interface\Buttons\UI-Panel-CloseButton-Down"/>
-						<HighlightTexture file="Interface\Buttons\UI-Panel-CloseButton-Highlight" alphaMode="ADD"/>
-					</Button>
-					<Button parentKey="minimizeButton" frameLevel="9">
-						<Size x="32" y="32"/>
-						<Anchors>
-							<Anchor point="TOPRIGHT" relativeKey="$parent.closeButton" relativePoint="TOPLEFT" x="-6" y="0"/>
-						</Anchors>
-						<Scripts>
-							<OnLoad>
-								self:SetFrameStrata("HIGH");
-								self:SetFrameLevel(self:GetParent():GetFrameLevel() + 8);
+								PetBuddyHeaderButton_OnLoad(self, "close");
 							</OnLoad>
 							<OnClick>
-								PetBuddyFrameMinimizeButton_OnClick(self);
+								PetBuddyHeaderButton_OnClick(self, button);
 							</OnClick>
 							<OnEnter>
-								PetBuddyFrameMinimizeButton_OnEnter(self);
+								PetBuddyHeaderButton_OnEnter(self);
 							</OnEnter>
 							<OnLeave>
-								PetBuddyFrameMinimizeButton_OnLeave(self);
+								PetBuddyHeaderButton_OnLeave(self);
 							</OnLeave>
 						</Scripts>
-						<NormalTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Up"/>
-						<PushedTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Down"/>
-						<HighlightTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Highlight" alphaMode="ADD"/>
+					</Button>
+					<Button parentKey="minimizeButton" frameLevel="9">
+						<Size x="14" y="14"/>
+						<Anchors>
+							<Anchor point="RIGHT" relativeKey="$parent.closeButton" relativePoint="LEFT" x="-3" y="0"/>
+						</Anchors>
+						<Layers>
+							<Layer level="OVERLAY">
+								<FontString parentKey="label" inherits="PetBuddyFontNormal" justifyH="CENTER" justifyV="MIDDLE" text="-">
+									<Anchors>
+										<Anchor point="CENTER" x="0" y="0"/>
+									</Anchors>
+									<Color r="0.95" g="0.90" b="1.0"/>
+								</FontString>
+							</Layer>
+						</Layers>
+						<Scripts>
+							<OnLoad>
+								PetBuddyHeaderButton_OnLoad(self, "minimize");
+							</OnLoad>
+							<OnClick>
+								PetBuddyHeaderButton_OnClick(self, button);
+							</OnClick>
+							<OnEnter>
+								PetBuddyHeaderButton_OnEnter(self);
+							</OnEnter>
+							<OnLeave>
+								PetBuddyHeaderButton_OnLeave(self);
+							</OnLeave>
+						</Scripts>
 					</Button>
 					<PlayerModel name="$parentPepeFrame" parentKey="pepeFrame">
 						<Size x="50" y="50"/>
-						<Anchors>
-							<Anchor point="BOTTOM" relativePoint="TOP" relativeKey="$parent.minimizeButton" x="1" y="-21"/>
-						</Anchors>
 						<Scripts>
 							<OnLoad>
 								self:EnableMouse(false);
+								self:SetFrameStrata("DIALOG");
+								self:SetFrameLevel(self:GetParent():GetFrameLevel() + 12);
 								self:SetCreature(86470);
-							 	self:SetPosition(-0.5, 0, 0);
-							 	self:SetRotation(-0.35);
+								self:SetPosition(-0.15, 0, 0);
+								self:SetRotation(-0.2);
 							</OnLoad>
 						</Scripts>
 					</PlayerModel>
 					<Frame name="$parentPetCharms" mixin="PetBuddy_PetCharmsMixin">
 						<Size x="46" y="20"/>
 						<Anchors>
-							<Anchor point="RIGHT" relativeKey="$parent.minimizeButton" relativePoint="LEFT" x="0" y="0"/>
+							<Anchor point="RIGHT" relativeKey="$parent.minimizeButton" relativePoint="LEFT" x="-4" y="0"/>
 						</Anchors>
 						<Layers>
 							<Layer level="ARTWORK">
@@ -121,7 +146,7 @@
 								<FontString name="$parentText" inherits="PetBuddyFontNormal" justifyH="RIGHT" justifyV="CENTER" parentKey="text">
 									<Size x="46" y="20"/>
 									<Anchors>
-										<Anchor point="RIGHT" x="-16" y="-1"/>
+										<Anchor point="RIGHT" x="-16" y="0"/>
 									</Anchors>
 								</FontString>
 							</Layer>
@@ -152,7 +177,72 @@
 					<Anchor point="TOP" relativeTo="$parentPet2" relativePoint="BOTTOM" x="0" y="-3"/>
 				</Anchors>
 			</Button>
-			
+			<Frame name="$parentZoneTracker" parentKey="zoneTracker" mixin="PetBuddy_ZoneTrackerMixin" hidden="true" enableMouse="true">
+				<Size x="208" y="30"/>
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString name="$parentLabel" parentKey="label" inherits="PetBuddyFontSmall" justifyH="LEFT" justifyV="CENTER" text="Zone Pets">
+							<Size x="128" y="12"/>
+							<Anchors>
+								<Anchor point="TOPLEFT" x="8" y="-5"/>
+							</Anchors>
+							<Color r="0.94" g="0.90" b="1.0"/>
+						</FontString>
+						<FontString name="$parentValue" parentKey="value" inherits="PetBuddyFontSmall" justifyH="RIGHT" justifyV="CENTER">
+							<Size x="52" y="12"/>
+							<Anchors>
+								<Anchor point="TOPRIGHT" x="-8" y="-5"/>
+							</Anchors>
+							<Color r="0.94" g="0.90" b="1.0"/>
+						</FontString>
+						<FontString name="$parentHint" parentKey="hint" inherits="PetBuddyFontSmall" justifyH="LEFT" justifyV="CENTER" hidden="true">
+							<Size x="182" y="12"/>
+							<Anchors>
+								<Anchor point="BOTTOMLEFT" x="8" y="4"/>
+							</Anchors>
+							<Color r="0.84" g="0.84" b="0.90"/>
+						</FontString>
+						<FontString name="$parentPetsText" parentKey="petsText" inherits="PetBuddyFontSmall" justifyH="LEFT" justifyV="CENTER" hidden="true">
+							<Size x="182" y="12"/>
+							<Anchors>
+								<Anchor point="BOTTOMLEFT" x="8" y="4"/>
+							</Anchors>
+							<Color r="0.90" g="0.90" b="0.96"/>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Frames>
+					<StatusBar name="$parentBar" parentKey="bar">
+						<Size x="192" y="9"/>
+						<Anchors>
+							<Anchor point="TOPLEFT" relativeKey="$parent.label" relativePoint="BOTTOMLEFT" x="0" y="-2"/>
+							<Anchor point="TOPRIGHT" relativeKey="$parent.value" relativePoint="BOTTOMRIGHT" x="0" y="-2"/>
+						</Anchors>
+						<BarTexture file="Interface\TargetingFrame\UI-StatusBar" parentKey="texture"/>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture parentKey="bg" setAllPoints="true">
+									<Color r="0.12" g="0.12" b="0.18" a="0.9"/>
+								</Texture>
+							</Layer>
+							<Layer level="OVERLAY">
+								<FontString name="$parentText" parentKey="text" inherits="PetBuddyFontSmall" justifyH="CENTER" justifyV="CENTER">
+									<Anchors>
+										<Anchor point="CENTER"/>
+									</Anchors>
+									<Color r="1.0" g="1.0" b="1.0"/>
+								</FontString>
+							</Layer>
+						</Layers>
+					</StatusBar>
+				</Frames>
+				<Scripts>
+					<OnEnter method="OnEnter"/>
+					<OnLeave method="OnLeave"/>
+					<OnMouseUp method="OnMouseUp"/>
+				</Scripts>
+			</Frame>
+
 			<Frame name="$parentSpellSelect" frameStrata="DIALOG" parentKey="spellSelect" hidden="true">
 				<Size x="28" y="69"/>	
 				<Layers>

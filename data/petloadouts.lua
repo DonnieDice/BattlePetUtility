@@ -12,6 +12,15 @@ local PETBUDDY_LOADOUT_TEXT = "Enter a name for current pet loadout:|n|n%s";
 local CURRENT_LOADOUT_NAME = nil;
 local unpackFunc = unpack or table.unpack;
 
+local function GetSafeRarityColor(rarity)
+	local normalized = tonumber(rarity) or 1;
+	if(normalized < 1) then
+		normalized = 1;
+	end
+
+	return ITEM_QUALITY_COLORS[normalized - 1] or ITEM_QUALITY_COLORS[1] or NORMAL_FONT_COLOR;
+end
+
 local function TrimInput(text)
 	text = tostring(text or "");
 
@@ -47,6 +56,40 @@ local function GetPopupEditBox(frame)
 	end
 
 	return nil;
+end
+
+local function EnsureSavedLoadoutsTable()
+	if(not addon.db or not addon.db.global) then
+		return nil;
+	end
+
+	if(type(addon.db.global.SavedLoadouts) ~= "table") then
+		addon.db.global.SavedLoadouts = {};
+	end
+
+	return addon.db.global.SavedLoadouts;
+end
+
+local function RefreshLoadoutUI(keepListOpen)
+	if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
+		PetBuddyFrameLoadouts_UpdateList();
+	end
+
+	if(type(addon.UpdateUtilityMenuState) == "function") then
+		addon:UpdateUtilityMenuState();
+	end
+
+	if(type(addon.UpdatePets) == "function") then
+		addon:UpdatePets();
+	end
+
+	if(type(addon.RefreshZoneTracker) == "function") then
+		addon:RefreshZoneTracker();
+	end
+
+	if(not keepListOpen and type(PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
+		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
+	end
 end
 
 StaticPopupDialogs["PETBUDDY_LOADOUT_ERROR_LOCKED"] = {
@@ -383,8 +426,11 @@ function addon:SaveLoadout(loadout_name)
 	if(not loadout_name) then return false end
 	loadout_name = TrimInput(loadout_name);
 	if(loadout_name == "") then return false end
+
+	local savedLoadouts = EnsureSavedLoadoutsTable();
+	if(not savedLoadouts) then return false end
 	
-	if(self.db.global.SavedLoadouts[loadout_name]) then
+	if(savedLoadouts[loadout_name]) then
 		StaticPopup_Show("PETBUDDY_LOADOUT_SAVE_EXISTS", loadout_name, nil, {
 			newSave = true,
 			name = loadout_name,
@@ -407,10 +453,10 @@ function addon:SaveLoadout(loadout_name)
 		});
 	end
 	
-	self.db.global.SavedLoadouts[loadout_name] = currentLoadout;
-	
-	PetBuddyFrameLoadouts_UpdateList();
+	savedLoadouts[loadout_name] = currentLoadout;
+	RefreshLoadoutUI(true);
 	CloseMenus();
+	return true;
 end
 
 function addon:RestoreLoadout(loadout_info)
@@ -457,9 +503,9 @@ function addon:RestoreLoadout(loadout_info)
 	
 	addon:RefreshPetJournalLoadOut();
 	PetBuddyPetFrame_ResetAbilitySwitches();
-	
-	PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
+	RefreshLoadoutUI(false);
 	CloseMenus();
+	return true;
 end
 
 function addon:RenameLoadout(old_loadout_name, new_loadout_name)
@@ -468,9 +514,11 @@ function addon:RenameLoadout(old_loadout_name, new_loadout_name)
 	new_loadout_name = TrimInput(new_loadout_name);
 	if(new_loadout_name == "") then return false end
 	if(old_loadout_name == "" or old_loadout_name == new_loadout_name) then return false end
-	if(not self.db.global.SavedLoadouts[old_loadout_name]) then return false end
+
+	local savedLoadouts = EnsureSavedLoadoutsTable();
+	if(not savedLoadouts or not savedLoadouts[old_loadout_name]) then return false end
 	
-	if(self.db.global.SavedLoadouts[new_loadout_name]) then
+	if(savedLoadouts[new_loadout_name]) then
 		StaticPopup_Show("PETBUDDY_LOADOUT_SAVE_EXISTS", new_loadout_name, nil, {
 			newSave = false,
 			name = new_loadout_name,
@@ -479,29 +527,35 @@ function addon:RenameLoadout(old_loadout_name, new_loadout_name)
 		return false;
 	end
 	
-	self.db.global.SavedLoadouts[new_loadout_name] = self.db.global.SavedLoadouts[old_loadout_name];
-	self.db.global.SavedLoadouts[old_loadout_name] = nil;
+	savedLoadouts[new_loadout_name] = savedLoadouts[old_loadout_name];
+	savedLoadouts[old_loadout_name] = nil;
 	
-	PetBuddyFrameLoadouts_UpdateList();
+	RefreshLoadoutUI(true);
 	CloseMenus();
+	return true;
 end
 
 function addon:DeleteLoadout(loadout_name)
 	if(not loadout_name) then return false end
 	loadout_name = TrimInput(loadout_name);
 	if(loadout_name == "") then return false end
+
+	local savedLoadouts = EnsureSavedLoadoutsTable();
+	if(not savedLoadouts) then return false end
 	
-	if(self.db.global.SavedLoadouts[loadout_name]) then
-		self.db.global.SavedLoadouts[loadout_name] = nil;
+	if(savedLoadouts[loadout_name]) then
+		savedLoadouts[loadout_name] = nil;
 	end
 	
-	PetBuddyFrameLoadouts_UpdateList();
+	RefreshLoadoutUI(true);
 	CloseMenus();
+	return true;
 end
 
 function addon:GetSortedLoadouts()
 	local loadoutData = {};
-	for loadout_name, pets in pairs(addon.db.global.SavedLoadouts) do
+	local savedLoadouts = EnsureSavedLoadoutsTable() or {};
+	for loadout_name, pets in pairs(savedLoadouts) do
 		tinsert(loadoutData, {
 			name = loadout_name,
 			pets = pets,
@@ -563,7 +617,7 @@ function PetBuddyFrameLoadouts_UpdateList()
 					
 					if(speciesID) then
 						local health, maxHealth, _, _, rarity = C_PetJournal.GetPetStats(petID);
-						local rarityColor = ITEM_QUALITY_COLORS[(rarity or 1)-1] or ITEM_QUALITY_COLORS[1];
+						local rarityColor = GetSafeRarityColor(rarity);
 						
 						petIcon.level:SetText(level);
 						
@@ -631,7 +685,7 @@ function PetBuddyLoadoutsButton_OnClick(self, button)
 	
 	if(button == "LeftButton") then
 		if(self.data.isRematch or not self.hasMissingPet) then
-			StaticPopup_Show("PETBUDDY_LOADOUT_RESTORE", self.data.name, nil, self.data)
+			addon:RestoreLoadout(self.data);
 		else
 			StaticPopup_Show("PETBUDDY_LOADOUT_DELETE", self.data.name, nil, self.data.name)
 		end
@@ -722,9 +776,9 @@ function PetBuddyLoadoutsSaveButton_OnLoad(self)
 		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\SaveButtonIcon",
 		-- count = "S",
 		tooltipTitle = "Save Loadout",
-		tooltipDescription = "Save current pets and abilities to PetBuddy loadouts (Shift-Click: open Rematch Save Team when available)",
+		tooltipDescription = "Save current pets and abilities to PetBuddy loadouts, or open Rematch Save Team when Rematch is available",
 		func = function(self)
-			if(IsShiftKeyDown() and addon:IsRematchLoadoutsEnabled()) then
+			if(addon:IsRematchLoadoutsEnabled()) then
 				if(addon:OpenRematchSaveTeamDialog()) then
 					return;
 				end
@@ -752,7 +806,8 @@ end
 
 function PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
 	local minimized = addon and addon:IsFrameMinimized();
-	if(minimized) then
+	local hideMain = addon and addon.db and addon.db.global.HideMainGUI == true;
+	if(minimized or hideMain) then
 		showstate = false;
 	end
 
@@ -760,9 +815,9 @@ function PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
 
 	local button = PetBuddyFrameLoadouts.toggleButton;
 	if(button) then
-		button:SetEnabled(not minimized);
+		button:SetEnabled(not minimized and not hideMain);
 		if(button.icon) then
-			button.icon:SetDesaturated(minimized);
+			button.icon:SetDesaturated(minimized or hideMain);
 		end
 	end
 
@@ -797,7 +852,7 @@ function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
 		{
 			text = data.isRematch and "Load (Rematch)" or "Restore",
 			func = function()
-				StaticPopup_Show("PETBUDDY_LOADOUT_RESTORE", data.name, nil, data);
+				addon:RestoreLoadout(data);
 			end,
 			notCheckable = true,
 		},
@@ -842,13 +897,8 @@ function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
 	if(relativeFrame.hasMissingPet) then
 		contextMenuData[2].disabled = true;
 	end
-	
-	PetBuddyFrameLoadouts.ContextMenu:ClearAllPoints();
-	PetBuddyFrameLoadouts.ContextMenu:SetPoint("TOPLEFT", relativeFrame, "CENTER", 0, 5);
-	if(type(addon.OpenDropDownMenu) == "function") then
-		addon:OpenDropDownMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
-	elseif(type(EasyMenu) == "function") then
-		EasyMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
-	end
-end
 
+	PetBuddyFrameLoadouts.ContextMenu:ClearAllPoints();
+	PetBuddyFrameLoadouts.ContextMenu:SetPoint("BOTTOMLEFT", relativeFrame, "TOPLEFT", 0, 0);
+	addon:OpenDropDownMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
+end

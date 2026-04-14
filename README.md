@@ -39,7 +39,7 @@
 <!-- WoW Compatibility -->
 [![WoW Retail](https://img.shields.io/badge/WoW-Retail%20Midnight-58be81?style=flat-square&logo=worldofwarcraft)](https://worldofwarcraft.com)
 [![Interface](https://img.shields.io/badge/Interface-120000%2C120001-4ecdc4?style=flat-square)](https://github.com/donniedice/PetBuddy2)
-[![Version](https://img.shields.io/badge/Version-v1.2.0-7598b6?style=flat-square)](https://github.com/donniedice/PetBuddy2/releases)
+[![Version](https://img.shields.io/badge/Version-v2.0.0-7598b6?style=flat-square)](https://github.com/donniedice/PetBuddy2/releases)
 
 [Features](#features) • [Quick Start](#quick-start) • [Commands](#command-reference) • [Compatibility](#compatibility) • [Installation](#installation) • [Support](#support)
 
@@ -98,7 +98,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 
 ### <span style="color:#58be81">🔥 Why Choose PetBuddy2?</span>
 - **<span style="color:#2dc26b">🎮 No Dependencies:</span>** <span style="color:#e67e23">Works out of the box with zero external library requirements</span>
-- **<span style="color:#58be81">🌟 Native Loadouts:</span>** <span style="color:#e67e23">Full loadout management without needing Rematch</span>
+- **<span style="color:#58be81">🌟 Flexible Loadouts:</span>** <span style="color:#e67e23">PB2 native loadouts are built in, while Rematch becomes the default team flow when it is available</span>
 - **<span style="color:#b96ad9">🛠️ One Frame:</span>** <span style="color:#e67e23">Team HUD, utility buttons, and loadouts all in one place</span>
 - **<span style="color:#4ecdc4">🎯 Optional Integrations:</span>** <span style="color:#e67e23">Enhanced when Rematch or BattlePetBreedID is present</span>
 
@@ -114,8 +114,9 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 | 🔀 **Drag and Drop** | Move pets between battle slots quickly |
 | ⚔️ **Ability Controls** | Swap active pet abilities directly from the frame |
 | 🧰 **Utility Quick Buttons** | Heal, bandage, currencies, stones, rewards, and pet consumables |
-| 💾 **Native Loadouts** | Save, rename, overwrite, restore, and delete loadouts without Rematch |
-| 🤝 **Optional Rematch Helper** | Shift-click Save to open Rematch save flow when installed |
+| 💾 **Native Loadouts** | PB2 includes account-wide native loadouts with save, rename, overwrite, restore, and delete support |
+| 🤝 **Rematch Integration** | When Rematch is installed, save/load team flow defaults to Rematch-managed teams |
+| 🗺️ **Zone Pet Tracker** | Shows zone completion, missing pets, and collected pets directly under the HUD |
 | 🏥 **Auto Heal** | Stable-master automation support |
 | 🔄 **Auto Resummon** | Companion resummon with trigger handling for common state transitions |
 | 💎 **Charms Display** | Aggregates pet charm item and currency counts |
@@ -194,14 +195,12 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 <details>
 <summary><strong><span style="color:#58be81">🎉 Click to see the latest updates!</span></strong></summary>
 
-### <span style="color:#4ecdc4">v1.2.0 - HUD & Loadout Overhaul</span>
-- <span style="color:#2dc26b">✅ **Team HUD**</span> <span style="color:#e67e23">with health and XP bars per slot</span>
-- <span style="color:#58be81">✅ **Native Loadout System**</span> <span style="color:#e67e23">- save, rename, overwrite, restore, and delete without Rematch</span>
-- <span style="color:#ff6b6b">✅ **Auto Heal**</span> <span style="color:#e67e23">stable-master automation support</span>
-- <span style="color:#b96ad9">✅ **Auto Resummon**</span> <span style="color:#e67e23">with common state transition handling</span>
-- <span style="color:#4ecdc4">✅ **Charms Display**</span> <span style="color:#e67e23">aggregating pet charm items and currencies</span>
-- <span style="color:#2dc26b">✅ **Drag and Drop**</span> <span style="color:#e67e23">pet slot management</span>
-- <span style="color:#58be81">✅ **Ability Controls**</span> <span style="color:#e67e23">swap pet abilities directly from the frame</span>
+### <span style="color:#4ecdc4">v2.0.0 - Live Release</span>
+- <span style="color:#2dc26b">✅ **Zone Pet Tracker**</span> <span style="color:#e67e23">with native PB2 zone data, completion progress, and missing-pet visibility</span>
+- <span style="color:#58be81">✅ **Account-wide Native Loadouts**</span> <span style="color:#e67e23">with reliable realtime refresh across characters</span>
+- <span style="color:#ff6b6b">✅ **Header & Layout Polish**</span> <span style="color:#e67e23">including refreshed controls, title art, charms row, and cuteness placement</span>
+- <span style="color:#b96ad9">✅ **Media & Options Cleanup**</span> <span style="color:#e67e23">with restored font and statusbar options plus cleaner dropdown behavior</span>
+- <span style="color:#4ecdc4">✅ **Startup / Combat Fixes**</span> <span style="color:#e67e23">for team display, loadout visibility, and combat-driven behavior</span>
 
 </details>
 
@@ -218,7 +217,7 @@ _<span style="color:#e67e23">See</span> [<span style="color:#58be81">docs/CHANGE
 ### <span style="color:#4ecdc4">Recommended Setup:</span>
 - **<span style="color:#2dc26b">First Launch:</span>** <span style="color:#e67e23">Right-click the frame and enable only the sections you need</span>
 - **<span style="color:#b96ad9">Loadouts:</span>** <span style="color:#e67e23">Save a loadout before entering pet battles so you can restore quickly</span>
-- **<span style="color:#58be81">Rematch Users:</span>** <span style="color:#e67e23">Shift-click Save to use the Rematch save flow</span>
+- **<span style="color:#58be81">Rematch Users:</span>** <span style="color:#e67e23">PB2 uses the Rematch save/load team flow by default when Rematch is installed</span>
 - **<span style="color:#ff6b6b">Minimize:</span>** <span style="color:#e67e23">Use the minimize toggle to keep the frame out of the way when not battling</span>
 
 </td>
@@ -227,7 +226,7 @@ _<span style="color:#e67e23">See</span> [<span style="color:#58be81">docs/CHANGE
 ### <span style="color:#4ecdc4">Performance:</span>
 - **<span style="color:#2dc26b">No Libraries:</span>** <span style="color:#e67e23">PetBuddy2 has zero external library dependencies</span>
 - **<span style="color:#b96ad9">Scale:</span>** <span style="color:#e67e23">Adjust the UI scale from options if the frame feels too large or small</span>
-- **<span style="color:#58be81">Optional Addons:</span>** <span style="color:#e67e23">Install Rematch or BattlePetBreedID for enhanced functionality</span>
+- **<span style="color:#58be81">Optional Addons:</span>** <span style="color:#e67e23">Install Rematch or BattlePetBreedID for enhanced functionality; PB2 zone tracking works on its own</span>
 
 </td>
 </tr>

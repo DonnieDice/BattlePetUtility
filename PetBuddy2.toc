@@ -1,11 +1,11 @@
 ## Interface: 120000,120001
-## Title: |cff8B1538R|r|cff8B1538G|r|cff8B1538X|r |cff3598db||r |cff2dc26bP|r|cffffffffet|r |cff2dc26bB|r|cffffffffuddy|r|cff2dc26b2|r
-## Notes: |cff8B1538R|r|cff8B1538G|r|cff8B1538X|r |cff3598db||r |cff2dc26bP|r|cffffffffet|r |cff2dc26bB|r|cffffffffuddy|r|cff2dc26b2|r - Battle pet HUD, utility items, and loadouts for Midnight.|nType |cffb07fff/petbuddy|r for options.|n|cff8B1538By DonnieDice|r
-## Version: v1.2.1
+## Title: |cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r
+## Notes: |n|r  |cffb07fff/petbuddy -|r Open options panel  |n|r   |cffb512fcBy DonnieDice|r
+## Version: v2.0.0
 ## Author: DonnieDice
 ## Email: donniedice@protonmail.com
 ## SavedVariables: PetBuddyDB
-## IconTexture: Interface\Icons\INV_PandarenSerpentPet
+## IconTexture: Interface\AddOns\PetBuddy2\Media\logo
 ## DefaultState: Enabled
 ## OptionalDeps: BattlePetBreedID, Rematch
 
@@ -15,6 +15,8 @@
 data/compat.lua
 
 data/core.lua
+data/zonespecies.lua
+data/zonetracking.lua
 data/options.lua
 data/databroker.lua
 data/itembuttons.lua
