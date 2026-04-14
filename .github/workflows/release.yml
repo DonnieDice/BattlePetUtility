@@ -79,7 +79,18 @@ jobs:
         id: extract_changelog
         run: |
           if [ -f "docs/CHANGES.md" ]; then
-            CHANGELOG=$(cat docs/CHANGES.md | head -50 | jq -Rs '.')
+            CHANGELOG=$(awk '
+              /^## / {
+                if (in_section) {
+                  exit
+                }
+                in_section=1
+                next
+              }
+              in_section {
+                print
+              }
+            ' docs/CHANGES.md | sed '/./,$!d' | jq -Rs '.')
             CHANGELOG=${CHANGELOG:1:-1}
             echo "changelog<<EOF" >> $GITHUB_OUTPUT
             echo "$CHANGELOG" >> $GITHUB_OUTPUT
