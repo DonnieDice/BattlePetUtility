@@ -2,6 +2,9 @@ package-as: PetBuddy2
 
 enable-nolib-creation: no
 
+curseforge:
+  project-id: 1476629
+
 ignore:
   - .github
   - .gitignore
@@ -11,5 +14,4 @@ ignore:
 manual-changelog:
   filename: docs/CHANGES.md
   markup-type: markdown
-
 
