@@ -7,7 +7,7 @@
 ## SavedVariables: PetBuddyDB
 ## IconTexture: Interface\AddOns\PetBuddy2\media\logo
 ## DefaultState: Enabled
-## OptionalDeps: BattlePetBreedID, Rematch
+## OptionalDeps: BattlePetBreedID, Rematch, PetTracker
 
 ## X-Category: UI Media, Pets & Companions, Miscellaneous
 ## X-Curse-Project-ID: 1476629

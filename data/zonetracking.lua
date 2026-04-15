@@ -8,6 +8,16 @@ local TOOLTIP_ICON_SIZE = 12;
 
 PetBuddy_ZoneTrackerMixin = {};
 
+local function IsPetTrackerLoaded()
+	return rawget(_G, "PetTracker") ~= nil;
+end
+
+local qualityMapCache = nil;
+local function InvalidateQualityMap()
+	qualityMapCache = nil;
+end
+addon.InvalidateZoneQualityCache = InvalidateQualityMap;
+
 local function GetMapName(mapID)
 	if(not mapID or mapID == 0 or not C_Map or type(C_Map.GetMapInfo) ~= "function") then
 		return nil;
@@ -119,6 +129,16 @@ local function GetSpeciesIcon(speciesID)
 end
 
 local function BuildSpeciesQualityMap()
+	-- PetTracker path: we never use the native quality map, so skip the whole scan
+	-- (and critically, avoid mutating C_PetJournal filters which would thrash PetTracker).
+	if(IsPetTrackerLoaded()) then
+		return {};
+	end
+
+	if(qualityMapCache) then
+		return qualityMapCache;
+	end
+
 	local qualityBySpecies = {};
 	if(not C_PetJournal or type(C_PetJournal.GetNumPets) ~= "function" or type(C_PetJournal.GetPetInfoByIndex) ~= "function") then
 		return qualityBySpecies;
@@ -147,6 +167,7 @@ local function BuildSpeciesQualityMap()
 		addon:RestoreJournalFiltering();
 	end
 
+	qualityMapCache = qualityBySpecies;
 	return qualityBySpecies;
 end
 

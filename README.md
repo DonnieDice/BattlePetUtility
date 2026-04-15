@@ -100,7 +100,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 - **<span style="color:#2dc26b">🎮 No Dependencies:</span>** <span style="color:#e67e23">Works out of the box with zero external library requirements</span>
 - **<span style="color:#58be81">🌟 Flexible Loadouts:</span>** <span style="color:#e67e23">PB2 native loadouts are built in, while Rematch becomes the default team flow when it is available</span>
 - **<span style="color:#b96ad9">🛠️ One Frame:</span>** <span style="color:#e67e23">Team HUD, utility buttons, and loadouts all in one place</span>
-- **<span style="color:#4ecdc4">🎯 Optional Integrations:</span>** <span style="color:#e67e23">Enhanced when Rematch or BattlePetBreedID is present</span>
+- **<span style="color:#4ecdc4">🎯 Optional Integrations:</span>** <span style="color:#e67e23">Enhanced when Rematch, PetTracker, or BattlePetBreedID is present — PetTracker's zone data is preferred by the Zone Pet Tracker when it is installed, and PB2 avoids mutating the pet journal filters so the two addons never fight</span>
 
 ---
 
@@ -116,6 +116,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 | 🧰 **Utility Quick Buttons** | Heal, bandage, currencies, stones, rewards, and pet consumables |
 | 💾 **Native Loadouts** | PB2 includes account-wide native loadouts with save, rename, overwrite, restore, and delete support |
 | 🤝 **Rematch Integration** | When Rematch is installed, save/load team flow defaults to Rematch-managed teams |
+| 🧭 **PetTracker Compat** | When PetTracker is installed, PB2 defers to its live zone data and never touches pet journal filters |
 | 🗺️ **Zone Pet Tracker** | Shows zone completion, missing pets, and collected pets directly under the HUD |
 | 🏥 **Auto Heal** | Stable-master automation support |
 | 🔄 **Auto Resummon** | Companion resummon with trigger handling for common state transitions |
@@ -167,7 +168,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 | Setting | Value |
 |---------|-------|
 | **Required Libraries** | None |
-| **Optional Addons** | `Rematch`, `BattlePetBreedID`, `LibDataBroker-1.1` |
+| **Optional Addons** | `Rematch`, `PetTracker`, `BattlePetBreedID`, `LibDataBroker-1.1` |
 
 </div>
 
@@ -231,7 +232,7 @@ _<span style="color:#e67e23">See</span> [<span style="color:#58be81">docs/CHANGE
 ### <span style="color:#4ecdc4">Performance:</span>
 - **<span style="color:#2dc26b">No Libraries:</span>** <span style="color:#e67e23">PetBuddy2 has zero external library dependencies</span>
 - **<span style="color:#b96ad9">Scale:</span>** <span style="color:#e67e23">Adjust the UI scale from options if the frame feels too large or small</span>
-- **<span style="color:#58be81">Optional Addons:</span>** <span style="color:#e67e23">Install Rematch or BattlePetBreedID for enhanced functionality; PB2 zone tracking works on its own</span>
+- **<span style="color:#58be81">Optional Addons:</span>** <span style="color:#e67e23">Install Rematch, PetTracker, or BattlePetBreedID for enhanced functionality; PB2 zone tracking works on its own and defers to PetTracker's live data when it is installed — no filter thrashing, no overlap</span>
 
 </td>
 </tr>

@@ -1192,6 +1192,9 @@ function addon:UPDATE_SUMMONPETS_ACTION()
 end
 
 function addon:PET_JOURNAL_LIST_UPDATE()
+	if(type(addon.InvalidateZoneQualityCache) == "function") then
+		addon:InvalidateZoneQualityCache();
+	end
 	addon:UpdatePets();
 	addon:UpdateAutoResummon();
 end
