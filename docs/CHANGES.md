@@ -1,5 +1,17 @@
 # Changes
 
+## v2.1.1
+
+- Added missing `avatar_url` (pet logo) to all Discord release, beta, alpha, and failure notification embeds
+
+## v2.1.0
+
+- Added a standalone PetBuddy2 minimap icon using the `logo.tga` asset. Left click toggles the PetBuddy2 frame, right click opens the options menu, and the icon can be dragged around the minimap edge. Saved position persists across sessions.
+- Added a "Show minimap icon" toggle to the options menu so the icon can be enabled or disabled without relying on external minimap-button managers.
+- Implemented non-interfering PetTracker integration: when PetTracker is installed, PB2 defers to its live zone data and skips the native journal quality scan entirely, so it never mutates `C_PetJournal` filters or fires spurious `PET_JOURNAL_LIST_UPDATE` events that would thrash PetTracker's own listeners.
+- Cached the native zone quality map and invalidated it on `PET_JOURNAL_LIST_UPDATE` so PetTracker-less users rebuild at most once per collection change instead of once per zone refresh.
+- Added PetTracker to `OptionalDeps` for deterministic load order when both addons are present.
+
 ## v2.0.1
 
 - Normalized non-documentation asset and UI file paths to lower case, including the `media/` directory and XML layout filenames, while intentionally leaving documentation files and the addon manifest naming alone.

@@ -187,6 +187,11 @@ function addon:InitializeDatabase()
 			ShowPetCharms = true,
 			ShowZoneTracker = true,
 			ShowZoneTrackerPetList = true,
+
+			MinimapIcon = {
+				enabled = true,
+				angle = 215,
+			},
 			
 			PetStatsText = {
 				Enabled = true,
@@ -861,6 +866,21 @@ function addon:GetPrimaryMenuData()
 					keepShownOnClick = true,
 				},
 			},
+		},
+		{
+			text = "Show minimap icon",
+			func = function()
+				self.db.global.MinimapIcon = self.db.global.MinimapIcon or {};
+				self.db.global.MinimapIcon.enabled = not self.db.global.MinimapIcon.enabled;
+				if(type(addon.UpdateMinimapIconVisibility) == "function") then
+					addon:UpdateMinimapIconVisibility();
+				end
+			end,
+			checked = function()
+				return self.db.global.MinimapIcon and self.db.global.MinimapIcon.enabled;
+			end,
+			isNotRadio = true,
+			keepShownOnClick = true,
 		},
 		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,

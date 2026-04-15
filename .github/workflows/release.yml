@@ -134,6 +134,7 @@ jobs:
 
             const payload = {
               "username": "PetBuddy2 Update",
+              "avatar_url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png",
               "embeds": [{
                 "title": `🐾 PetBuddy2 - ${process.env.VERSION}`,
                 "description": `**Battle pet HUD + utility panel**\nA fresh PetBuddy2 build is now live!\n\n**Highlights:**\n${changelog}`,
@@ -196,6 +197,7 @@ jobs:
 
             const payload = {
               "username": "PetBuddy2 Beta",
+              "avatar_url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png",
               "embeds": [{
                 "title": `🧪 PetBuddy2 Beta - ${process.env.VERSION}`,
                 "description": `A beta build of PetBuddy2 is ready for testing.\n\n**What's New:**\n${changelog}`,
@@ -246,6 +248,7 @@ jobs:
 
             const payload = {
               "username": "PetBuddy2 Alpha",
+              "avatar_url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png",
               "embeds": [{
                 "title": `🔬 PetBuddy2 Alpha - ${process.env.VERSION}`,
                 "description": `Development snapshot for internal testing.\n\n**What's New:**\n${changelog}`,
@@ -285,6 +288,7 @@ jobs:
 
             const payload = {
               "username": "PetBuddy2 Build Failed",
+              "avatar_url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png",
               "embeds": [{
                 "title": "❌ PetBuddy2 Build Failed",
                 "description": "The release workflow encountered an error",

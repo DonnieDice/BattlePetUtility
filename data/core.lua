@@ -1892,6 +1892,9 @@ function addon:OnInitialize()
 	
 	addon:InitializeDatabase();
 	addon:InitializeDatabroker();
+	if(type(addon.InitializeMinimapIcon) == "function") then
+		addon:InitializeMinimapIcon();
+	end
 	addon:RegisterEvent("ZONE_CHANGED_NEW_AREA");
 	addon:RegisterEvent("ZONE_CHANGED");
 	addon:RegisterEvent("ZONE_CHANGED_INDOORS");
