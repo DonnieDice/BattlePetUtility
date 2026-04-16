@@ -39,7 +39,7 @@
 <!-- WoW Compatibility -->
 [![WoW Retail](https://img.shields.io/badge/WoW-Retail%20Midnight-58be81?style=flat-square&logo=worldofwarcraft)](https://worldofwarcraft.com)
 [![Interface](https://img.shields.io/badge/Interface-120000%2C120001-4ecdc4?style=flat-square)](https://github.com/donniedice/PetBuddy2)
-[![Version](https://img.shields.io/badge/Version-v2.1.0-7598b6?style=flat-square)](https://github.com/donniedice/PetBuddy2/releases)
+[![Version](https://img.shields.io/badge/Version-v2.1.1-7598b6?style=flat-square)](https://github.com/donniedice/PetBuddy2/releases)
 
 [Features](#features) • [Quick Start](#quick-start) • [Commands](#command-reference) • [Compatibility](#compatibility) • [Installation](#installation) • [Support](#support)
 
@@ -197,10 +197,11 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 <details>
 <summary><strong><span style="color:#58be81">🎉 Click to see the latest updates!</span></strong></summary>
 
-### <span style="color:#4ecdc4">v2.1.0 - Feature Release</span>
-- <span style="color:#2dc26b">✅ **Minimap Icon**</span> <span style="color:#e67e23">standalone draggable button using the PB2 logo — left-click toggles the frame, right-click opens options</span>
+### <span style="color:#4ecdc4">v2.1.1 - Feature Release</span>
+- <span style="color:#2dc26b">✅ **Minimap Icon**</span> <span style="color:#e67e23">standalone draggable button using the PB2 logo — left-click toggles the frame, right-click opens options, drag to reposition around the minimap edge</span>
 - <span style="color:#58be81">✅ **PetTracker Compat**</span> <span style="color:#e67e23">non-interfering integration — defers to PetTracker's live zone data when installed and stops touching pet journal filters</span>
 - <span style="color:#ff6b6b">✅ **Zone Quality Cache**</span> <span style="color:#e67e23">native quality scan now caches across zone changes and only rebuilds on real pet collection updates</span>
+- <span style="color:#b96ad9">✅ **Discord Branding Fix**</span> <span style="color:#e67e23">release/beta/alpha/failure notifications now render with the proper PB2 avatar</span>
 
 ### <span style="color:#4ecdc4">v2.0.1 - Patch Release</span>
 - <span style="color:#2dc26b">✅ **Lower-case Asset Cleanup**</span> <span style="color:#e67e23">to keep media and UI file paths consistent outside documentation files</span>
