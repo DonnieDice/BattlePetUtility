@@ -140,6 +140,9 @@ jobs:
                 "description": `**Battle pet HUD + utility panel**\nA fresh PetBuddy2 build is now live!\n\n**Highlights:**\n${changelog}`,
                 "url": `https://github.com/DonnieDice/PetBuddy2/releases/tag/${process.env.TAG_NAME}`,
                 "color": 5793266,
+                "thumbnail": {
+                  "url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png"
+                },
                 "fields": [
                   {
                     "name": "📥 Downloads",
@@ -202,6 +205,9 @@ jobs:
                 "title": `🧪 PetBuddy2 Beta - ${process.env.VERSION}`,
                 "description": `A beta build of PetBuddy2 is ready for testing.\n\n**What's New:**\n${changelog}`,
                 "color": 15695661,
+                "thumbnail": {
+                  "url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png"
+                },
                 "fields": [
                   {
                     "name": "📥 Download Beta",
@@ -253,6 +259,9 @@ jobs:
                 "title": `🔬 PetBuddy2 Alpha - ${process.env.VERSION}`,
                 "description": `Development snapshot for internal testing.\n\n**What's New:**\n${changelog}`,
                 "color": 14696959,
+                "thumbnail": {
+                  "url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png"
+                },
                 "footer": {
                   "text": "RGX Mods - Alpha Build",
                   "icon_url": "https://raw.githubusercontent.com/donniedice/SimpleQuestPlates/main/images/kiwi.gif"
@@ -294,6 +303,9 @@ jobs:
                 "description": "The release workflow encountered an error",
                 "url": `https://github.com/DonnieDice/PetBuddy2/actions/runs/${process.env.RUN_ID}`,
                 "color": 15158332,
+                "thumbnail": {
+                  "url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png"
+                },
                 "fields": [
                   {
                     "name": "Version",
