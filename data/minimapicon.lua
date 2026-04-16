@@ -13,7 +13,7 @@ local ADDON_NAME, addon = ...;
 
 local BUTTON_NAME = "PetBuddy2MinimapButton";
 local DEFAULT_ANGLE = 215;
-local ICON_TEXTURE = "Interface\\AddOns\\PetBuddy2\\media\\logo";
+local ICON_TEXTURE = (addon and addon.LOGO_TEXTURE) or "Interface\\AddOns\\PetBuddy2\\media\\logo.tga";
 
 local function EnsureSavedDefaults()
 	if(not addon.db or not addon.db.global) then

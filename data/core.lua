@@ -460,11 +460,16 @@ function addon:RunStartupRefresh()
 		return false;
 	end
 
-	self:UpdateUtilityMenuState();
-	self:UpdateMinimizeState();
-	self:UpdatePets();
-	if(type(self.RefreshZoneTracker) == "function") then
-		self:RefreshZoneTracker();
+	self:RegisterRuntimeUpdateEvents();
+	if(type(self.RestoreSavedSettings) == "function") then
+		self:RestoreSavedSettings();
+	else
+		self:UpdateUtilityMenuState();
+		self:UpdateMinimizeState();
+		self:UpdatePets();
+		if(type(self.RefreshZoneTracker) == "function") then
+			self:RefreshZoneTracker();
+		end
 	end
 
 	return self:HasLoadedTeamSelection();
@@ -500,6 +505,16 @@ function addon:ToggleFrameMinimized()
 	self:SetFrameMinimized(not self:IsFrameMinimized());
 end
 
+function addon:RegisterRuntimeUpdateEvents()
+	self:RegisterEvent("PET_BATTLE_PET_CHANGED", self.UpdatePets);
+	self:RegisterEvent("PET_BATTLE_HEALTH_CHANGED", self.UpdatePets);
+	self:RegisterEvent("PET_BATTLE_LEVEL_CHANGED", self.UpdatePets);
+	self:RegisterEvent("PET_BATTLE_XP_CHANGED", self.UpdatePets);
+	self:RegisterEvent("PET_JOURNAL_NEW_BATTLE_SLOT", self.UpdatePets);
+	self:RegisterEvent("UPDATE_SUMMONPETS_ACTION");
+	self:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
+end
+
 function addon:OnEnable()
 	TryLoadCollectionsUI();
 	
@@ -521,15 +536,7 @@ function addon:OnEnable()
 	addon:RegisterEvent("PET_BATTLE_OPENING_START");
 	addon:RegisterEvent("PET_BATTLE_CLOSE");
 	
-	addon:RegisterEvent("PET_BATTLE_PET_CHANGED", addon.UpdatePets);
-	addon:RegisterEvent("PET_BATTLE_HEALTH_CHANGED", addon.UpdatePets);
-	addon:RegisterEvent("PET_BATTLE_LEVEL_CHANGED", addon.UpdatePets);
-	addon:RegisterEvent("PET_BATTLE_XP_CHANGED", addon.UpdatePets);
-	
-	addon:RegisterEvent("PET_JOURNAL_NEW_BATTLE_SLOT", addon.UpdatePets);
-	
-	addon:RegisterEvent("UPDATE_SUMMONPETS_ACTION");
-	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
+	addon:RegisterRuntimeUpdateEvents();
 	addon:RegisterEvent("PLAYER_ENTERING_WORLD");
 	addon:RegisterEvent("PLAYER_ALIVE", addon.HandleAutoSummonTrigger);
 	addon:RegisterEvent("PLAYER_UNGHOST", addon.HandleAutoSummonTrigger);
@@ -1563,12 +1570,15 @@ function PetBuddyFrame_OnShow(self)
 	addon.db.global.Visible = true;
 	RefreshHeaderArt();
 
-	-- Events are registered once in OnEnable() - don't re-register here
-	-- Just trigger initial updates
-	addon:UpdateUtilityMenuState();
-	addon:RefreshMedia();
-	addon:UpdateMinimizeState();
-	addon:UpdatePets();
+	addon:RegisterRuntimeUpdateEvents();
+	if(type(addon.RestoreSavedSettings) == "function") then
+		addon:RestoreSavedSettings();
+	else
+		addon:UpdateUtilityMenuState();
+		addon:RefreshMedia();
+		addon:UpdateMinimizeState();
+		addon:UpdatePets();
+	end
 	addon.PendingStartupRefreshes = 0;
 	addon:QueueStartupRefresh(0.3);
 	addon:QueueStartupRefresh(1.0);

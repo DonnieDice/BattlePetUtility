@@ -1,5 +1,11 @@
 # Changes
 
+## v2.1.2
+
+- Fixed startup restoration so the pet team HUD, zone tracker, and saved loadout UI come back correctly after login or reload without needing to toggle the loadout menu off and on.
+- Restored PetBuddy2's live runtime update events whenever the frame is shown again so pet team data and loadout visuals do not get stuck after hide/show flows.
+- Wired the standalone minimap icon to the same shared PetBuddy2 logo texture used by chat and the main frame; it remains draggable around the minimap and left-click toggles the addon frame.
+
 ## v2.1.1
 
 - Added a standalone PetBuddy2 minimap icon using the `logo.tga` asset. Left click toggles the PetBuddy2 frame, right click opens the options menu, and the icon can be dragged around the minimap edge with its position persisting across sessions.
