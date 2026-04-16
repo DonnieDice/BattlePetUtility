@@ -14,6 +14,8 @@ local ADDON_NAME, addon = ...;
 local BUTTON_NAME = "PetBuddy2MinimapButton";
 local DEFAULT_ANGLE = 215;
 local ICON_TEXTURE = (addon and addon.LOGO_TEXTURE) or "Interface\\AddOns\\PetBuddy2\\media\\logo.tga";
+local TOOLTIP_ICON = "|TInterface\\AddOns\\PetBuddy2\\media\\logo.tga:18:18:0:0|t ";
+local TOOLTIP_TITLE = TOOLTIP_ICON .. "|cffb512fcPetBuddy2|r |cffd9c6ffBattle Pet HUD|r";
 
 local function EnsureSavedDefaults()
 	if(not addon.db or not addon.db.global) then
@@ -79,11 +81,13 @@ local function ShowTooltip(button)
 
 	GameTooltip:SetOwner(button, "ANCHOR_LEFT");
 	GameTooltip:ClearLines();
-	GameTooltip:AddLine("|cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r");
+	GameTooltip:AddLine(TOOLTIP_TITLE);
 	GameTooltip:AddLine(" ");
-	GameTooltip:AddLine("|cffffffffLeft-Click|r  Toggle PetBuddy2", 0.9, 0.9, 0.9);
-	GameTooltip:AddLine("|cffffffffRight-Click|r Options", 0.9, 0.9, 0.9);
-	GameTooltip:AddLine("|cffffffffDrag|r        Move around minimap", 0.9, 0.9, 0.9);
+	GameTooltip:AddLine("|cffd9c6ffYour compact pet team, loadouts, and tracker hub.|r", 1, 1, 1, true);
+	GameTooltip:AddLine(" ");
+	GameTooltip:AddDoubleLine("|cffb512fcLeft-Click|r", "|cffffffffShow or hide PetBuddy2|r", 0.95, 0.80, 1.0, 1.0, 1.0, 1.0);
+	GameTooltip:AddDoubleLine("|cff4ecdc4Right-Click|r", "|cffffffffOpen options|r", 0.45, 0.90, 0.86, 1.0, 1.0, 1.0);
+	GameTooltip:AddDoubleLine("|cffe67e22Drag|r", "|cffffffffMove around minimap|r", 0.90, 0.49, 0.13, 1.0, 1.0, 1.0);
 	GameTooltip:Show();
 end
 
@@ -104,17 +108,27 @@ local function CreateMinimapButton()
 	button:RegisterForClicks("LeftButtonUp", "RightButtonUp");
 	button:RegisterForDrag("LeftButton");
 
+	local backdrop = button:CreateTexture(nil, "BACKGROUND");
+	backdrop:SetSize(24, 24);
+	backdrop:SetPoint("CENTER", button, "CENTER", 1, 0);
+	backdrop:SetTexture("Interface\\Buttons\\WHITE8X8");
+	if(backdrop.SetMask) then
+		backdrop:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMaskSmall");
+	end
+	backdrop:SetVertexColor(0.03, 0.03, 0.03, 0.98);
+	button.backdrop = backdrop;
+
 	local overlay = button:CreateTexture(nil, "OVERLAY");
 	overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder");
 	overlay:SetSize(54, 54);
 	overlay:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0);
 	button.overlay = overlay;
 
-	local icon = button:CreateTexture(nil, "BACKGROUND");
+	local icon = button:CreateTexture(nil, "ARTWORK");
 	icon:SetTexture(ICON_TEXTURE);
-	icon:SetSize(20, 20);
-	icon:SetPoint("CENTER", button, "CENTER", 1, 1);
-	icon:SetTexCoord(0, 1, 0, 1);
+	icon:SetSize(19, 19);
+	icon:SetPoint("CENTER", button, "CENTER", 1, -2);
+	icon:SetTexCoord(0.02, 0.98, 0.02, 0.98);
 	button.icon = icon;
 
 	button:SetScript("OnEnter", function(self)

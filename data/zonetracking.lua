@@ -5,6 +5,13 @@ local MAX_TRACKED_PET_NAMES = 3;
 local MAX_TOOLTIP_PET_LINES = 30;
 local MAX_VISIBLE_ZONE_LINES = 4;
 local TOOLTIP_ICON_SIZE = 12;
+local MISSING_SEGMENT_COLOR = CreateColor(0.62, 0.62, 0.62);
+local PET_QUALITY_COLORS = {
+	[1] = CreateColor(1.00, 1.00, 1.00), -- poor shown as white per requested bar palette
+	[2] = CreateColor(1.00, 1.00, 1.00), -- common
+	[3] = CreateColor(0.12, 1.00, 0.00), -- uncommon
+	[4] = CreateColor(0.00, 0.44, 0.87), -- rare
+};
 
 PetBuddy_ZoneTrackerMixin = {};
 
@@ -128,6 +135,11 @@ local function GetSpeciesIcon(speciesID)
 	return icon;
 end
 
+local function GetPetQualityColor(quality)
+	local clampedQuality = math.max(1, math.min(4, tonumber(quality) or 1));
+	return PET_QUALITY_COLORS[clampedQuality] or NORMAL_FONT_COLOR;
+end
+
 local function BuildSpeciesQualityMap()
 	-- PetTracker path: we never use the native quality map, so skip the whole scan
 	-- (and critically, avoid mutating C_PetJournal filters which would thrash PetTracker).
@@ -241,12 +253,21 @@ local function EnsureQualityBars(frame)
 	end
 
 	container.qualityBars = {};
-	for quality = 1, 4 do
-		local bar = CreateFrame("StatusBar", nil, container);
-		bar:SetAllPoints(container);
-		bar:SetFrameLevel(container:GetFrameLevel() + quality);
-		local color = ITEM_QUALITY_COLORS[quality - 1] and ITEM_QUALITY_COLORS[quality - 1].color or NORMAL_FONT_COLOR;
-		bar:SetStatusBarColor(color.r, color.g, color.b);
+	for quality = 0, 4 do
+		local bar = container:CreateTexture(nil, "ARTWORK");
+		bar:SetDrawLayer("ARTWORK", quality);
+		bar:ClearAllPoints();
+		bar:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0);
+		bar:SetPoint("BOTTOMLEFT", container, "BOTTOMLEFT", 0, 0);
+		bar:SetWidth(0);
+		local color = nil;
+		if(quality == 0) then
+			color = MISSING_SEGMENT_COLOR;
+		else
+			color = GetPetQualityColor(quality);
+		end
+		bar.pbColor = color;
+		bar:SetColorTexture(color.r, color.g, color.b, 1);
 		container.qualityBars[quality] = bar;
 	end
 
@@ -281,8 +302,13 @@ local function ApplyProgressBarTexture(frame)
 
 	local bars = EnsureQualityBars(frame);
 	if(bars) then
-		for _, bar in ipairs(bars) do
-			bar:SetStatusBarTexture(texturePath);
+		for _, bar in pairs(bars) do
+			if(bar.SetTexture) then
+				bar:SetTexture(texturePath);
+				if(bar.pbColor) then
+					bar:SetVertexColor(bar.pbColor.r, bar.pbColor.g, bar.pbColor.b, 1);
+				end
+			end
 		end
 	end
 end
@@ -299,13 +325,29 @@ local function UpdateQualityBars(frame, snapshot)
 
 	local total = math.max(1, tonumber(snapshot.total) or 1);
 	local qualityCounts = snapshot.qualityCounts or {};
-	local runningTotal = 0;
+	local containerWidth = frame.bar:GetWidth() or 0;
+	if(containerWidth <= 0) then
+		C_Timer.After(0, function()
+			if(frame and frame.bar and frame.snapshot == snapshot) then
+				UpdateQualityBars(frame, snapshot);
+			end
+		end);
+		return;
+	end
+	local missingCount = math.max(0, tonumber(snapshot.missing) or math.max(0, total - (tonumber(snapshot.owned) or 0)));
+	local offset = 0;
+	local segmentOrder = { 0, 1, 2, 3, 4 };
 
-	for quality = 4, 1, -1 do
-		runningTotal = runningTotal + (tonumber(qualityCounts[quality]) or 0);
-		bars[quality]:SetMinMaxValues(0, total);
-		bars[quality]:SetValue(runningTotal);
-		bars[quality]:SetShown(snapshot.state == "ready");
+	for _, quality in ipairs(segmentOrder) do
+		local count = quality == 0 and missingCount or math.max(0, tonumber(qualityCounts[quality]) or 0);
+		local width = containerWidth * (count / total);
+		local bar = bars[quality];
+		bar:ClearAllPoints();
+		bar:SetPoint("TOPLEFT", frame.bar, "TOPLEFT", offset, 0);
+		bar:SetPoint("BOTTOMLEFT", frame.bar, "BOTTOMLEFT", offset, 0);
+		bar:SetWidth(width);
+		bar:SetShown(snapshot.state == "ready" and width > 0);
+		offset = offset + width;
 	end
 end
 
@@ -370,8 +412,7 @@ local function AddTooltipPetLines(tooltip, snapshot)
 		for _, petInfo in ipairs(collectedEntries) do
 			if(shown >= MAX_TOOLTIP_PET_LINES) then break end
 			local quality = tonumber(petInfo.quality) or 0;
-			local qIndex = math.max(0, math.min(4, quality - 1));
-			local qualityColor = ITEM_QUALITY_COLORS[qIndex] and ITEM_QUALITY_COLORS[qIndex].color;
+			local qualityColor = GetPetQualityColor(quality);
 			local hex;
 			if(qualityColor and qualityColor.GenerateHexColorMarkup) then
 				hex = qualityColor:GenerateHexColorMarkup();
@@ -382,9 +423,7 @@ local function AddTooltipPetLines(tooltip, snapshot)
 			end
 			local iconMarkup = petInfo.icon and ("|T" .. tostring(petInfo.icon) .. ":" .. TOOLTIP_ICON_SIZE .. ":" .. TOOLTIP_ICON_SIZE .. ":0:0|t ") or "";
 			local name = petInfo.name or "Unknown";
-			local rarityText = _G["ITEM_QUALITY" .. qIndex .. "_DESC"] or "";
-			local rarityMarkup = rarityText ~= "" and (" " .. hex .. "(" .. rarityText .. ")|r") or "";
-			GameTooltip:AddLine(iconMarkup .. hex .. name .. "|r" .. rarityMarkup, 1, 1, 1);
+			GameTooltip:AddLine(iconMarkup .. hex .. name .. "|r", 1, 1, 1);
 			shown = shown + 1;
 		end
 	end
@@ -479,7 +518,7 @@ local function UpdateSpeciesLines(frame, snapshot)
 		local entry = entries[index];
 		local line = lines[index];
 		local quality = tonumber(entry.quality) or 0;
-		local color = quality > 0 and ITEM_QUALITY_COLORS[quality - 1] and ITEM_QUALITY_COLORS[quality - 1].color or nil;
+		local color = quality > 0 and GetPetQualityColor(quality) or nil;
 
 		line.icon:SetTexture(entry.icon or GetSpeciesIcon(entry.speciesID) or "Interface\\Icons\\INV_Misc_QuestionMark");
 		line.subIcon:SetShown(entry.sourceIcon ~= nil);
