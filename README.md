@@ -75,6 +75,7 @@
 
 ---
 
+<a id="support"></a>
 ## <span style="color:#58be81">💖 Support </span> <span style="color:#8B1538">R</span><span style="color:#8B1538">G</span><span style="color:#8B1538">X</span> <span style="color:#4ecdc4">Mods</span>
 
 <div align="center">
@@ -104,6 +105,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 
 ---
 
+<a id="features"></a>
 ## <span style="color:#58be81">✨ Features</span>
 
 <div align="center">
@@ -128,6 +130,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 
 ---
 
+<a id="quick-start"></a>
 ## <span style="color:#58be81">🚀 Quick Start</span>
 
 1. **<span style="color:#2dc26b">Install</span>** <span style="color:#e67e23">PetBuddy2 from your preferred platform</span>
@@ -139,6 +142,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 
 ---
 
+<a id="command-reference"></a>
 ## <span style="color:#58be81">📋 Command Reference</span>
 
 <span style="color:#e67e23">Use</span> <span style="color:#2dc26b">`/petbuddy`</span> <span style="color:#e67e23">followed by</span><span style="color:#3598db">:</span>
@@ -158,6 +162,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 
 ---
 
+<a id="compatibility"></a>
 ## <span style="color:#58be81">📋 Compatibility</span>
 
 <div align="center">
@@ -175,6 +180,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 
 ---
 
+<a id="installation"></a>
 ## <span style="color:#58be81">📥 Installation</span>
 
 1. **<span style="color:#2dc26b">Download</span>** <span style="color:#e67e23">from your preferred platform</span><span style="color:#3598db">:</span>
@@ -194,8 +200,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 
 ## <span style="color:#58be81">🆕 What's New</span>
 
-<details>
-<summary><strong><span style="color:#58be81">🎉 Click to see the latest updates!</span></strong></summary>
+<span style="color:#58be81">🎉 Click to see the latest updates!</span>
 
 ### <span style="color:#4ecdc4">v2.1.1 - Feature Release</span>
 - <span style="color:#2dc26b">✅ **Minimap Icon**</span> <span style="color:#e67e23">standalone draggable button using the PB2 logo — left-click toggles the frame, right-click opens options, drag to reposition around the minimap edge</span>
@@ -215,7 +220,6 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 - <span style="color:#b96ad9">✅ **Media & Options Cleanup**</span> <span style="color:#e67e23">with restored font and statusbar options plus cleaner dropdown behavior</span>
 - <span style="color:#4ecdc4">✅ **Startup / Combat Fixes**</span> <span style="color:#e67e23">for team display, loadout visibility, and combat-driven behavior</span>
 
-</details>
 
 _<span style="color:#e67e23">See</span> [<span style="color:#58be81">docs/CHANGES.md</span>](./docs/CHANGES.md) <span style="color:#e67e23">for full release history.</span>_
 
@@ -316,6 +320,6 @@ _<span style="color:#e67e23">"Your pets deserve a better HUD!"</span>_
 
 [<span style="color:#05dffa">BLU</span>](https://github.com/donniedice/BLU) | [<span style="color:#05dffa">BLU Classic</span>](https://github.com/donniedice/BLU_Classic) | [<span style="color:#9b59b6">CCU</span>](https://github.com/donniedice/CoordinationCloakUtility) | [<span style="color:#ffe568">FFLU</span>](https://github.com/donniedice/FFLU) | [<span style="color:#e74c3c">RND</span>](https://github.com/donniedice/remove_nameplate_debuffs) | [<span style="color:#58be81">SQP</span>](https://github.com/donniedice/SimpleQuestPlates) | [<span style="color:#8B4513">SRLU</span>](https://github.com/donniedice/SRLU)
 
-**<span style="color:#8B1538">🎮</span> <span style="color:#8B1538">R</span><span style="color:#8B1538">G</span><span style="color:#8B1538">X</span> <span style="color:#4ecdc4">Mods</span> <span style="color:#3598db">-</span> <span style="color:#e67e23">Powered by</span> [<span style="color:#8B1538">R</span><span style="color:#7598b6">ealm</span><span style="color:#8B1538">G</span><span style="color:#8B1538">X</span>](https://realmgx.com) <span style="color:#e67e23">Community</span>**
+**<img src="https://raw.githubusercontent.com/donniedice/SimpleQuestPlates/main/images/kiwi.gif" width="18" height="18"> <span style="color:#8B1538">R</span><span style="color:#8B1538">G</span><span style="color:#8B1538">X</span> <span style="color:#4ecdc4">Mods</span> <span style="color:#3598db">-</span> <span style="color:#e67e23">Powered by</span> [<span style="color:#8B1538">R</span><span style="color:#7598b6">ealm</span><span style="color:#8B1538">G</span><span style="color:#8B1538">X</span>](https://realmgx.com) <span style="color:#e67e23">Community</span>**
 
 </div>
