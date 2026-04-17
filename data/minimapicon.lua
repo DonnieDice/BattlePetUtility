@@ -88,6 +88,7 @@ local function ShowTooltip(button)
 	GameTooltip:AddDoubleLine("|cffb512fcLeft-Click|r", "|cffffffffShow or hide PetBuddy2|r", 0.95, 0.80, 1.0, 1.0, 1.0, 1.0);
 	GameTooltip:AddDoubleLine("|cff4ecdc4Right-Click|r", "|cffffffffOpen options|r", 0.45, 0.90, 0.86, 1.0, 1.0, 1.0);
 	GameTooltip:AddDoubleLine("|cffe67e22Drag|r", "|cffffffffMove around minimap|r", 0.90, 0.49, 0.13, 1.0, 1.0, 1.0);
+	GameTooltip:AddDoubleLine("|cffe74c3cCtrl+Right-Click|r", "|cffffffffHide minimap icon|r", 0.90, 0.20, 0.20, 1.0, 1.0, 1.0);
 	GameTooltip:Show();
 end
 
@@ -145,6 +146,17 @@ local function CreateMinimapButton()
 
 	button:SetScript("OnClick", function(self, btn)
 		if(self.isDragging) then
+			return;
+		end
+
+		-- Handle Ctrl+Right-click to hide the minimap icon
+		if(btn == "RightButton" and IsControlKeyDown()) then
+			if(GameTooltip) then
+				GameTooltip:Hide();
+			end
+			if(type(addon.ToggleMinimapIcon) == "function") then
+				addon:ToggleMinimapIcon(false);
+			end
 			return;
 		end
 

@@ -215,6 +215,26 @@ function addon:PrintHelp()
 	self:PrintMessage(" |cffb07fff/petbuddy help|r - Show command help");
 	self:PrintMessage(" |cffb07fff/petbuddy welcome|r - Toggle login welcome message");
 	self:PrintMessage(" |cffb07fff/petbuddy version|r - Show current version");
+	self:PrintMessage(" |cffb07fff/pb2 icon on|r or |cffb07fffoff|r - Show/hide minimap icon");
+end
+
+-- Function to toggle the minimap icon visibility
+function addon:ToggleMinimapIcon(show)
+	if(not self.db or not self.db.global) then return end
+	self.db.global.MinimapIcon = self.db.global.MinimapIcon or {};
+	if(show ~= nil) then
+		self.db.global.MinimapIcon.enabled = show;
+	else
+		self.db.global.MinimapIcon.enabled = not self.db.global.MinimapIcon.enabled;
+	end
+	if(type(self.UpdateMinimapIconVisibility) == "function") then
+		self:UpdateMinimapIconVisibility();
+	end
+	if(show == false) then
+		self:PrintMessage("|cffffcc00Minimap icon hidden.|r Use |cffb07fff/pb2 icon on|r to show it again.");
+	elseif(show == true) then
+		self:PrintMessage("|cff00ff00Minimap icon shown.|r");
+	end
 end
 
 local function UpdateHeaderButtonVisual(button, hovered)
@@ -1881,9 +1901,9 @@ function TogglePetBuddy()
 end
 	
 function addon:OnInitialize()
-	SLASH_PETBUDDY1	= "/petbuddy";
-	SLASH_PETBUDDY2	= "/pb";
-	SLASH_PETBUDDY3	= "/bpb";
+	SLASH_PETBUDDY1 = "/petbuddy";
+	SLASH_PETBUDDY2 = "/pb";
+	SLASH_PETBUDDY3 = "/bpb";
 	SlashCmdList["PETBUDDY"] = function(command)
 		command = string.lower(strtrim(command or ""));
 
@@ -1891,15 +1911,31 @@ function addon:OnInitialize()
 			TogglePetBuddy();
 		elseif(command == "help") then
 			addon:PrintHelp();
-			elseif(command == "welcome") then
-				addon:ToggleWelcomeMessage();
-			elseif(command == "version") then
-				addon:PrintMessage("|cffffff00Version:|r |cff8080ff" .. GetAddonVersion() .. "|r");
-			else
+		elseif(command == "welcome") then
+			addon:ToggleWelcomeMessage();
+		elseif(command == "version") then
+			addon:PrintMessage("|cffffff00Version:|r |cff8080ff" .. GetAddonVersion() .. "|r");
+		else
 			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cffb07fff/petbuddy help|r.");
 		end
 	end
-	
+
+	-- Register /pb2 command for icon toggle
+	SLASH_PB21 = "/pb2";
+	SlashCmdList["PB2"] = function(command)
+		command = string.lower(strtrim(command or ""));
+
+		if(command == "icon on" or command == "icon enable" or command == "icon show") then
+			addon:ToggleMinimapIcon(true);
+		elseif(command == "icon off" or command == "icon disable" or command == "icon hide") then
+			addon:ToggleMinimapIcon(false);
+		elseif(command == "icon") then
+			addon:PrintMessage("|cffffff00Usage:|r |cffb07fff/pb2 icon on|r or |cffb07fffoff|r");
+		else
+			addon:PrintMessage("|cffffcc00Unknown command.|r Use |cffb07fff/pb2 icon on|r or |cffb07fffoff|r.");
+		end
+	end
+
 	addon:InitializeDatabase();
 	addon:InitializeDatabroker();
 	if(type(addon.InitializeMinimapIcon) == "function") then
@@ -1920,7 +1956,7 @@ function addon:BARBER_SHOP_CLOSE()
 end
 
 function addon:OnDisable()
-		
+
 end
 
 local function InitializeAddon()

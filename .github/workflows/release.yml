@@ -32,6 +32,7 @@ env:
   WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
   WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
   GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -90,8 +91,9 @@ jobs:
         id: extract_changelog
         run: |
           if [ -f "docs/CHANGES.md" ]; then
+            # Extract content from first # header to next # header or end of file
             CHANGELOG=$(awk '
-              /^## / {
+              /^# / {
                 if (in_section) {
                   exit
                 }
@@ -133,12 +135,12 @@ jobs:
             }
 
             const payload = {
-              "username": "PetBuddy2 Update",
+              "username": "PetBuddy2 Release",
               "avatar_url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png",
               "embeds": [{
-                "title": `🐾 PetBuddy2 - ${process.env.VERSION}`,
-                "description": `**Battle pet HUD + utility panel**\nA fresh PetBuddy2 build is now live!\n\n**Highlights:**\n${changelog}`,
-                "url": `https://github.com/DonnieDice/PetBuddy2/releases/tag/${process.env.TAG_NAME}`,
+                "title": "🐾 PetBuddy2 - " + process.env.VERSION,
+                "description": "**Battle pet HUD + utility panel!** A new version of PetBuddy2 has been released!\n\n🎵 **What's New:**\n" + changelog,
+                "url": "https://github.com/DonnieDice/PetBuddy2/releases/tag/" + process.env.TAG_NAME,
                 "color": 5793266,
                 "thumbnail": {
                   "url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png"
@@ -146,17 +148,17 @@ jobs:
                 "fields": [
                   {
                     "name": "📥 Downloads",
-                    "value": "[CurseForge](https://www.curseforge.com/wow/addons/petbuddy2)\n[GitHub Releases](https://github.com/DonnieDice/PetBuddy2/releases)",
+                    "value": "[CurseForge](https://www.curseforge.com/wow/addons/petbuddy2)\n[Wago.io](https://addons.wago.io/addons/petbuddy2)\n[GitHub](https://github.com/DonnieDice/PetBuddy2)",
                     "inline": true
                   },
                   {
                     "name": "🎮 Compatibility",
-                    "value": "Retail Midnight",
+                    "value": "✅ Retail\n✅ Classic (Era/HC/Seasons)",
                     "inline": true
                   },
                   {
                     "name": "💬 Support",
-                    "value": "[Discord](https://discord.gg/rgxmods)\n[Report Issues](https://github.com/DonnieDice/PetBuddy2/issues)",
+                    "value": "[Join Discord](https://discord.gg/N7kdKAHVVF)\n[Report Issues](https://github.com/DonnieDice/PetBuddy2/issues)",
                     "inline": true
                   }
                 ],
@@ -185,6 +187,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           VERSION: ${{ steps.extract_version.outputs.version }}
+          TAG_NAME: ${{ steps.set_release_type.outputs.tag_name }}
           TIMESTAMP: ${{ steps.extract_version.outputs.timestamp }}
           CHANGELOG: ${{ steps.extract_changelog.outputs.changelog }}
         with:
@@ -202,8 +205,9 @@ jobs:
               "username": "PetBuddy2 Beta",
               "avatar_url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png",
               "embeds": [{
-                "title": `🧪 PetBuddy2 Beta - ${process.env.VERSION}`,
-                "description": `A beta build of PetBuddy2 is ready for testing.\n\n**What's New:**\n${changelog}`,
+                "title": "🧪 PetBuddy2 Beta - " + process.env.VERSION,
+                "description": "**Battle pet HUD + utility panel!** A beta build of PetBuddy2 is ready for testing!\n\n🎵 **What's New:**\n" + changelog,
+                "url": "https://github.com/DonnieDice/PetBuddy2/releases/tag/" + process.env.TAG_NAME,
                 "color": 15695661,
                 "thumbnail": {
                   "url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png"
@@ -211,11 +215,17 @@ jobs:
                 "fields": [
                   {
                     "name": "📥 Download Beta",
-                    "value": "[CurseForge](https://www.curseforge.com/wow/addons/petbuddy2)\n[GitHub Releases](https://github.com/DonnieDice/PetBuddy2/releases)"
+                    "value": "[CurseForge](https://www.curseforge.com/wow/addons/petbuddy2)\n[Wago.io](https://addons.wago.io/addons/petbuddy2)\n[GitHub](https://github.com/DonnieDice/PetBuddy2/releases)",
+                    "inline": true
+                  },
+                  {
+                    "name": "💬 Support",
+                    "value": "[Join Discord](https://discord.gg/N7kdKAHVVF)\n[Report Issues](https://github.com/DonnieDice/PetBuddy2/issues)",
+                    "inline": true
                   }
                 ],
                 "footer": {
-                  "text": "RGX Mods - Beta Build",
+                  "text": "RGX Mods - RealmGX Community",
                   "icon_url": "https://raw.githubusercontent.com/donniedice/SimpleQuestPlates/main/images/kiwi.gif"
                 },
                 "timestamp": process.env.TIMESTAMP
@@ -256,14 +266,15 @@ jobs:
               "username": "PetBuddy2 Alpha",
               "avatar_url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png",
               "embeds": [{
-                "title": `🔬 PetBuddy2 Alpha - ${process.env.VERSION}`,
-                "description": `Development snapshot for internal testing.\n\n**What's New:**\n${changelog}`,
+                "title": "🔬 PetBuddy2 Alpha - " + process.env.VERSION,
+                "description": "**Battle pet HUD + utility panel!** Development snapshot for internal testing.\n\n🎵 **What's New:**\n" + changelog,
+                "url": "https://github.com/DonnieDice/PetBuddy2",
                 "color": 14696959,
                 "thumbnail": {
                   "url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png"
                 },
                 "footer": {
-                  "text": "RGX Mods - Alpha Build",
+                  "text": "RGX Mods - RealmGX Community",
                   "icon_url": "https://raw.githubusercontent.com/donniedice/SimpleQuestPlates/main/images/kiwi.gif"
                 },
                 "timestamp": process.env.TIMESTAMP
@@ -301,7 +312,7 @@ jobs:
               "embeds": [{
                 "title": "❌ PetBuddy2 Build Failed",
                 "description": "The release workflow encountered an error",
-                "url": `https://github.com/DonnieDice/PetBuddy2/actions/runs/${process.env.RUN_ID}`,
+                "url": "https://github.com/DonnieDice/PetBuddy2/actions/runs/" + process.env.RUN_ID,
                 "color": 15158332,
                 "thumbnail": {
                   "url": "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png"
@@ -314,12 +325,12 @@ jobs:
                   },
                   {
                     "name": "Workflow",
-                    "value": `[View Logs](https://github.com/DonnieDice/PetBuddy2/actions/runs/${process.env.RUN_ID})`,
+                    "value": "[View Logs](https://github.com/DonnieDice/PetBuddy2/actions/runs/" + process.env.RUN_ID + ")",
                     "inline": true
                   }
                 ],
                 "footer": {
-                  "text": "RGX Mods - Build System",
+                  "text": "RGX Mods - RealmGX Community",
                   "icon_url": "https://raw.githubusercontent.com/donniedice/SimpleQuestPlates/main/images/kiwi.gif"
                 },
                 "timestamp": process.env.TIMESTAMP

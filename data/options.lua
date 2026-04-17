@@ -870,10 +870,8 @@ function addon:GetPrimaryMenuData()
 		{
 			text = "Show minimap icon",
 			func = function()
-				self.db.global.MinimapIcon = self.db.global.MinimapIcon or {};
-				self.db.global.MinimapIcon.enabled = not self.db.global.MinimapIcon.enabled;
-				if(type(addon.UpdateMinimapIconVisibility) == "function") then
-					addon:UpdateMinimapIconVisibility();
+				if(type(addon.ToggleMinimapIcon) == "function") then
+					addon:ToggleMinimapIcon(nil);  -- nil toggles
 				end
 			end,
 			checked = function()
@@ -881,6 +879,8 @@ function addon:GetPrimaryMenuData()
 			end,
 			isNotRadio = true,
 			keepShownOnClick = true,
+			tooltipTitle = "Ctrl+Right-click minimap icon to hide",
+			tooltipText = "You can also use |cffb07fff/pb2 icon off|r to hide or |cffb07fff/pb2 icon on|r to show.",
 		},
 		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,
