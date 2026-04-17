@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/donniedice/PetBuddy2/main/images/icon.tga" width="25" height="25"> <span style="color:#b512fc">P</span><span style="color:#fff">et</span><span style="color:#b512fc">B</span><span style="color:#fff">uddy2</span> <span style="color:#fff">|</span> <span style="color:#b512fc">Battle Pet HUD & Utility</span>
+# <img src="https://raw.githubusercontent.com/donniedice/PetBuddy2/main/images/icon.tga" width="25" height="25"> <span style="color:#b512fc">P</span><span style="color:#fff">et</span><span style="color:#b512fc">B</span><span style="color:#fff">uddy</span><span style="color:#b512fc">2</span> <span style="color:#3598db">|</span> <span style="color:#b512fc">Battle Pet HUD & Utility</span>
 ## <img src="https://raw.githubusercontent.com/donniedice/SimpleQuestPlates/main/images/kiwi.gif" height="20"> <span style="color:#8B1538">R</span><span style="color:#8B1538">G</span><span style="color:#8B1538">X</span> <span style="color:#4ecdc4">Mods</span> <span style="color:#3598db">-</span> [<span style="color:#8B1538">R</span><span style="color:#7598b6">ealm</span><span style="color:#8B1538">G</span><span style="color:#8B1538">X</span>](https://realmgx.com) <span style="color:#58be81">Community Project</span>
 
 **<span style="color:#58be81">"Your pets deserve a better HUD!"</span> <span style="color:#e67e23">- Now in</span> <span style="color:#06c">World of Warcraft Midnight</span><span style="color:#e67e23">!</span>**
@@ -92,7 +92,7 @@ _<span style="color:#e67e23">Every donation helps fund new features and improvem
 
 ---
 
-## <span style="color:#58be81">🐾 What is PetBuddy2?</span>
+## <span style="color:#b512fc">🐾 What is P</span><span style="color:#fff">et</span><span style="color:#b512fc">B</span><span style="color:#fff">uddy</span><span style="color:#b512fc">2</span><span style="color:#fff">?</span>
 
 **<span style="color:#58be81">PetBuddy2</span>** <span style="color:#e67e23">is a battle pet control HUD for</span> <span style="color:#06c">World of Warcraft Retail Midnight</span> <span style="color:#e67e23">that keeps your team status, pet utility actions, and loadouts in one compact, draggable frame. Built to stay usable during normal pet content without requiring any external embedded libraries.</span>
 
