@@ -8,16 +8,47 @@
 
 local ADDON_NAME, addon = ...;
 local E = addon.E;
-local DEFAULT_FONT_NAME = "DorisPP";
-local DEFAULT_FONT_PATH = [[Interface\AddOns\PetBuddy2\media\dorispp.ttf]];
 local DEFAULT_STATUSBAR_NAME = "RenAscensionL";
 local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]];
+
+local function GetRGXFonts()
+	return rawget(_G, "RGXFonts");
+end
+
+local function GetDefaultFontName()
+	local rgxFonts = GetRGXFonts();
+	if(type(rgxFonts) == "table" and type(rgxFonts.GetDefault) == "function") then
+		local defaultName = rgxFonts:GetDefault();
+		if(type(defaultName) == "string" and defaultName ~= "") then
+			return defaultName;
+		end
+	end
+
+	return "FRIZQT";
+end
+
+local function GetRGXFontPath(fontName)
+	local rgxFonts = GetRGXFonts();
+	if(type(rgxFonts) ~= "table" or type(rgxFonts.GetPath) ~= "function") then
+		return nil;
+	end
+
+	if(type(fontName) == "string" and fontName ~= "") then
+		local exists = type(rgxFonts.Exists) ~= "function" or rgxFonts:Exists(fontName);
+		local available = type(rgxFonts.IsAvailable) ~= "function" or rgxFonts:IsAvailable(fontName);
+		if(exists and available) then
+			return rgxFonts:GetPath(fontName);
+		end
+	end
+
+	return rgxFonts:GetPath(GetDefaultFontName());
+end
 
 addon.Media = addon.Media or {
 	font = {},
 	statusbar = {},
 	defaults = {
-		font = DEFAULT_FONT_NAME,
+		font = GetDefaultFontName(),
 		statusbar = DEFAULT_STATUSBAR_NAME,
 	},
 };
@@ -102,7 +133,26 @@ function addon:ListMedia(mediaType)
 	return list;
 end
 
-local function ImportExternalSharedMedia()
+local function ImportRGXFonts()
+	local rgxFonts = rawget(_G, "RGXFonts");
+	if(type(rgxFonts) ~= "table" or type(rgxFonts.ListAvailable) ~= "function") then
+		return;
+	end
+
+	addon.Media.font = {};
+	addon.Media.defaults.font = GetDefaultFontName();
+
+	for _, info in ipairs(rgxFonts:ListAvailable() or {}) do
+		local fontName = info and info.name;
+		local fontPath = info and info.path;
+
+		if(type(fontName) == "string" and fontName ~= "" and type(fontPath) == "string" and fontPath ~= "") then
+			addon:RegisterMedia("font", fontName, fontPath);
+		end
+	end
+end
+
+local function ImportExternalStatusbars()
 	local libStubObject = rawget(_G, "LibStub");
 	if(type(libStubObject) ~= "table" or type(libStubObject.GetLibrary) ~= "function") then
 		return;
@@ -113,23 +163,17 @@ local function ImportExternalSharedMedia()
 		return;
 	end
 
-	for _, mediaType in ipairs({ "font", "statusbar" }) do
-		local mediaList = externalLSM:List(mediaType) or {};
-		for _, mediaName in ipairs(mediaList) do
-			local mediaPath = externalLSM:Fetch(mediaType, mediaName, true) or externalLSM:Fetch(mediaType, mediaName);
-			if(type(mediaPath) == "string" and mediaPath ~= "") then
-				addon:RegisterMedia(mediaType, mediaName, mediaPath);
-			end
+	local mediaType = "statusbar";
+	local mediaList = externalLSM:List(mediaType) or {};
+	for _, mediaName in ipairs(mediaList) do
+		local mediaPath = externalLSM:Fetch(mediaType, mediaName, true) or externalLSM:Fetch(mediaType, mediaName);
+		if(type(mediaPath) == "string" and mediaPath ~= "") then
+			addon:RegisterMedia(mediaType, mediaName, mediaPath);
 		end
 	end
 end
 
-addon:RegisterMedia("font", DEFAULT_FONT_NAME, DEFAULT_FONT_PATH);
-addon:RegisterMedia("font", "Friz Quadrata", STANDARD_TEXT_FONT or DEFAULT_FONT_PATH);
-addon:RegisterMedia("font", "Arial Narrow", "Fonts\\ARIALN.TTF");
-addon:RegisterMedia("font", "Morpheus", "Fonts\\MORPHEUS.TTF");
-addon:RegisterMedia("font", "Skurri", "Fonts\\SKURRI.TTF");
-addon:RegisterMedia("font", "Expressway", "Fonts\\EXPRESSW.TTF");
+ImportRGXFonts();
 addon:RegisterMedia("statusbar", DEFAULT_STATUSBAR_NAME, DEFAULT_STATUSBAR_PATH);
 addon:RegisterMedia("statusbar", "Blizzard", "Interface\\TargetingFrame\\UI-StatusBar");
 addon:RegisterMedia("statusbar", "Smooth", "Interface\\RaidFrame\\Raid-Bar-Hp-Fill");
@@ -138,7 +182,7 @@ addon:RegisterMedia("statusbar", "Glamour", "Interface\\AddOns\\PetBuddy2\\media
 addon:RegisterMedia("statusbar", "Minimalist", "Interface\\Tooltips\\UI-Tooltip-Background");
 addon:RegisterMedia("statusbar", "Perl", "Interface\\TargetingFrame\\UI-StatusBar");
 addon:RegisterMedia("statusbar", "Smoother", "Interface\\AddOns\\PetBuddy2\\media\\backdrop.tga");
-ImportExternalSharedMedia();
+ImportExternalStatusbars();
 
 E.VISIBILITY_MODE = {
 	DO_NOTHING 	= 0x1,
@@ -168,7 +212,7 @@ function addon:InitializeDatabase()
 			},
 			
 			fontSize = 10,
-			fontFace = "DorisPP",
+			fontFace = GetDefaultFontName(),
 			barTexture = "RenAscensionL",
 			
 			SavedLoadouts = {},
@@ -320,19 +364,22 @@ function addon:RestoreSavedSettings()
 end
 
 function addon:RefreshMedia(font, barTexture)
+	ImportRGXFonts();
+
 	local selectedFont = font or self.db.global.fontFace;
 	local selectedBarTexture = barTexture or self.db.global.barTexture;
+	local fontPath = GetRGXFontPath(selectedFont);
 
-	if(not addon:HasMedia("font", selectedFont)) then
-		selectedFont = DEFAULT_FONT_NAME;
+	if(not fontPath) then
+		selectedFont = GetDefaultFontName();
 		self.db.global.fontFace = selectedFont;
+		fontPath = GetRGXFontPath(selectedFont);
 	end
 	if(not addon:HasMedia("statusbar", selectedBarTexture)) then
 		selectedBarTexture = DEFAULT_STATUSBAR_NAME;
 		self.db.global.barTexture = selectedBarTexture;
 	end
 
-	local fontPath = addon:FetchMedia("font", selectedFont);
 	local statusBarPath = addon:FetchMedia("statusbar", selectedBarTexture);
 	
 	local fontSize = self.db.global.fontSize;
@@ -422,6 +469,34 @@ local function RefreshDropdownMenu(menuFrame)
 	end
 end
 
+local function SuppressDropDownFrameVisuals(menuFrame)
+	if(not menuFrame) then
+		return;
+	end
+
+	local frameName = menuFrame.GetName and menuFrame:GetName();
+	if(type(frameName) == "string" and frameName ~= "") then
+		for _, suffix in ipairs({ "Left", "Middle", "Right", "Button", "Text", "Icon" }) do
+			local region = _G[frameName .. suffix];
+			if(region) then
+				if(region.Hide) then
+					region:Hide();
+				end
+				if(region.SetAlpha) then
+					region:SetAlpha(0);
+				end
+			end
+		end
+	end
+
+	if(menuFrame.SetWidth) then
+		menuFrame:SetWidth(1);
+	end
+	if(menuFrame.SetHeight) then
+		menuFrame:SetHeight(1);
+	end
+end
+
 -- Recursively convert menuData (array of info tables) into UIDropDownMenu-compatible info objects
 local function CreateMenuInfo(entry)
 	if(type(entry) ~= "table") then
@@ -491,8 +566,20 @@ end
 
 function addon:GetPrimaryMenuData()
 	local sharedMediaFonts = {};
-	for _, font in ipairs(addon:ListMedia("font")) do
-		local fontName = font;
+	local rgxFonts = GetRGXFonts();
+	local fontEntries = {};
+
+	if(type(rgxFonts) == "table" and type(rgxFonts.ListAvailable) == "function") then
+		fontEntries = rgxFonts:ListAvailable() or {};
+	end
+
+	for _, fontInfo in ipairs(fontEntries) do
+		local fontName = fontInfo and fontInfo.name;
+		if(type(fontName) ~= "string" or fontName == "") then
+			fontName = nil;
+		end
+
+		if(fontName) then
 		tinsert(sharedMediaFonts, {
 			text = fontName,
 			func = function()
@@ -503,6 +590,7 @@ function addon:GetPrimaryMenuData()
 			checked = function() return self.db.global.fontFace == fontName; end,
 			keepShownOnClick = true,
 		});
+		end
 	end
 
 	local fontSizes = {};
@@ -923,6 +1011,7 @@ function addon:OpenContextMenu(contextMenuData, parentframe, anchor, point, rela
 	if(not addon.ContextMenu) then
 		addon.ContextMenu = CreateFrame("Frame", "PetBuddyContextMenuFrame", UIParent, "UIDropDownMenuTemplate");
 		addon.ContextMenu:SetFrameStrata("DIALOG");
+		SuppressDropDownFrameVisuals(addon.ContextMenu);
 	end
 
 	if(not contextMenuData) then

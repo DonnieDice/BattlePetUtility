@@ -383,7 +383,7 @@
 						</Scripts>
 					</CheckButton>
 					
-					<ScrollFrame name="$parentScrollFrame" parentKey="scrollFrame" inherits="HybridScrollFrameTemplate" hidden="true">
+					<ScrollFrame name="$parentScrollFrame" parentKey="scrollFrame" inherits="HybridScrollFrameTemplate" frameStrata="HIGH" hidden="true">
 						<Size x="208" y="138"/>
 						<Anchors>
 							<Anchor point="TOP" relativeTo="$parent" x="0" y="-31"/>
@@ -399,6 +399,7 @@
 						<Scripts>
 							<OnLoad>
 								tinsert(UISpecialFrames, self:GetName());
+								self:SetFrameLevel((self:GetFrameLevel() or 0) + 20);
 							</OnLoad>
 							<OnHide>
 								PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);

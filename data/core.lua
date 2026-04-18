@@ -194,7 +194,7 @@ end
 function addon:ShowWelcomeMessage()
 	if(not self.db or self.db.global.ShowWelcomeMessage == false) then return end
 
-	self:PrintMessage("Welcome! Use |cffb07fff/petbuddy|r to toggle, and |cffb07fff/petbuddy help|r for commands.");
+	self:PrintMessage("Welcome! Use |cffb07fff/pb2|r to toggle, and |cffb07fff/pb2 help|r for commands.");
 	self:PrintMessage("|cffffff00Version:|r |cff8080ff" .. GetAddonVersion() .. "|r");
 end
 
@@ -211,10 +211,10 @@ end
 
 function addon:PrintHelp()
 	self:PrintMessage("|cffffff00PetBuddy2 Commands:|r");
-	self:PrintMessage(" |cffb07fff/petbuddy|r - Toggle PetBuddy2");
-	self:PrintMessage(" |cffb07fff/petbuddy help|r - Show command help");
-	self:PrintMessage(" |cffb07fff/petbuddy welcome|r - Toggle login welcome message");
-	self:PrintMessage(" |cffb07fff/petbuddy version|r - Show current version");
+	self:PrintMessage(" |cffb07fff/pb2|r - Toggle PetBuddy2");
+	self:PrintMessage(" |cffb07fff/pb2 help|r - Show command help");
+	self:PrintMessage(" |cffb07fff/pb2 welcome|r - Toggle login welcome message");
+	self:PrintMessage(" |cffb07fff/pb2 version|r - Show current version");
 	self:PrintMessage(" |cffb07fff/pb2 icon on|r or |cffb07fffoff|r - Show/hide minimap icon");
 end
 
@@ -362,6 +362,16 @@ function addon:_DoUpdateMinimizeState()
 	if(minimized) then
 		-- Minimized: show only title bar, hide everything else including zone tracker
 		PetBuddyFrame:SetHeight(titleHeight + FRAME_MINIMIZED_PADDING);
+
+		-- Immediately hide zone tracker; RefreshZoneTracker's debounce may skip
+		-- the pending call and leave stale text (e.g. value "8 / 12") hanging
+		-- outside the collapsed frame.
+		if(PetBuddyFrameZoneTracker) then
+			PetBuddyFrameZoneTracker:Hide();
+		end
+		if(type(PetBuddyFlyout_Close) == "function") then
+			PetBuddyFlyout_Close();
+		end
 	elseif(hideMain) then
 		-- Hide main GUI body: show title bar + compact zone tracker
 		local zoneHeight = 40;
@@ -1440,23 +1450,82 @@ function PetBuddyFrameDragButton_OnClick(self, button)
 end
 	
 function PetBuddyFrameDragButton_OnDragStart(self)
-	local petID = self:GetParent().petID;
+	local parent = self:GetParent();
+	local petID = parent.petID;
 	if(not petID) then return end
-	
+
+	local slotIndex = parent:GetID();
+	if(type(slotIndex) ~= "number") then
+		return;
+	end
+
+	local _, _, _, _, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
+	if(locked) then
+		PetBuddyFrame._dragSourceSlot = nil;
+		PetBuddyFrame._dragSourcePetID = nil;
+		return;
+	end
+
 	if(not C_PetBattles.IsInBattle()) then
 		C_PetJournal.PickupPet(petID);
-		
+		-- Remember the slot the pet was picked up from so OnReceiveDrag can
+		-- perform a swap between two loadout slots.
+		PetBuddyFrame._dragSourceSlot = slotIndex;
+		PetBuddyFrame._dragSourcePetID = petID;
+
 		CloseMenus();
 	end
 end
 
+local function ClearPetBuddyDragState()
+	PetBuddyFrame._dragSourceSlot = nil;
+	PetBuddyFrame._dragSourcePetID = nil;
+end
+
+local function TrySwapPetLoadoutSlots(sourceSlot, targetSlot)
+	if(type(sourceSlot) ~= "number" or type(targetSlot) ~= "number") then
+		return false;
+	end
+
+	if(sourceSlot < 1 or sourceSlot > 3 or targetSlot < 1 or targetSlot > 3 or sourceSlot == targetSlot) then
+		return false;
+	end
+
+	local sourcePetID, _, _, _, sourceLocked = C_PetJournal.GetPetLoadOutInfo(sourceSlot);
+	local targetPetID, _, _, _, targetLocked = C_PetJournal.GetPetLoadOutInfo(targetSlot);
+	if(sourceLocked or targetLocked or not sourcePetID) then
+		return false;
+	end
+
+	C_PetJournal.SetPetLoadOutInfo(targetSlot, sourcePetID);
+	if(targetPetID) then
+		C_PetJournal.SetPetLoadOutInfo(sourceSlot, targetPetID);
+	else
+		C_PetJournal.SetPetLoadOutInfo(sourceSlot, nil);
+	end
+
+	return true;
+end
+
 function PetBuddyFrameDragButton_OnReceiveDrag(self)
-	local _, _, _, _, locked = C_PetJournal.GetPetLoadOutInfo(self:GetParent():GetID());
+	local parent = self:GetParent();
+	local targetSlot = parent:GetID();
+	local _, _, _, _, locked = C_PetJournal.GetPetLoadOutInfo(targetSlot);
 	if(locked) then
 		ClearCursor();
+		ClearPetBuddyDragState();
 		return;
 	end
-	
+
+	local sourceSlot = PetBuddyFrame._dragSourceSlot;
+	if(TrySwapPetLoadoutSlots(sourceSlot, targetSlot)) then
+		addon:RefreshPetJournalLoadOut();
+		ClearCursor();
+		ClearPetBuddyDragState();
+		CloseMenus();
+		return;
+	end
+
 	local type, petID = GetCursorInfo();
 	if(type == "battlepet") then
 		local _, dialog = StaticPopup_Visible("BATTLE_PET_RELEASE");
@@ -1466,13 +1535,17 @@ function PetBuddyFrameDragButton_OnReceiveDrag(self)
 		if ( PetJournal_IsPendingCage(petID) ) then
 			UIErrorsFrame:AddMessage(ERR_PET_JOURNAL_PET_PENDING_CAGE, 1.0, 0.1, 0.1, 1.0);
 			ClearCursor();
+			ClearPetBuddyDragState();
 			return;
 		end
-		C_PetJournal.SetPetLoadOutInfo(self:GetParent():GetID(), petID);
+
+		C_PetJournal.SetPetLoadOutInfo(targetSlot, petID);
+
 		addon:RefreshPetJournalLoadOut();
 		ClearCursor();
 	end
-	
+
+	ClearPetBuddyDragState();
 	CloseMenus();
 end
 
@@ -1901,10 +1974,10 @@ function TogglePetBuddy()
 end
 	
 function addon:OnInitialize()
-	SLASH_PETBUDDY1 = "/petbuddy";
-	SLASH_PETBUDDY2 = "/pb";
-	SLASH_PETBUDDY3 = "/bpb";
-	SlashCmdList["PETBUDDY"] = function(command)
+	SLASH_PB21 = "/pb2";
+	SLASH_PB22 = "/pb";
+	SLASH_PB23 = "/bpb";
+	SlashCmdList["PB2"] = function(command)
 		command = string.lower(strtrim(command or ""));
 
 		if(command == "") then
@@ -1915,24 +1988,14 @@ function addon:OnInitialize()
 			addon:ToggleWelcomeMessage();
 		elseif(command == "version") then
 			addon:PrintMessage("|cffffff00Version:|r |cff8080ff" .. GetAddonVersion() .. "|r");
-		else
-			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cffb07fff/petbuddy help|r.");
-		end
-	end
-
-	-- Register /pb2 command for icon toggle
-	SLASH_PB21 = "/pb2";
-	SlashCmdList["PB2"] = function(command)
-		command = string.lower(strtrim(command or ""));
-
-		if(command == "icon on" or command == "icon enable" or command == "icon show") then
+		elseif(command == "icon on" or command == "icon enable" or command == "icon show") then
 			addon:ToggleMinimapIcon(true);
 		elseif(command == "icon off" or command == "icon disable" or command == "icon hide") then
 			addon:ToggleMinimapIcon(false);
 		elseif(command == "icon") then
 			addon:PrintMessage("|cffffff00Usage:|r |cffb07fff/pb2 icon on|r or |cffb07fffoff|r");
 		else
-			addon:PrintMessage("|cffffcc00Unknown command.|r Use |cffb07fff/pb2 icon on|r or |cffb07fffoff|r.");
+			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cffb07fff/pb2 help|r.");
 		end
 	end
 

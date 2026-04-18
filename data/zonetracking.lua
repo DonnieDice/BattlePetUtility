@@ -6,6 +6,12 @@ local MAX_TOOLTIP_PET_LINES = 30;
 local MAX_VISIBLE_ZONE_LINES = 4;
 local TOOLTIP_ICON_SIZE = 12;
 local MISSING_SEGMENT_COLOR = CreateColor(0.62, 0.62, 0.62);
+local MAP_ALIASES = {
+	-- Stormwind City and its modern city-map variant should use the
+	-- nearest outdoor wild-pet dataset instead of showing as unavailable.
+	[84] = 37,
+	[301] = 37,
+};
 local PET_QUALITY_COLORS = {
 	[1] = CreateColor(1.00, 1.00, 1.00), -- poor shown as white per requested bar palette
 	[2] = CreateColor(1.00, 1.00, 1.00), -- common
@@ -581,6 +587,37 @@ local function ResolveZoneProgress()
 		mapID = parentMapID;
 	end
 
+	local aliasMapID = MAP_ALIASES[currentMapID];
+	if(aliasMapID and aliasMapID ~= currentMapID) then
+		local aliasData = GetPetTrackerSnapshotForMap(aliasMapID) or GetNativeProgressForMap(aliasMapID);
+		if(aliasData) then
+			aliasData.state = "ready";
+			aliasData.title = bestKnownMapName;
+			aliasData.resolvedMapID = aliasMapID;
+			return aliasData;
+		end
+
+		if(addon.ZoneSpeciesByMap and addon.ZoneSpeciesByMap[aliasMapID]) then
+			return {
+				state = "empty",
+				title = bestKnownMapName,
+				detail = "No trackable wild pets found for this zone.",
+				provider = "native",
+				resolvedMapID = aliasMapID,
+			};
+		end
+
+		if(GetPetTrackerSnapshotForMap(aliasMapID)) then
+			return {
+				state = "empty",
+				title = bestKnownMapName,
+				detail = "No trackable wild pets found for this zone.",
+				provider = "PetTracker",
+				resolvedMapID = aliasMapID,
+			};
+		end
+	end
+
 	if(addon.ZoneSpeciesByMap and addon.ZoneSpeciesByMap[currentMapID]) then
 		return {
 			state = "empty",
@@ -660,9 +697,9 @@ function addon:RefreshZoneTrackerAnchor()
 	if(hideMain) then
 		yOffset = -2;
 	elseif(anchorTarget == (PetBuddyFrameLoadouts and PetBuddyFrameLoadouts.scrollFrame) or anchorTarget == rawget(_G, "PetBuddyFrameLoadoutsScrollFrame")) then
-		yOffset = 10;
+		yOffset = -6;
 	elseif(showItems or showLoadouts) then
-		yOffset = 10;
+		yOffset = -6;
 	else
 		yOffset = -2;
 	end

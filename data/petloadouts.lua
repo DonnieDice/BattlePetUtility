@@ -504,6 +504,15 @@ function addon:RestoreLoadout(loadout_info)
 	addon:RefreshPetJournalLoadOut();
 	PetBuddyPetFrame_ResetAbilitySwitches();
 	RefreshLoadoutUI(false);
+	-- Enforce known-good static layout so the team change doesn't leave a
+	-- visual gap between the main GUI and the zone pet tracker.
+	if(type(addon.UpdateMinimizeState) == "function") then
+		addon:UpdateMinimizeState();
+	end
+	if(type(addon.RefreshZoneTracker) == "function") then
+		addon._lastZoneTrackerRefresh = nil;
+		addon:RefreshZoneTracker();
+	end
 	CloseMenus();
 	return true;
 end
