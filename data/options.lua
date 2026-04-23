@@ -11,17 +11,47 @@ local E = addon.E;
 local DEFAULT_STATUSBAR_NAME = "RenAscensionL";
 local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]];
 
-local function GetRGXFonts()
-	return rawget(_G, "RGXFonts");
-end
-
-local function GetRGXTextures()
+local function GetRGX()
 	local rgx = rawget(_G, "RGXFramework");
-	if(type(rgx) == "table" and type(rgx.GetModule) == "function") then
-		return rgx:GetModule("textures");
+	if(type(rgx) == "table") then
+		return rgx;
 	end
 
 	return nil;
+end
+
+local function GetRGXModule(name, globalName)
+	local rgx = GetRGX();
+	if(type(rgx) == "table" and type(rgx.RequireModule) == "function") then
+		local module = rgx:RequireModule(name);
+		if(type(module) == "table") then
+			return module;
+		end
+	end
+
+	if(type(rgx) == "table" and type(rgx.GetModule) == "function") then
+		local module = rgx:GetModule(name);
+		if(type(module) == "table") then
+			return module;
+		end
+	end
+
+	if(type(globalName) == "string") then
+		local module = rawget(_G, globalName);
+		if(type(module) == "table") then
+			return module;
+		end
+	end
+
+	return nil;
+end
+
+local function GetRGXFonts()
+	return GetRGXModule("fonts", "RGXFonts");
+end
+
+local function GetRGXTextures()
+	return GetRGXModule("textures", "RGXTextures");
 end
 
 local function GetDefaultFontName()
