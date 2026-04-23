@@ -1,7 +1,7 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
 
-	<Font name="PetBuddyFontTitleHuge" font="Interface/AddOns/RGX-Framework/media/fonts/Ubuntu-Regular.ttf" outline="NORMAL" virtual="true">
+	<Font name="PetBuddyFontTitleHuge" font="Fonts/FRIZQT__.TTF" outline="NORMAL" virtual="true">
 		<Shadow>
 			<Offset>
 				<AbsDimension x="1" y="-1"/>
@@ -12,7 +12,7 @@
 			<AbsValue val="16"/>
 		</FontHeight>
 	</Font>
-	<Font name="PetBuddyFontTitle" font="Interface/AddOns/RGX-Framework/media/fonts/Ubuntu-Regular.ttf" outline="NORMAL" virtual="true">
+	<Font name="PetBuddyFontTitle" font="Fonts/FRIZQT__.TTF" outline="NORMAL" virtual="true">
 		<Shadow>
 			<Offset>
 				<AbsDimension x="1" y="-1"/>
@@ -23,12 +23,12 @@
 			<AbsValue val="12"/>
 		</FontHeight>
 	</Font>
-	<Font name="PetBuddyFontNormal" font="Interface/AddOns/RGX-Framework/media/fonts/Ubuntu-Regular.ttf" outline="NORMAL" virtual="true">
+	<Font name="PetBuddyFontNormal" font="Fonts/ARIALN.TTF" outline="NORMAL" virtual="true">
 		<FontHeight>
 			<AbsValue val="10"/>
 		</FontHeight>
 	</Font>
-	<Font name="PetBuddyFontSmall" font="Interface/AddOns/RGX-Framework/media/fonts/Ubuntu-Regular.ttf" outline="NORMAL" virtual="true">
+	<Font name="PetBuddyFontSmall" font="Fonts/ARIALN.TTF" outline="NORMAL" virtual="true">
 		<FontHeight>
 			<AbsValue val="9"/>
 		</FontHeight>

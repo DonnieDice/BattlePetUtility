@@ -486,7 +486,7 @@ function addon:HasLoadedTeamSelection()
 end
 
 function addon:RunStartupRefresh()
-	if(not PetBuddyFrame or not PetBuddyFrame:IsShown()) then
+	if(not PetBuddyFrame) then
 		return false;
 	end
 
@@ -592,8 +592,11 @@ function addon:OnEnable()
 	addon:RegisterEvent("BARBER_SHOP_CLOSE");
 	
 	addon:UpdatePets();
-	addon:ShowWelcomeMessage();
 	addon:HandleAutoSummonTrigger("PLAYER_ENTERING_WORLD");
+	addon.PendingStartupRefreshes = 0;
+	addon:QueueStartupRefresh(0.25);
+	addon:QueueStartupRefresh(0.75);
+	addon:QueueStartupRefresh(1.5);
 	
 	addon:ScheduleRepeatingTimer(function()
 		addon:UpdateAutoResummon();
@@ -1917,8 +1920,13 @@ function addon:PLAYER_ENTERING_WORLD(event, isInitialLogin, isReloadingUi)
 		addon.LoginTime = GetTime();
 	end
 
+	if(isInitialLogin or isReloadingUi) then
+		addon:ShowWelcomeMessage();
+	end
+
 	addon:HandleAutoSummonTrigger("PLAYER_ENTERING_WORLD");
 	addon.PendingStartupRefreshes = 0;
+	addon:RunStartupRefresh();
 	addon:QueueStartupRefresh(0.5);
 	addon:QueueStartupRefresh(1.5);
 end
@@ -1943,10 +1951,12 @@ end
 
 function addon:PET_JOURNAL_LIST_UPDATE()
 	-- Lightweight handler: only update pets and loadout list
-	-- Avoid triggering expensive RefreshZoneTracker cascade
 	self:UpdatePets();
 	if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
 		PetBuddyFrameLoadouts_UpdateList();
+	end
+	if(type(self.RefreshZoneTracker) == "function") then
+		self:RefreshZoneTracker();
 	end
 end
 

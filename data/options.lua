@@ -15,6 +15,15 @@ local function GetRGXFonts()
 	return rawget(_G, "RGXFonts");
 end
 
+local function GetRGXTextures()
+	local rgx = rawget(_G, "RGXFramework");
+	if(type(rgx) == "table" and type(rgx.GetModule) == "function") then
+		return rgx:GetModule("textures");
+	end
+
+	return nil;
+end
+
 local function GetDefaultFontName()
 	local rgxFonts = GetRGXFonts();
 	if(type(rgxFonts) == "table" and type(rgxFonts.GetDefault) == "function") then
@@ -27,31 +36,59 @@ local function GetDefaultFontName()
 	return "FRIZQT";
 end
 
-local function GetRGXFontPath(fontName)
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) ~= "table" or type(rgxFonts.GetPath) ~= "function") then
-		return nil;
-	end
-
-	if(type(fontName) == "string" and fontName ~= "") then
-		local exists = type(rgxFonts.Exists) ~= "function" or rgxFonts:Exists(fontName);
-		local available = type(rgxFonts.IsAvailable) ~= "function" or rgxFonts:IsAvailable(fontName);
-		if(exists and available) then
-			return rgxFonts:GetPath(fontName);
-		end
-	end
-
-	return rgxFonts:GetPath(GetDefaultFontName());
-end
-
 addon.Media = addon.Media or {
-	font = {},
 	statusbar = {},
 	defaults = {
-		font = GetDefaultFontName(),
 		statusbar = DEFAULT_STATUSBAR_NAME,
 	},
 };
+
+local function BuildDefaultTextStyle(size, flags, extras)
+	local style = {
+		font = GetDefaultFontName(),
+		size = size,
+		flags = flags or "",
+	};
+
+	if(type(extras) == "table") then
+		for key, value in pairs(extras) do
+			style[key] = value;
+		end
+	end
+
+	local rgxFonts = GetRGXFonts();
+	if(type(rgxFonts) == "table" and type(rgxFonts.CreateStyle) == "function") then
+		return rgxFonts:CreateStyle(style);
+	end
+
+	return style;
+end
+
+local function EnsurePB2TextStyles(db)
+	if(type(db) ~= "table") then
+		return;
+	end
+
+	if(type(db.titleText) ~= "table" or type(db.normalText) ~= "table" or type(db.smallText) ~= "table") then
+		local legacyFont = db.fontFace or GetDefaultFontName();
+		local legacySize = tonumber(db.fontSize) or 10;
+
+		db.titleText = BuildDefaultTextStyle(legacySize + 2, "OUTLINE", {
+			font = legacyFont,
+			shadowColor = "shadow",
+			shadowOffset = { x = 1, y = -1 },
+		});
+		db.normalText = BuildDefaultTextStyle(legacySize, "", {
+			font = legacyFont,
+		});
+		db.smallText = BuildDefaultTextStyle(math.max(8, legacySize - 1), "", {
+			font = legacyFont,
+		});
+	end
+
+	db.fontFace = nil;
+	db.fontSize = nil;
+end
 
 local function EnsureTable(tbl, key)
 	if(type(tbl[key]) ~= "table") then
@@ -86,11 +123,29 @@ function addon:RegisterMedia(mediaType, name, path)
 	end
 
 	mediaTable[name] = path;
+
+	if(string.lower(mediaType or "") == "statusbar") then
+		local rgxTextures = GetRGXTextures();
+		if(type(rgxTextures) == "table" and type(rgxTextures.RegisterBar) == "function") then
+			rgxTextures:RegisterBar(name, path);
+		end
+	end
 end
 
 function addon:HasMedia(mediaType, name)
 	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
-	return type(mediaTable) == "table" and mediaTable[name] ~= nil;
+	if(type(mediaTable) == "table" and mediaTable[name] ~= nil) then
+		return true;
+	end
+
+	if(string.lower(mediaType or "") == "statusbar") then
+		local rgxTextures = GetRGXTextures();
+		return type(rgxTextures) == "table"
+			and type(rgxTextures.bars) == "table"
+			and rgxTextures.bars[name] ~= nil;
+	end
+
+	return false;
 end
 
 function addon:FetchMedia(mediaType, name)
@@ -104,13 +159,48 @@ function addon:FetchMedia(mediaType, name)
 		return mediaTable[name];
 	end
 
+	if(mediaKey == "statusbar") then
+		local rgxTextures = GetRGXTextures();
+		if(type(name) == "string"
+			and type(rgxTextures) == "table"
+			and type(rgxTextures.bars) == "table"
+			and rgxTextures.bars[name] ~= nil
+			and type(rgxTextures.GetBar) == "function") then
+			return rgxTextures:GetBar(name);
+		end
+	end
+
 	local defaultName = self.Media.defaults and self.Media.defaults[mediaKey];
 	if(type(defaultName) == "string" and mediaTable[defaultName]) then
 		return mediaTable[defaultName];
 	end
 
+	if(mediaKey == "statusbar") then
+		local rgxTextures = GetRGXTextures();
+		if(type(defaultName) == "string"
+			and type(rgxTextures) == "table"
+			and type(rgxTextures.bars) == "table"
+			and rgxTextures.bars[defaultName] ~= nil
+			and type(rgxTextures.GetBar) == "function") then
+			return rgxTextures:GetBar(defaultName);
+		end
+	end
+
 	for _, path in pairs(mediaTable) do
 		return path;
+	end
+
+	if(mediaKey == "statusbar") then
+		local rgxTextures = GetRGXTextures();
+		if(type(rgxTextures) == "table"
+			and type(rgxTextures.ListBars) == "function"
+			and type(rgxTextures.GetBar) == "function") then
+			local bars = rgxTextures:ListBars();
+			local first = bars and bars[1];
+			if(type(first) == "string" and first ~= "") then
+				return rgxTextures:GetBar(first);
+			end
+		end
 	end
 
 	return nil;
@@ -119,7 +209,7 @@ end
 function addon:ListMedia(mediaType)
 	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
 	if(type(mediaTable) ~= "table") then
-		return {};
+		mediaTable = {};
 	end
 
 	local list, seen = {}, {};
@@ -129,27 +219,21 @@ function addon:ListMedia(mediaType)
 			tinsert(list, name);
 		end
 	end
-	table.sort(list);
-	return list;
-end
 
-local function ImportRGXFonts()
-	local rgxFonts = rawget(_G, "RGXFonts");
-	if(type(rgxFonts) ~= "table" or type(rgxFonts.ListAvailable) ~= "function") then
-		return;
-	end
-
-	addon.Media.font = {};
-	addon.Media.defaults.font = GetDefaultFontName();
-
-	for _, info in ipairs(rgxFonts:ListAvailable() or {}) do
-		local fontName = info and info.name;
-		local fontPath = info and info.path;
-
-		if(type(fontName) == "string" and fontName ~= "" and type(fontPath) == "string" and fontPath ~= "") then
-			addon:RegisterMedia("font", fontName, fontPath);
+	if(string.lower(mediaType or "") == "statusbar") then
+		local rgxTextures = GetRGXTextures();
+		if(type(rgxTextures) == "table" and type(rgxTextures.ListBars) == "function") then
+			for _, name in ipairs(rgxTextures:ListBars()) do
+				if(type(name) == "string" and name ~= "" and not seen[name]) then
+					seen[name] = true;
+					tinsert(list, name);
+				end
+			end
 		end
 	end
+
+	table.sort(list);
+	return list;
 end
 
 local function ImportExternalStatusbars()
@@ -173,7 +257,6 @@ local function ImportExternalStatusbars()
 	end
 end
 
-ImportRGXFonts();
 addon:RegisterMedia("statusbar", DEFAULT_STATUSBAR_NAME, DEFAULT_STATUSBAR_PATH);
 addon:RegisterMedia("statusbar", "Blizzard", "Interface\\TargetingFrame\\UI-StatusBar");
 addon:RegisterMedia("statusbar", "Smooth", "Interface\\RaidFrame\\Raid-Bar-Hp-Fill");
@@ -211,9 +294,13 @@ function addon:InitializeDatabase()
 				y = 0,
 			},
 			
-			fontSize = 10,
-			fontFace = GetDefaultFontName(),
 			barTexture = "RenAscensionL",
+			titleText = BuildDefaultTextStyle(12, "OUTLINE", {
+				shadowColor = "shadow",
+				shadowOffset = { x = 1, y = -1 },
+			}),
+			normalText = BuildDefaultTextStyle(10, ""),
+			smallText = BuildDefaultTextStyle(9, ""),
 			
 			SavedLoadouts = {},
 			
@@ -293,6 +380,8 @@ function addon:InitializeDatabase()
 		_saved = saved,
 	};
 
+	EnsurePB2TextStyles(self.db.global);
+
 	if(type(addon.InitializePetItemCategoryDefaults) == "function") then
 		addon:InitializePetItemCategoryDefaults();
 	end
@@ -363,30 +452,25 @@ function addon:RestoreSavedSettings()
 	end
 end
 
-function addon:RefreshMedia(font, barTexture)
-	ImportRGXFonts();
-
-	local selectedFont = font or self.db.global.fontFace;
+function addon:RefreshMedia(_, barTexture)
 	local selectedBarTexture = barTexture or self.db.global.barTexture;
-	local fontPath = GetRGXFontPath(selectedFont);
-
-	if(not fontPath) then
-		selectedFont = GetDefaultFontName();
-		self.db.global.fontFace = selectedFont;
-		fontPath = GetRGXFontPath(selectedFont);
-	end
 	if(not addon:HasMedia("statusbar", selectedBarTexture)) then
 		selectedBarTexture = DEFAULT_STATUSBAR_NAME;
 		self.db.global.barTexture = selectedBarTexture;
 	end
 
 	local statusBarPath = addon:FetchMedia("statusbar", selectedBarTexture);
-	
-	local fontSize = self.db.global.fontSize;
-	
-	PetBuddyFontTitle:SetFont(fontPath, fontSize + 2, "OUTLINE");
-	PetBuddyFontNormal:SetFont(fontPath, fontSize, "OUTLINE");
-	PetBuddyFontSmall:SetFont(fontPath, math.max(8, fontSize - 1), "OUTLINE");
+
+	EnsurePB2TextStyles(self.db.global);
+
+	local rgxFonts = GetRGXFonts();
+	if(type(rgxFonts) == "table" and type(rgxFonts.ApplyStyleMap) == "function") then
+		rgxFonts:ApplyStyleMap({
+			titleText = PetBuddyFontTitle,
+			normalText = PetBuddyFontNormal,
+			smallText = PetBuddyFontSmall,
+		}, self.db.global);
+	end
 	
 	for i=1,3 do
 		local petFrame = _G['PetBuddyFramePet'..i];
@@ -415,6 +499,73 @@ end
 function addon:SetWindowScale(scale)
 	self.db.global.WindowScale = scale or 1.0;
 	PetBuddyFrame:SetScale(self.db.global.WindowScale);
+end
+
+function addon:CreateTextStyleOptionsFrame()
+	if(self.TextStyleOptionsFrame) then
+		return self.TextStyleOptionsFrame;
+	end
+
+	local rgxFonts = GetRGXFonts();
+	if(type(rgxFonts) ~= "table" or type(rgxFonts.CreateStyleEditorFrame) ~= "function") then
+		return nil;
+	end
+
+	local frame = rgxFonts:CreateStyleEditorFrame({
+		name = "PetBuddyTextStyleOptionsFrame",
+		parent = UIParent,
+		title = "PetBuddy2 Text Styles",
+		subtitle = "PetBuddy2 uses RGX-Framework for all font selection and styling.",
+		db = self.db.global,
+		width = 420,
+		height = 520,
+		onChange = function()
+			addon:RefreshMedia();
+		end,
+		onReset = function(db)
+			db.titleText = BuildDefaultTextStyle(12, "OUTLINE", {
+				shadowColor = "shadow",
+				shadowOffset = { x = 1, y = -1 },
+			});
+			db.normalText = BuildDefaultTextStyle(10, "");
+			db.smallText = BuildDefaultTextStyle(9, "");
+		end,
+		styles = {
+			{
+				key = "titleText",
+				label = "Title Text",
+				previewText = "PetBuddy2 title and pet names",
+				width = 360,
+				height = 130,
+			},
+			{
+				key = "normalText",
+				label = "Normal Text",
+				previewText = "PetBuddy2 body and status text",
+				width = 360,
+				height = 130,
+			},
+			{
+				key = "smallText",
+				label = "Small Text",
+				previewText = "PetBuddy2 compact helper text",
+				width = 360,
+				height = 130,
+			},
+		},
+	});
+
+	self.TextStyleOptionsFrame = frame;
+	return frame;
+end
+
+function addon:ToggleTextStyleOptionsFrame()
+	local frame = self:CreateTextStyleOptionsFrame();
+	if(not frame) then
+		return;
+	end
+
+	frame:Toggle();
 end
 
 function addon:GetWindowScaleMenu()
@@ -565,49 +716,6 @@ function addon:GetPetItemsUtilityMenuData()
 end
 
 function addon:GetPrimaryMenuData()
-	local sharedMediaFonts = {};
-	local rgxFonts = GetRGXFonts();
-	local fontEntries = {};
-
-	if(type(rgxFonts) == "table" and type(rgxFonts.ListAvailable) == "function") then
-		fontEntries = rgxFonts:ListAvailable() or {};
-	end
-
-	for _, fontInfo in ipairs(fontEntries) do
-		local fontName = fontInfo and fontInfo.name;
-		if(type(fontName) ~= "string" or fontName == "") then
-			fontName = nil;
-		end
-
-		if(fontName) then
-		tinsert(sharedMediaFonts, {
-			text = fontName,
-			func = function()
-				self.db.global.fontFace = fontName;
-				addon:RefreshMedia();
-				RefreshDropdownMenu(addon.ContextMenu);
-			end,
-			checked = function() return self.db.global.fontFace == fontName; end,
-			keepShownOnClick = true,
-		});
-		end
-	end
-
-	local fontSizes = {};
-	for size = 8, 16 do
-		local value = size;
-		tinsert(fontSizes, {
-			text = tostring(value),
-			func = function()
-				self.db.global.fontSize = value;
-				addon:RefreshMedia();
-				RefreshDropdownMenu(addon.ContextMenu);
-			end,
-			checked = function() return self.db.global.fontSize == value; end,
-			keepShownOnClick = true,
-		});
-	end
-
 	local sharedMediaBarTextures = {};
 	for _, statusbar in ipairs(addon:ListMedia("statusbar")) do
 		local barName = statusbar;
@@ -977,6 +1085,13 @@ function addon:GetPrimaryMenuData()
 			text = "Frame Options", isTitle = true, notCheckable = true, disabled = true,
 		},
 		{
+			text = "Text styles",
+			notCheckable = true,
+			func = function()
+				addon:ToggleTextStyleOptionsFrame();
+			end,
+		},
+		{
 			text = "Bar texture",
 			notCheckable = true,
 			hasArrow = true,
@@ -988,18 +1103,6 @@ function addon:GetPrimaryMenuData()
 			hasArrow = true,
 			keepShownOnClick = true,
 			menuList = addon:GetWindowScaleMenu(),
-		},
-		{
-			text = "Font face",
-			notCheckable = true,
-			hasArrow = true,
-			menuList = sharedMediaFonts,
-		},
-		{
-			text = "Font size",
-			notCheckable = true,
-			hasArrow = true,
-			menuList = fontSizes,
 		},
 	};
 

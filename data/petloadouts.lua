@@ -564,11 +564,26 @@ end
 function addon:GetSortedLoadouts()
 	local loadoutData = {};
 	local savedLoadouts = EnsureSavedLoadoutsTable() or {};
+	local seenNames = {};
+
 	for loadout_name, pets in pairs(savedLoadouts) do
-		tinsert(loadoutData, {
+		local entry = {
 			name = loadout_name,
 			pets = pets,
-		});
+		};
+		tinsert(loadoutData, entry);
+		seenNames[string.lower(loadout_name or "")] = true;
+	end
+
+	if(addon.IsRematchLoadoutsEnabled and addon:IsRematchLoadoutsEnabled()) then
+		local rematchLoadouts = addon:GetRematchLoadouts();
+		for _, loadout in ipairs(rematchLoadouts) do
+			local normalizedName = string.lower(loadout.name or "");
+			if(not seenNames[normalizedName]) then
+				tinsert(loadoutData, loadout);
+				seenNames[normalizedName] = true;
+			end
+		end
 	end
 	
 	table.sort(loadoutData, function(a, b)
