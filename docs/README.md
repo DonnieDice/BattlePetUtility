@@ -2,7 +2,7 @@
 
 Documentation index for PetBuddy2.
 
-Current addon version: `v2.1.0`
+Current addon version: `v2.2.1`
 
 ## Files
 
