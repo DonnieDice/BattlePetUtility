@@ -1,3 +1,10 @@
+# v2.2.2 - 2026-04-23
+
+## Changes
+- Merged origin/main into dev with resolved conflicts.
+- Added RGX-Framework as RequiredDep.
+- Hardened RGX module resolution for compatibility.
+
 # v2.2.1 - 2026-04-23
 
 ## Changes

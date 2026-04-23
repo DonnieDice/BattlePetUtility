@@ -1,7 +1,7 @@
 ## Interface: 120005
 ## Title: |cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r
 ## Notes: |n|r  |cffb07fff/pb2 -|r Open options panel  |n|r   |cffb512fcBy DonnieDice|r
-## Version: v2.2.1
+## Version: v2.2.2
 ## Author: DonnieDice
 ## Email: donniedice@protonmail.com
 ## SavedVariables: PetBuddyDB
