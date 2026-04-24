@@ -9,82 +9,29 @@
 local ADDON_NAME, addon = ...;
 local E = addon.E;
 local DEFAULT_STATUSBAR_NAME = "RenAscensionL";
-local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]];
 
-local function GetRGX()
-	return rawget(_G, "RGXFramework");
-end
-
-local function GetRGXFonts()
-	local rgx = GetRGX();
-	return rgx and rgx:GetFonts();
-end
-
-local function GetRGXTextures()
-	local rgx = GetRGX();
-	return rgx and rgx:GetTextures();
-end
-
-local function GetDefaultFontName()
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) == "table" and type(rgxFonts.GetDefault) == "function") then
-		local defaultName = rgxFonts:GetDefault();
-		if(type(defaultName) == "string" and defaultName ~= "") then
-			return defaultName;
-		end
-	end
-
-	return "FRIZQT";
-end
-
-addon.Media = addon.Media or {
-	statusbar = {},
-	defaults = {
-		statusbar = DEFAULT_STATUSBAR_NAME,
-	},
-};
+local Fonts    = _G.RGXFonts;
+local Textures = _G.RGXTextures;
 
 local function BuildDefaultTextStyle(size, flags, extras)
-	local style = {
-		font = GetDefaultFontName(),
-		size = size,
-		flags = flags or "",
-	};
-
-	if(type(extras) == "table") then
-		for key, value in pairs(extras) do
-			style[key] = value;
-		end
+	local style = { font = Fonts:GetDefault(), size = size, flags = flags or "" };
+	if type(extras) == "table" then
+		for key, value in pairs(extras) do style[key] = value; end
 	end
-
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) == "table" and type(rgxFonts.CreateStyle) == "function") then
-		return rgxFonts:CreateStyle(style);
-	end
-
-	return style;
+	return Fonts:CreateStyle(style);
 end
 
 local function EnsurePB2TextStyles(db)
-	if(type(db) ~= "table") then
-		return;
-	end
+	if type(db) ~= "table" then return; end
 
-	if(type(db.titleText) ~= "table" or type(db.normalText) ~= "table" or type(db.smallText) ~= "table") then
-		local legacyFont = db.fontFace or GetDefaultFontName();
+	if type(db.titleText) ~= "table" or type(db.normalText) ~= "table" or type(db.smallText) ~= "table" then
+		local legacyFont = db.fontFace or Fonts:GetDefault();
 		local legacySize = tonumber(db.fontSize) or 10;
-
 		db.titleText = BuildDefaultTextStyle(legacySize + 2, "OUTLINE", {
-			font = legacyFont,
-			shadowColor = "shadow",
-			shadowOffset = { x = 1, y = -1 },
+			font = legacyFont, shadowColor = "shadow", shadowOffset = { x = 1, y = -1 },
 		});
-		db.normalText = BuildDefaultTextStyle(legacySize, "", {
-			font = legacyFont,
-		});
-		db.smallText = BuildDefaultTextStyle(math.max(8, legacySize - 1), "", {
-			font = legacyFont,
-		});
+		db.normalText = BuildDefaultTextStyle(legacySize, "",         { font = legacyFont });
+		db.smallText  = BuildDefaultTextStyle(math.max(8, legacySize - 1), "", { font = legacyFont });
 	end
 
 	db.fontFace = nil;
@@ -92,20 +39,16 @@ local function EnsurePB2TextStyles(db)
 end
 
 local function EnsureTable(tbl, key)
-	if(type(tbl[key]) ~= "table") then
-		tbl[key] = {};
-	end
+	if type(tbl[key]) ~= "table" then tbl[key] = {}; end
 	return tbl[key];
 end
 
 local function CopyDefaults(dst, src)
 	for key, value in pairs(src) do
-		if(type(value) == "table") then
-			if(type(dst[key]) ~= "table") then
-				dst[key] = {};
-			end
+		if type(value) == "table" then
+			if type(dst[key]) ~= "table" then dst[key] = {}; end
 			CopyDefaults(dst[key], value);
-		elseif(dst[key] == nil) then
+		elseif dst[key] == nil then
 			dst[key] = value;
 		end
 	end
@@ -117,156 +60,12 @@ local function GetCharacterKey()
 	return characterName .. " - " .. realmName;
 end
 
-function addon:RegisterMedia(mediaType, name, path)
-	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
-	if(not mediaTable or type(name) ~= "string" or type(path) ~= "string") then
-		return;
-	end
-
-	mediaTable[name] = path;
-
-	if(string.lower(mediaType or "") == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(rgxTextures) == "table" and type(rgxTextures.RegisterBar) == "function") then
-			rgxTextures:RegisterBar(name, path);
-		end
-	end
-end
-
-function addon:HasMedia(mediaType, name)
-	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
-	if(type(mediaTable) == "table" and mediaTable[name] ~= nil) then
-		return true;
-	end
-
-	if(string.lower(mediaType or "") == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		return type(rgxTextures) == "table"
-			and type(rgxTextures.bars) == "table"
-			and rgxTextures.bars[name] ~= nil;
-	end
-
-	return false;
-end
-
-function addon:FetchMedia(mediaType, name)
-	local mediaKey = string.lower(mediaType or "");
-	local mediaTable = self.Media and self.Media[mediaKey];
-	if(type(mediaTable) ~= "table") then
-		return nil;
-	end
-
-	if(type(name) == "string" and mediaTable[name]) then
-		return mediaTable[name];
-	end
-
-	if(mediaKey == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(name) == "string"
-			and type(rgxTextures) == "table"
-			and type(rgxTextures.bars) == "table"
-			and rgxTextures.bars[name] ~= nil
-			and type(rgxTextures.GetBar) == "function") then
-			return rgxTextures:GetBar(name);
-		end
-	end
-
-	local defaultName = self.Media.defaults and self.Media.defaults[mediaKey];
-	if(type(defaultName) == "string" and mediaTable[defaultName]) then
-		return mediaTable[defaultName];
-	end
-
-	if(mediaKey == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(defaultName) == "string"
-			and type(rgxTextures) == "table"
-			and type(rgxTextures.bars) == "table"
-			and rgxTextures.bars[defaultName] ~= nil
-			and type(rgxTextures.GetBar) == "function") then
-			return rgxTextures:GetBar(defaultName);
-		end
-	end
-
-	for _, path in pairs(mediaTable) do
-		return path;
-	end
-
-	if(mediaKey == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(rgxTextures) == "table"
-			and type(rgxTextures.ListBars) == "function"
-			and type(rgxTextures.GetBar) == "function") then
-			local bars = rgxTextures:ListBars();
-			local first = bars and bars[1];
-			if(type(first) == "string" and first ~= "") then
-				return rgxTextures:GetBar(first);
-			end
-		end
-	end
-
-	return nil;
-end
-
-function addon:ListMedia(mediaType)
-	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
-	if(type(mediaTable) ~= "table") then
-		mediaTable = {};
-	end
-
-	local list, seen = {}, {};
-	for name, path in pairs(mediaTable) do
-		if(type(name) == "string" and name ~= "" and not seen[name]) then
-			seen[name] = true;
-			tinsert(list, name);
-		end
-	end
-
-	if(string.lower(mediaType or "") == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(rgxTextures) == "table" and type(rgxTextures.ListBars) == "function") then
-			for _, name in ipairs(rgxTextures:ListBars()) do
-				if(type(name) == "string" and name ~= "" and not seen[name]) then
-					seen[name] = true;
-					tinsert(list, name);
-				end
-			end
-		end
-	end
-
-	table.sort(list);
-	return list;
-end
-
-local function ImportExternalStatusbars()
-	local libStubObject = rawget(_G, "LibStub");
-	if(type(libStubObject) ~= "table" or type(libStubObject.GetLibrary) ~= "function") then
-		return;
-	end
-
-	local ok, externalLSM = pcall(libStubObject.GetLibrary, libStubObject, "LibSharedMedia-3.0", true);
-	if(not ok or not externalLSM) then
-		return;
-	end
-
-	local mediaType = "statusbar";
-	local mediaList = externalLSM:List(mediaType) or {};
-	for _, mediaName in ipairs(mediaList) do
-		local mediaPath = externalLSM:Fetch(mediaType, mediaName, true) or externalLSM:Fetch(mediaType, mediaName);
-		if(type(mediaPath) == "string" and mediaPath ~= "") then
-			addon:RegisterMedia(mediaType, mediaName, mediaPath);
-		end
-	end
-end
-
-addon:RegisterMedia("statusbar", DEFAULT_STATUSBAR_NAME, DEFAULT_STATUSBAR_PATH);
-addon:RegisterMedia("statusbar", "Blizzard", "Interface\\TargetingFrame\\UI-StatusBar");
-addon:RegisterMedia("statusbar", "Smooth", "Interface\\RaidFrame\\Raid-Bar-Hp-Fill");
-addon:RegisterMedia("statusbar", "Flat", "Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar");
-addon:RegisterMedia("statusbar", "Glamour", "Interface\\AddOns\\PetBuddy2\\media\\renascensionl.tga");
-addon:RegisterMedia("statusbar", "Minimalist", "Interface\\Tooltips\\UI-Tooltip-Background");
-addon:RegisterMedia("statusbar", "Perl", "Interface\\TargetingFrame\\UI-StatusBar");
-addon:RegisterMedia("statusbar", "Smoother", "Interface\\AddOns\\PetBuddy2\\media\\backdrop.tga");
-ImportExternalStatusbars();
+-- Register PB2's bundled textures into the shared framework pool
+Textures:RegisterBars("PetBuddy2", {
+	[DEFAULT_STATUSBAR_NAME] = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]],
+	["Glamour"]              = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]],
+	["Smoother"]             = [[Interface\AddOns\PetBuddy2\media\backdrop.tga]],
+});
 
 E.VISIBILITY_MODE = {
 	DO_NOTHING 	= 0x1,
@@ -455,23 +254,20 @@ end
 
 function addon:RefreshMedia(_, barTexture)
 	local selectedBarTexture = barTexture or self.db.global.barTexture;
-	if(not addon:HasMedia("statusbar", selectedBarTexture)) then
+	if not Textures:Exists(selectedBarTexture) then
 		selectedBarTexture = DEFAULT_STATUSBAR_NAME;
 		self.db.global.barTexture = selectedBarTexture;
 	end
 
-	local statusBarPath = addon:FetchMedia("statusbar", selectedBarTexture);
+	local statusBarPath = Textures:GetBar(selectedBarTexture);
 
 	EnsurePB2TextStyles(self.db.global);
 
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) == "table" and type(rgxFonts.ApplyStyleMap) == "function") then
-		rgxFonts:ApplyStyleMap({
-			titleText = PetBuddyFontTitle,
-			normalText = PetBuddyFontNormal,
-			smallText = PetBuddyFontSmall,
-		}, self.db.global);
-	end
+	Fonts:ApplyStyleMap({
+		titleText = PetBuddyFontTitle,
+		normalText = PetBuddyFontNormal,
+		smallText = PetBuddyFontSmall,
+	}, self.db.global);
 	
 	for i=1,3 do
 		local petFrame = _G['PetBuddyFramePet'..i];
@@ -507,12 +303,7 @@ function addon:CreateTextStyleOptionsFrame()
 		return self.TextStyleOptionsFrame;
 	end
 
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) ~= "table" or type(rgxFonts.CreateStyleEditorFrame) ~= "function") then
-		return nil;
-	end
-
-	local frame = rgxFonts:CreateStyleEditorFrame({
+	local frame = Fonts:CreateStyleEditorFrame({
 		name = "PetBuddyTextStyleOptionsFrame",
 		parent = UIParent,
 		title = "PetBuddy2 Text Styles",

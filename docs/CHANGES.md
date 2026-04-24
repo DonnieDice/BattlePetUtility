@@ -1,3 +1,8 @@
+# v2.2.3 - 2026-04-24
+
+## Changes
+- Replaced LibStub / LibDataBroker-1.1 with native `RGXDataBroker` framework module. No external library dependency. Data object proxy behaviour is identical — `addon.databroker.text = ...` still fires display callbacks automatically. If LibDataBroker-1.1 is loaded by another addon, the object is mirrored to it for display addon compatibility.
+
 # v2.2.2 - 2026-04-23
 
 ## Changes
