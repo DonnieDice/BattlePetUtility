@@ -1,4 +1,5 @@
 local ADDON_NAME, addon = ...;
+local RGX = _G.RGXFramework;
 
 local ZONE_TRACKER_TITLE = "Zone Pets";
 local MAX_TRACKED_PET_NAMES = 3;
@@ -333,7 +334,7 @@ local function UpdateQualityBars(frame, snapshot)
 	local qualityCounts = snapshot.qualityCounts or {};
 	local containerWidth = frame.bar:GetWidth() or 0;
 	if(containerWidth <= 0) then
-		C_Timer.After(0, function()
+		RGX:After(0, function()
 			if(frame and frame.bar and frame.snapshot == snapshot) then
 				UpdateQualityBars(frame, snapshot);
 			end

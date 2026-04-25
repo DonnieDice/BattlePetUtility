@@ -252,6 +252,20 @@ function addon:RestoreSavedSettings()
 	end
 end
 
+function addon:ListMedia(mediaType)
+	if mediaType == "statusbar" then
+		return Textures:ListBars();
+	end
+	return {};
+end
+
+function addon:FetchMedia(mediaType, name)
+	if mediaType == "statusbar" then
+		return Textures:GetBar(name);
+	end
+	return nil;
+end
+
 function addon:RefreshMedia(_, barTexture)
 	local selectedBarTexture = barTexture or self.db.global.barTexture;
 	if not Textures:Exists(selectedBarTexture) then

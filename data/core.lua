@@ -13,6 +13,7 @@ addon.E = addon.E or {};
 addon.ADDON_TITLE = "PetBuddy2";
 local E = addon.E;
 local unpackFunc = unpack or table.unpack;
+local RGX = assert(_G.RGXFramework, "PetBuddy2: RGX-Framework not loaded");
 local PET_TYPE_TEXTURE_SUFFIX = {
 	[1] = "Humanoid",
 	[2] = "Dragon",
@@ -62,43 +63,26 @@ local function GetSafeRarityColor(rarity)
 	return ITEM_QUALITY_COLORS[normalized - 1] or ITEM_QUALITY_COLORS[1] or NORMAL_FONT_COLOR;
 end
 
-addon._eventHandlers = addon._eventHandlers or {};
 addon._timers = addon._timers or {};
-
-addon.EventFrame = addon.EventFrame or CreateFrame("Frame");
-addon.EventFrame:SetScript("OnEvent", function(_, event, ...)
-	local handler = addon._eventHandlers[event];
-	if(not handler) then
-		handler = addon[event];
-	end
-
-	if(type(handler) == "string") then
-		handler = addon[handler];
-	end
-
-	if(type(handler) == "function") then
-		handler(addon, event, ...);
-	end
-end);
 
 function addon:RegisterEvent(event, handler)
 	if(not event) then return end
-
-	local ok = pcall(self.EventFrame.RegisterEvent, self.EventFrame, event);
-	if(not ok) then
-		self._eventHandlers[event] = nil;
-		return false;
+	local cb = handler or event;
+	local id = "PB2_" .. event;
+	if(type(cb) == "function") then
+		-- Wrap to preserve original calling convention: handler(addon, event, ...)
+		local fn = cb;
+		local ok = pcall(RGX.RegisterEvent, RGX, event, function(evt, ...) fn(addon, evt, ...); end, id);
+		return ok;
+	else
+		local ok = pcall(RGX.RegisterEvent, RGX, event, cb, id, self);
+		return ok;
 	end
-
-	self._eventHandlers[event] = handler or event;
-	return true;
 end
 
 function addon:UnregisterEvent(event)
 	if(not event) then return end
-
-	self._eventHandlers[event] = nil;
-	pcall(self.EventFrame.UnregisterEvent, self.EventFrame, event);
+	RGX:UnregisterEvent(event, "PB2_" .. event);
 end
 
 local function RunTimerCallback(callback, args)
@@ -118,7 +102,7 @@ function addon:ScheduleTimer(callback, delay, ...)
 	local args = { n = select("#", ...), ... };
 	local timer;
 
-	timer = C_Timer.NewTimer(math.max(0, delay), function()
+	timer = RGX:After(math.max(0, delay), function()
 		addon._timers[timer] = nil;
 		RunTimerCallback(callback, args);
 	end);
@@ -131,7 +115,7 @@ function addon:ScheduleRepeatingTimer(callback, delay, ...)
 	if(not callback or delay == nil) then return nil end
 
 	local args = { n = select("#", ...), ... };
-	local ticker = C_Timer.NewTicker(math.max(0.01, delay), function()
+	local ticker = RGX:Every(math.max(0.01, delay), function()
 		RunTimerCallback(callback, args);
 	end);
 
@@ -141,19 +125,13 @@ end
 
 function addon:CancelTimer(timerHandle)
 	if(not timerHandle) then return end
-
-	if(type(timerHandle.Cancel) == "function") then
-		timerHandle:Cancel();
-	end
-
+	RGX:CancelTimer(timerHandle);
 	self._timers[timerHandle] = nil;
 end
 
 function addon:CancelAllTimers()
 	for timerHandle in pairs(self._timers) do
-		if(type(timerHandle.Cancel) == "function") then
-			timerHandle:Cancel();
-		end
+		RGX:CancelTimer(timerHandle);
 		self._timers[timerHandle] = nil;
 	end
 end
@@ -341,7 +319,7 @@ function addon:UpdateMinimizeState()
 
 	self:_DoUpdateMinimizeState();
 
-	C_Timer.After(0.1, function()
+	RGX:After(0.1, function()
 		self._pendingMinimizeUpdate = false;
 	end);
 end
@@ -999,7 +977,7 @@ function addon:UpdatePets()
 	self:_DoUpdatePets();
 
 	-- Subsequent calls within 0.15s window will be coalesced
-	C_Timer.After(0.15, function()
+	RGX:After(0.15, function()
 		self._pendingPetsUpdate = false;
 	end);
 end
@@ -1261,17 +1239,22 @@ end
 
 PetBuddy_PetCharmsMixin = {}
 
+function addon:RefreshPetCharms()
+	local frame = PetBuddyFrameTitlePetCharms;
+	if(not frame) then return end;
+	local charmIcon, charmsNumAmount = self:GetPetCharmsInfo();
+	if(charmIcon ~= nil and charmsNumAmount ~= nil) then
+		frame.text:SetText(tostring(charmsNumAmount));
+		frame.icon:SetTexture(charmIcon);
+	end
+	self:UpdateDatabrokerText();
+end
+
 function PetBuddy_PetCharmsMixin:OnShow()
-	self:RegisterEvent("PLAYER_ENTERING_WORLD");
-	self:RegisterEvent("BAG_UPDATE_DELAYED");
-	self:RegisterEvent("CURRENCY_DISPLAY_UPDATE");
-	self:OnEvent();
+	addon:RefreshPetCharms();
 end
 
 function PetBuddy_PetCharmsMixin:OnHide()
-	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
-	self:UnregisterEvent("BAG_UPDATE_DELAYED");
-	self:UnregisterEvent("CURRENCY_DISPLAY_UPDATE");
 end
 
 local PET_CHARM_ITEM_IDS = {
@@ -1984,10 +1967,7 @@ function TogglePetBuddy()
 end
 	
 function addon:OnInitialize()
-	SLASH_PB21 = "/pb2";
-	SLASH_PB22 = "/pb";
-	SLASH_PB23 = "/bpb";
-	SlashCmdList["PB2"] = function(command)
+	RGX:RegisterSlashCommand({"/pb2", "/pb", "/bpb"}, function(command)
 		command = string.lower(strtrim(command or ""));
 
 		if(command == "") then
@@ -2007,7 +1987,7 @@ function addon:OnInitialize()
 		else
 			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cffb07fff/pb2 help|r.");
 		end
-	end
+	end, "PB2");
 
 	addon:InitializeDatabase();
 	addon:InitializeDatabroker();
@@ -2018,6 +1998,8 @@ function addon:OnInitialize()
 	addon:RegisterEvent("ZONE_CHANGED");
 	addon:RegisterEvent("ZONE_CHANGED_INDOORS");
 	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
+	addon:RegisterEvent("BAG_UPDATE_DELAYED", "RefreshPetCharms");
+	addon:RegisterEvent("CURRENCY_DISPLAY_UPDATE", "RefreshPetCharms");
 end
 
 function addon:BARBER_SHOP_OPEN()
@@ -2050,12 +2032,8 @@ local function EnableAddon()
 	end
 end
 
-local bootstrapFrame = CreateFrame("Frame");
-bootstrapFrame:RegisterEvent("PLAYER_LOGIN");
-bootstrapFrame:SetScript("OnEvent", function(_, event, arg1)
-	if(event == "PLAYER_LOGIN") then
-		InitializeAddon();
-		EnableAddon();
-		bootstrapFrame:UnregisterEvent("PLAYER_LOGIN");
-	end
-end);
+RGX:RegisterEvent("PLAYER_LOGIN", function()
+	InitializeAddon();
+	EnableAddon();
+	RGX:UnregisterEvent("PLAYER_LOGIN", "PB2_Bootstrap");
+end, "PB2_Bootstrap");

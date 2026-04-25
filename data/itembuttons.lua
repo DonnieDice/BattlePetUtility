@@ -7,6 +7,7 @@
 --]]
 
 local ADDON_NAME, addon = ...;
+local RGX = _G.RGXFramework;
 
 local ITEM_BUTTON_CATEGORIES = {
 	{
@@ -390,12 +391,12 @@ local function ApplyCooldownSafely(button, start, duration)
 		return;
 	end
 
-	if(button._cooldownTimer and type(button._cooldownTimer.Cancel) == "function") then
-		button._cooldownTimer:Cancel();
+	if(button._cooldownTimer) then
+		RGX:CancelTimer(button._cooldownTimer);
 		button._cooldownTimer = nil;
 	end
 
-	button._cooldownTimer = C_Timer.NewTimer(0, function()
+	button._cooldownTimer = RGX:After(0, function()
 		button._cooldownTimer = nil;
 		if(not button.cooldown or type(button.cooldown.SetCooldown) ~= "function") then
 			return;
