@@ -401,7 +401,8 @@ local function ApplyCooldownSafely(button, start, duration)
 		if(not button.cooldown or type(button.cooldown.SetCooldown) ~= "function") then
 			return;
 		end
-		button.cooldown:SetCooldown(start or 0, duration or 0);
+		-- pcall: GetItemCooldown can return tainted "secret" values during restricted execution
+		pcall(button.cooldown.SetCooldown, button.cooldown, start or 0, duration or 0);
 	end);
 end
 
@@ -516,12 +517,12 @@ function addon:UpdateItemButtons()
 end
 
 function PetBuddyFrameButtons_OnShow(self)
-	self:RegisterEvent("BAG_UPDATE_DELAYED");
+	pcall(self.RegisterEvent, self, "BAG_UPDATE_DELAYED");
 	addon:UpdateItemButtons();
 end
 
 function PetBuddyFrameButtons_OnHide(self)
-	self:UnregisterEvent("BAG_UPDATE_DELAYED");
+	pcall(self.UnregisterEvent, self, "BAG_UPDATE_DELAYED");
 end
 
 function PetBuddyFrameButtons_OnEvent(self, event, ...)
@@ -602,7 +603,7 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 		local start, duration = GetSpellCooldown(self.actionData);
 		ApplyCooldownSafely(self, start, duration);
 		
-		self:RegisterEvent("SPELL_UPDATE_COOLDOWN");
+		pcall(self.RegisterEvent, self, "SPELL_UPDATE_COOLDOWN");
 	elseif(self.actionType == "item") then
 		local itemName, _, _, _, _, _, _, _, _, itemTexture = GetItemInfo(self.actionData);
 		if(not itemTexture and C_Item and type(C_Item.GetItemIconByID) == "function") then
@@ -639,8 +640,8 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 		local start, duration = GetItemCooldown(self.actionData);
 		ApplyCooldownSafely(self, start, duration);
 		
-		self:RegisterEvent("BAG_UPDATE_DELAYED");
-		self:RegisterEvent("BAG_UPDATE_COOLDOWN");
+		pcall(self.RegisterEvent, self, "BAG_UPDATE_DELAYED");
+		pcall(self.RegisterEvent, self, "BAG_UPDATE_COOLDOWN");
 	elseif(self.actionType == "flyout") then
 		self.icon:SetTexture(self.actionData.iconTexture);
 		

@@ -1,5 +1,5 @@
-# v2.3.0 - 2026-04-25
+# v2.3.1 - 2026-04-25
 
 ## Changes
-- Full RGX-Framework native migration: removed custom event frame and `_eventHandlers` table. All events, timers, and slash commands now delegated to `RGX:RegisterEvent`, `RGX:After`, `RGX:Every`, and `RGX:RegisterSlashCommand`.
-- `RequiredDeps: RGX-Framework` declared in TOC — deterministic load order guaranteed.
+- Fixed: `SetCooldown` now wrapped in `pcall` — WoW rejects tainted "secret" values from `GetItemCooldown` in some execution contexts, causing `[RGX:timer]` errors.
+- Fixed: `RegisterEvent` / `UnregisterEvent` on item button frames wrapped in `pcall` — these frames are in a forbidden execution context in some states, causing `ADDON FORBIDDEN` errors.
