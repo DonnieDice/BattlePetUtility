@@ -1,4 +1,5 @@
 local ADDON_NAME, addon = ...
+local RGX = _G.RGXFramework
 
 local DEFAULT_ANGLE = 215
 
