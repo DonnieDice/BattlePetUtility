@@ -8,6 +8,7 @@
 
 local ADDON_NAME, addon = ...;
 local RGX = _G.RGXFramework;
+local unpackFunc = unpack or table.unpack;
 
 local ITEM_BUTTON_CATEGORIES = {
 	{
@@ -208,6 +209,69 @@ local ITEM_BUTTON_CATEGORIES = {
 };
 
 local MAX_ITEM_BUTTONS = 6;
+local itemButtonEventBridgeRegistered = false;
+
+local function SafeSetButtonAttribute(button, key, value)
+	if(not button or type(button.SetAttribute) ~= "function") then
+		return false;
+	end
+
+	if(InCombatLockdown and InCombatLockdown()) then
+		button._pb2AttributeRefreshPending = true;
+		return false;
+	end
+
+	local ok, err = pcall(button.SetAttribute, button, key, value);
+	if(not ok and RGX and type(RGX.Debug) == "function") then
+		RGX:Debug("[PB2] SetAttribute failed", tostring(key), tostring(err));
+	end
+
+	return ok;
+end
+
+local function ClearButtonSecureAction(button)
+	if(not button or not button._pb2HasSecureAction) then
+		return;
+	end
+
+	SafeSetButtonAttribute(button, "type", nil);
+	SafeSetButtonAttribute(button, "unit", nil);
+	SafeSetButtonAttribute(button, "spell", nil);
+	SafeSetButtonAttribute(button, "item", nil);
+	button._pb2HasSecureAction = nil;
+	button._pb2SecureActionKind = nil;
+end
+
+local function DispatchItemButtonEvent(event, ...)
+	if(event == "BAG_UPDATE_DELAYED" and PetBuddyFrameButtons and PetBuddyFrameButtons:IsShown()) then
+		addon:UpdateItemButtons();
+	end
+
+	for i = 1, MAX_ITEM_BUTTONS do
+		local button = PetBuddyFrameButtons and PetBuddyFrameButtons["itemButton" .. i];
+		if(button and button:IsShown() and button.actionType) then
+			PetBuddyFrameButton_OnEvent(button, event, ...);
+		end
+	end
+
+	for i = 1, 20 do
+		local button = _G["PetBuddyFlyoutButton" .. i];
+		if(button and button:IsShown() and button.actionType) then
+			PetBuddyFrameButton_OnEvent(button, event, ...);
+		end
+	end
+end
+
+local function EnsureItemButtonEventBridge()
+	if(itemButtonEventBridgeRegistered or not RGX or type(RGX.RegisterEvent) ~= "function") then
+		return;
+	end
+
+	RGX:RegisterEvent("SPELL_UPDATE_COOLDOWN", DispatchItemButtonEvent, "PB2_ItemButton_SPELL_UPDATE_COOLDOWN");
+	RGX:RegisterEvent("BAG_UPDATE_DELAYED", DispatchItemButtonEvent, "PB2_ItemButton_BAG_UPDATE_DELAYED");
+	RGX:RegisterEvent("BAG_UPDATE_COOLDOWN", DispatchItemButtonEvent, "PB2_ItemButton_BAG_UPDATE_COOLDOWN");
+	itemButtonEventBridgeRegistered = true;
+end
 
 local function GetCategoryByKey(categoryKey)
 	for _, category in ipairs(ITEM_BUTTON_CATEGORIES) do
@@ -323,6 +387,52 @@ local function IsSpellUsableCompat(spellID)
 	return true;
 end
 
+local function GetSpellInfoCompat(spellID)
+	if(type(GetSpellInfo) == "function") then
+		return GetSpellInfo(spellID);
+	end
+
+	if(C_Spell and type(C_Spell.GetSpellInfo) == "function") then
+		local ok, info = pcall(C_Spell.GetSpellInfo, spellID);
+		if(ok and type(info) == "table") then
+			return info.name, nil, info.iconID;
+		end
+	end
+
+	return nil, nil, nil;
+end
+
+local function GetSpellCooldownCompat(spellID)
+	if(type(GetSpellCooldown) == "function") then
+		return GetSpellCooldown(spellID);
+	end
+
+	if(C_Spell and type(C_Spell.GetSpellCooldown) == "function") then
+		local ok, info = pcall(C_Spell.GetSpellCooldown, spellID);
+		if(ok and type(info) == "table") then
+			return info.startTime or info.start or 0, info.duration or 0, info.isEnabled, info.modRate;
+		end
+	end
+
+	return 0, 0, 0, 1;
+end
+
+local function IsSpellKnownCompat(spellID)
+	if(type(IsSpellKnown) == "function") then
+		return IsSpellKnown(spellID);
+	end
+
+	if(C_SpellBook and type(C_SpellBook.IsSpellKnown) == "function") then
+		return C_SpellBook.IsSpellKnown(spellID);
+	end
+
+	if(C_Spell and type(C_Spell.IsSpellDataCached) == "function") then
+		return C_Spell.IsSpellDataCached(spellID);
+	end
+
+	return false;
+end
+
 local function IsItemUsableCompat(itemID)
 	if(type(IsUsableItem) == "function") then
 		local usable = IsUsableItem(itemID);
@@ -341,6 +451,70 @@ local function IsItemUsableCompat(itemID)
 	end
 
 	return true;
+end
+
+local function GetItemInfoCompat(itemID)
+	if(type(GetItemInfo) == "function") then
+		return GetItemInfo(itemID);
+	end
+
+	if(C_Item and type(C_Item.GetItemInfo) == "function") then
+		local results = { pcall(C_Item.GetItemInfo, itemID) };
+		if(results[1]) then
+			if(type(results[2]) == "table") then
+				local info = results[2];
+				return info.itemName or info.name, nil, nil, nil, nil, info.itemType, nil, nil, nil, info.iconFileID or info.iconID;
+			end
+			return select(2, unpackFunc(results));
+		end
+	end
+
+	return nil;
+end
+
+local function GetItemIconCompat(itemID)
+	if(C_Item and type(C_Item.GetItemIconByID) == "function") then
+		local ok, icon = pcall(C_Item.GetItemIconByID, itemID);
+		if(ok and icon) then
+			return icon;
+		end
+	end
+
+	if(type(GetItemIcon) == "function") then
+		return GetItemIcon(itemID);
+	end
+
+	return nil;
+end
+
+local function GetItemCountCompat(itemID)
+	if(type(GetItemCount) == "function") then
+		return GetItemCount(itemID) or 0;
+	end
+
+	if(C_Item and type(C_Item.GetItemCount) == "function") then
+		local ok, count = pcall(C_Item.GetItemCount, itemID);
+		if(ok and count) then
+			return count;
+		end
+	end
+
+	return 0;
+end
+
+local function GetItemCooldownCompat(itemID)
+	if(type(GetItemCooldown) == "function") then
+		return GetItemCooldown(itemID);
+	end
+
+	if(C_Container and type(C_Container.GetItemCooldown) == "function") then
+		local ok, start, duration, enable = pcall(C_Container.GetItemCooldown, itemID);
+		if(ok) then
+			return start or 0, duration or 0, enable;
+		end
+	end
+
+	return 0, 0, 0;
 end
 
 local function StyleButtonIcon(button)
@@ -448,11 +622,11 @@ function addon:UpdateItemButtons()
 			
 			for _, id in ipairs(data.items) do
 				if(data.type == "item") then
-					if(GetItemCount(id) > 0 or data.alwaysVisible) then
+					if(GetItemCountCompat(id) > 0 or data.alwaysVisible) then
 						tinsert(foundItems, id);
 					end
 				elseif(data.type == "spell") then
-					if(IsSpellKnown(id) or data.alwaysVisible) then
+					if(IsSpellKnownCompat(id) or data.alwaysVisible) then
 						tinsert(foundItems, id);
 					end
 				end
@@ -517,12 +691,17 @@ function addon:UpdateItemButtons()
 end
 
 function PetBuddyFrameButtons_OnShow(self)
-	pcall(self.RegisterEvent, self, "BAG_UPDATE_DELAYED");
+	if(not addon._enabled) then
+		addon._pendingItemButtonRefresh = true;
+		return;
+	end
+
+	EnsureItemButtonEventBridge();
+	addon._pendingItemButtonRefresh = nil;
 	addon:UpdateItemButtons();
 end
 
 function PetBuddyFrameButtons_OnHide(self)
-	pcall(self.UnregisterEvent, self, "BAG_UPDATE_DELAYED");
 end
 
 function PetBuddyFrameButtons_OnEvent(self, event, ...)
@@ -545,7 +724,7 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 	if(type == nil) then
 		self.actionType = nil;
 		self.actionData = nil;
-		self:SetAttribute("type", nil);
+		ClearButtonSecureAction(self);
 		self:Hide();
 		return;
 	end
@@ -557,8 +736,6 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 	
 	self.actionType = type;
 	self.actionData = actionData;
-	
-	self:UnregisterAllEvents();
 	
 	self.Count:SetText("");
 	self.icon:SetVertexColor(1, 1, 1);
@@ -580,49 +757,46 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 	if(flyoutBorder) then flyoutBorder:Hide(); end
 	
 	if(self.actionType == "spell") then
-		local spellName, _, spellIcon = GetSpellInfo(self.actionData);
+		local spellName, _, spellIcon = GetSpellInfoCompat(self.actionData);
 		if(not spellName) then
 			self.icon:SetTexture("Interface\\ICONS\\INV_Misc_QuestionMark");
 			self.icon:SetVertexColor(0.55, 0.25, 0.25);
-			self:SetAttribute("type", nil);
+			ClearButtonSecureAction(self);
 			return;
 		end
 
 		self.icon:SetTexture(spellIcon);
 		
-		self:SetAttribute("type", "spell");
-		self:SetAttribute("unit", target or "player");
-		self:SetAttribute("spell", spellName);
+		SafeSetButtonAttribute(self, "type", "spell");
+		SafeSetButtonAttribute(self, "unit", target or "player");
+		SafeSetButtonAttribute(self, "spell", spellName);
+		self._pb2HasSecureAction = true;
+		self._pb2SecureActionKind = "spell";
 		
-		if(IsSpellKnown(self.actionData) and IsSpellUsableCompat(self.actionData)) then
+		if(IsSpellKnownCompat(self.actionData) and IsSpellUsableCompat(self.actionData)) then
 			self.icon:SetVertexColor(1, 1, 1);
 		else
 			self.icon:SetVertexColor(0.55, 0.25, 0.25);
 		end
 		
-		local start, duration = GetSpellCooldown(self.actionData);
+		local start, duration = GetSpellCooldownCompat(self.actionData);
 		ApplyCooldownSafely(self, start, duration);
-		
-		pcall(self.RegisterEvent, self, "SPELL_UPDATE_COOLDOWN");
 	elseif(self.actionType == "item") then
-		local itemName, _, _, _, _, _, _, _, _, itemTexture = GetItemInfo(self.actionData);
-		if(not itemTexture and C_Item and type(C_Item.GetItemIconByID) == "function") then
-			itemTexture = C_Item.GetItemIconByID(self.actionData);
-		end
-		if(not itemTexture and type(GetItemIcon) == "function") then
-			itemTexture = GetItemIcon(self.actionData);
-		end
+		local itemName, _, _, _, _, _, _, _, _, itemTexture = GetItemInfoCompat(self.actionData);
+		itemTexture = itemTexture or GetItemIconCompat(self.actionData);
 		self.icon:SetTexture(itemTexture or "Interface\\ICONS\\INV_Misc_QuestionMark");
 		
-		self:SetAttribute("type", "item");
-		self:SetAttribute("unit", target or "player");
-		self:SetAttribute("item", itemName or ("item:" .. tostring(self.actionData)));
+		SafeSetButtonAttribute(self, "type", "item");
+		SafeSetButtonAttribute(self, "unit", target or "player");
+		SafeSetButtonAttribute(self, "item", itemName or ("item:" .. tostring(self.actionData)));
+		self._pb2HasSecureAction = true;
+		self._pb2SecureActionKind = "item";
 		
 		-- self:SetScript("PreClick", function()
 		-- 	print(self.actionData, target, itemName);
 		-- end);
 		
-		local itemCount = GetItemCount(self.actionData);
+		local itemCount = GetItemCountCompat(self.actionData);
 		if(IsConsumableItem(self.actionData)) then
 			self.Count:SetText(itemCount);
 		else
@@ -637,11 +811,8 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 			self.icon:SetVertexColor(0.55, 0.55, 0.55);
 		end
 		
-		local start, duration = GetItemCooldown(self.actionData);
+		local start, duration = GetItemCooldownCompat(self.actionData);
 		ApplyCooldownSafely(self, start, duration);
-		
-		pcall(self.RegisterEvent, self, "BAG_UPDATE_DELAYED");
-		pcall(self.RegisterEvent, self, "BAG_UPDATE_COOLDOWN");
 	elseif(self.actionType == "flyout") then
 		self.icon:SetTexture(self.actionData.iconTexture);
 		
@@ -649,7 +820,7 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 			self.Count:SetText(self.actionData.count);
 		end
 		
-		self:SetAttribute("type", nil);
+		ClearButtonSecureAction(self);
 		
 		local arrow = EnsureFlyoutArrow(self);
 		if(arrow) then
@@ -682,7 +853,7 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 			self.Count:SetText(self.actionData.count);
 		end
 		
-		self:SetAttribute("type", nil);
+		ClearButtonSecureAction(self);
 		self:SetScript("PreClick", self.actionData.func);
 	else
 		self.icon:SetTexture("Interface\\Icons\\inv_misc_toy_02");
@@ -774,10 +945,10 @@ end
 
 function PetBuddyFrameButton_OnEvent(self, event, ...)
 	if(event == "SPELL_UPDATE_COOLDOWN") then
-		local start, duration = GetSpellCooldown(self.actionData);
+		local start, duration = GetSpellCooldownCompat(self.actionData);
 		ApplyCooldownSafely(self, start, duration)
 	elseif(event == "BAG_UPDATE_DELAYED" and self.actionType == "item") then
-		local itemCount = GetItemCount(self.actionData);
+		local itemCount = GetItemCountCompat(self.actionData);
 		if(IsConsumableItem(self.actionData)) then
 			self.Count:SetText(itemCount);
 		else
@@ -792,7 +963,7 @@ function PetBuddyFrameButton_OnEvent(self, event, ...)
 			self.icon:SetVertexColor(0.55, 0.55, 0.55);
 		end
 	elseif(event == "BAG_UPDATE_COOLDOWN" and self.actionType == "item") then
-		local start, duration = GetItemCooldown(self.actionData);
+		local start, duration = GetItemCooldownCompat(self.actionData);
 		ApplyCooldownSafely(self, start, duration);
 	end
 end
@@ -822,7 +993,7 @@ function PetBuddyFrameButton_OnEnter(self)
 	elseif(self.actionType == "item") then
 		GameTooltip:SetItemByID(self.actionData);
 		
-		if(not IsItemUsableCompat(self.actionData) and GetItemCount(self.actionData) > 0) then
+		if(not IsItemUsableCompat(self.actionData) and GetItemCountCompat(self.actionData) > 0) then
 			if(addon:IsPlayerInCelestialTournament()) then
 				GameTooltip:AddLine("Cannot use while in Celestial Tournament.", 1, 0.2, 0.2);
 			else
@@ -867,6 +1038,6 @@ function PetBuddyFrameButton_OnLeave(self)
 end
 
 function IsConsumableItem(item)
-	local _, _, _, _, _, itemType = GetItemInfo(item);
+	local _, _, _, _, _, itemType = GetItemInfoCompat(item);
 	return itemType == "Consumable";
 end

@@ -10,6 +10,7 @@ local ADDON_NAME, addon = ...;
 local E = addon.E;
 local DEFAULT_STATUSBAR_NAME = "RenAscensionL";
 
+local RGX      = _G.RGXFramework;
 local Fonts    = _G.RGXFonts;
 local Textures = _G.RGXTextures;
 
@@ -80,10 +81,12 @@ E.AUTO_SUMMON_MODE = {
 };
 
 function addon:InitializeDatabase()
-	local defaults = {
-		char = {
-			AutoSummonLastPetID = nil,
-		},
+  local defaults = {
+    char = {
+      AutoSummonLastPetID = nil,
+      LastActiveTeam = nil,
+      LastSavedMapID = nil,
+    },
 		
 		global = {
 			Visible = true,
@@ -131,14 +134,14 @@ function addon:InitializeDatabase()
 				RemainingExperience = true,
 			},			
 			
-			PetUtilityMenuState = 1,
+			PetUtilityMenuState = 3,
 			
 			ShowPepe = true,
 			PepeOnLeft = false,
 			ShowWelcomeMessage = true,
 			
 			ShowPetItems = true,
-			ShowPetLoadouts = false,
+			ShowPetLoadouts = true,
 			PetItemCategories = {
 				heal_spell = true,
 				battle_bandage = true,
@@ -173,6 +176,21 @@ function addon:InitializeDatabase()
 
 	CopyDefaults(globalData, defaults.global);
 	CopyDefaults(charRoot[charKey], defaults.char);
+
+	if(globalData._pb2DefaultInit_v237 ~= true) then
+		if((tonumber(globalData.PetUtilityMenuState) or 0) == 1 and globalData.ShowPetLoadouts == false) then
+			globalData.PetUtilityMenuState = 3;
+			globalData.ShowPetLoadouts = true;
+			globalData.ShowPetItems = true;
+		end
+		if(globalData.ShowZoneTracker == nil) then
+			globalData.ShowZoneTracker = true;
+		end
+		if(globalData.ShowZoneTrackerPetList == nil) then
+			globalData.ShowZoneTrackerPetList = true;
+		end
+		globalData._pb2DefaultInit_v237 = true;
+	end
 
 	self.db = {
 		global = globalData,
@@ -374,6 +392,89 @@ function addon:ToggleTextStyleOptionsFrame()
 	frame:Toggle();
 end
 
+function addon:GetTextStyleMenuData()
+	EnsurePB2TextStyles(self.db and self.db.global);
+
+	local menu = {
+		{ text = "Text Style Options", isTitle = true, notCheckable = true },
+	};
+
+	local styleDefs = {
+		{
+			key = "titleText",
+			label = "Title Text",
+			default = BuildDefaultTextStyle(12, "OUTLINE", {
+				shadowColor = "shadow",
+				shadowOffset = { x = 1, y = -1 },
+			}),
+		},
+		{
+			key = "normalText",
+			label = "Normal Text",
+			default = BuildDefaultTextStyle(10, ""),
+		},
+		{
+			key = "smallText",
+			label = "Small Text",
+			default = BuildDefaultTextStyle(9, ""),
+		},
+	};
+
+	local function RefreshTextStyleMenu()
+		addon:RefreshMedia();
+		RefreshDropdownMenu(addon.ContextMenu);
+	end
+
+	local function GetCurrentFont()
+		if(Fonts and type(Fonts.NormalizeStyle) == "function") then
+			local style = Fonts:NormalizeStyle(self.db.global.normalText or styleDefs[2].default);
+			return style.font;
+		end
+		return nil;
+	end
+
+	local function ApplySharedFont(fontName)
+		if(not Fonts or type(Fonts.NormalizeStyle) ~= "function") then
+			return;
+		end
+
+		for _, styleDef in ipairs(styleDefs) do
+			local nextStyle = Fonts:NormalizeStyle(self.db.global[styleDef.key] or styleDef.default);
+			nextStyle.font = fontName;
+			self.db.global[styleDef.key] = nextStyle;
+		end
+
+		RefreshTextStyleMenu();
+	end
+
+	local fontMenuItems = (Fonts and type(Fonts.CreateFontMenuItems) == "function") and Fonts:CreateFontMenuItems({
+		current = GetCurrentFont,
+		keepShownOnClick = true,
+		onSelect = ApplySharedFont,
+	}) or nil;
+	addon._fontMenuItems = fontMenuItems;
+	if(DEFAULT_CHAT_FRAME) then
+		local total, available, defaultName = 0, 0, "nil";
+		if(Fonts and type(Fonts.GetDebugCounts) == "function") then
+			total, available, defaultName = Fonts:GetDebugCounts();
+		end
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffbc6fa8[PB2:fonts]|r menuItems=%d total=%d available=%d default=%s",
+			type(fontMenuItems) == "table" and #fontMenuItems or 0,
+			total or 0,
+			available or 0,
+			tostring(defaultName)
+		));
+	end
+
+	tinsert(menu, {
+		text = "Applies to title, normal, and small text.",
+		disabled = true,
+		notCheckable = true,
+	});
+
+	return menu;
+end
+
 function addon:GetWindowScaleMenu()
 	local windowScales = { 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, };
 	local menu = {};
@@ -420,9 +521,9 @@ local function RefreshDropdownMenu(menuFrame)
 	end
 
 	if(type(UIDropDownMenu_Refresh) == "function" and menuFrame) then
-		UIDropDownMenu_Refresh(menuFrame);
+		pcall(UIDropDownMenu_Refresh, menuFrame);
 	elseif(type(CloseDropDownMenus) == "function") then
-		CloseDropDownMenus();
+		pcall(CloseDropDownMenus);
 	end
 end
 
@@ -471,6 +572,12 @@ local function CreateMenuInfo(entry)
 		info[k] = v;
 	end
 
+	if(type(entry.menuList) == "table") then
+		info.hasArrow = true;
+		info.menuList = entry.menuList;
+		info.value = entry.value or entry.menuList;
+	end
+
 	return info;
 end
 
@@ -479,7 +586,9 @@ local function InitializeMenuLevel(self, level, menuList)
 	level = level or 1;
 	local currentList;
 
-	if(type(menuList) == "table") then
+	if(menuList == "pb2_fonts") then
+		currentList = addon._fontMenuItems;
+	elseif(type(menuList) == "table") then
 		currentList = menuList;
 	else
 		currentList = self._pbMenuData;
@@ -537,6 +646,14 @@ function addon:GetPrimaryMenuData()
 		});
 	end
 	
+	local _fontLabel = "Default"
+	if Fonts and type(Fonts.NormalizeStyle) == "function" and type(Fonts.GetDropdownFontLabel) == "function" then
+		local _style = Fonts:NormalizeStyle(self.db and self.db.global and self.db.global.normalText)
+		if _style and _style.font then
+			_fontLabel = Fonts:GetDropdownFontLabel(_style.font)
+		end
+	end
+
 	local data = {
 		{
 			text = "PetBuddy2 Options", isTitle = true, notCheckable = true,
@@ -881,8 +998,8 @@ function addon:GetPrimaryMenuData()
 			end,
 			isNotRadio = true,
 			keepShownOnClick = true,
-			tooltipTitle = "Ctrl+Right-click minimap icon to hide",
-			tooltipText = "You can also use |cffb07fff/pb2 icon off|r to hide or |cffb07fff/pb2 icon on|r to show.",
+			tooltipTitle = "Minimap icon visibility",
+			tooltipText = "You can also right-click the minimap button for options, or use |cffb07fff/pb2 icon off|r and |cffb07fff/pb2 icon on|r.",
 		},
 		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,
@@ -893,9 +1010,14 @@ function addon:GetPrimaryMenuData()
 		{
 			text = "Text styles",
 			notCheckable = true,
-			func = function()
-				addon:ToggleTextStyleOptionsFrame();
-			end,
+			hasArrow = true,
+			menuList = addon:GetTextStyleMenuData(),
+		},
+		{
+			text = "Font: " .. _fontLabel,
+			notCheckable = true,
+			hasArrow = true,
+			menuList = "pb2_fonts",
 		},
 		{
 			text = "Bar texture",
@@ -947,13 +1069,20 @@ function addon:OpenDropDownMenu(menuData, menuFrame, anchor, x, y, displayMode, 
 	-- Store menu data on the frame for the init function to access
 	menuFrame._pbMenuData = menuData;
 
-	-- Initialize using the native UIDropDownMenu API (same pattern BLU uses)
-	UIDropDownMenu_Initialize(menuFrame, InitializeMenuLevel, displayMode or "MENU");
+	-- Initialize using the native UIDropDownMenu API (same pattern BLU uses).
+	local okInit = pcall(UIDropDownMenu_Initialize, menuFrame, InitializeMenuLevel, displayMode or "MENU");
+	if(not okInit) then
+		if(type(addon.PrintMessage) == "function") then
+			addon:PrintMessage("|cffff5555Unable to initialize dropdown menu.|r");
+		end
+		return false;
+	end
 
 	-- Open the dropdown
 	if(type(ToggleDropDownMenu) == "function") then
-		ToggleDropDownMenu(1, nil, menuFrame, anchor or "cursor", x or 0, y or 0, menuData, nil, autoHideDelay or 5);
+		local okToggle = pcall(ToggleDropDownMenu, 1, nil, menuFrame, anchor or "cursor", x or 0, y or 0, menuData, nil, autoHideDelay or 5);
+		return okToggle == true;
 	end
 
-	return true;
+	return false;
 end

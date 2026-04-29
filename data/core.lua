@@ -34,6 +34,85 @@ local AUTOSUMMON_BLOCK_AFTER_DISMOUNT = 3.0;
 local AUTOSUMMON_BLOCK_AFTER_LOGIN = 5.0;
 local AUTOSUMMON_BLOCK_AFTER_COMBAT = 2.0;
 
+local function GetSpellInfoCompat(spellID)
+	if(type(GetSpellInfo) == "function") then
+		return GetSpellInfo(spellID);
+	end
+
+	if(C_Spell and type(C_Spell.GetSpellInfo) == "function") then
+		local ok, info = pcall(C_Spell.GetSpellInfo, spellID);
+		if(ok and type(info) == "table") then
+			return info.name, nil, info.iconID;
+		end
+	end
+
+	return nil, nil, nil;
+end
+
+local function GetSpellCooldownCompat(spellID)
+	if(type(GetSpellCooldown) == "function") then
+		return GetSpellCooldown(spellID);
+	end
+
+	if(C_Spell and type(C_Spell.GetSpellCooldown) == "function") then
+		local ok, info = pcall(C_Spell.GetSpellCooldown, spellID);
+		if(ok and type(info) == "table") then
+			return info.startTime or info.start or 0, info.duration or 0, info.isEnabled, info.modRate;
+		end
+	end
+
+	return 0, 0, 0, 1;
+end
+
+local function GetItemInfoCompat(itemID)
+	if(type(GetItemInfo) == "function") then
+		return GetItemInfo(itemID);
+	end
+
+	if(C_Item and type(C_Item.GetItemInfo) == "function") then
+		local results = { pcall(C_Item.GetItemInfo, itemID) };
+		if(results[1]) then
+			if(type(results[2]) == "table") then
+				local info = results[2];
+				return info.itemName or info.name, nil, nil, nil, nil, info.itemType, nil, nil, nil, info.iconFileID or info.iconID;
+			end
+			return select(2, unpackFunc(results));
+		end
+	end
+
+	return nil;
+end
+
+local function GetItemIconCompat(itemID)
+	if(C_Item and type(C_Item.GetItemIconByID) == "function") then
+		local ok, icon = pcall(C_Item.GetItemIconByID, itemID);
+		if(ok and icon) then
+			return icon;
+		end
+	end
+
+	if(type(GetItemIcon) == "function") then
+		return GetItemIcon(itemID);
+	end
+
+	return nil;
+end
+
+local function GetItemCountCompat(itemID, includeBank)
+	if(type(GetItemCount) == "function") then
+		return tonumber(GetItemCount(itemID, includeBank)) or tonumber(GetItemCount(itemID)) or 0;
+	end
+
+	if(C_Item and type(C_Item.GetItemCount) == "function") then
+		local ok, count = pcall(C_Item.GetItemCount, itemID, includeBank);
+		if(ok and count) then
+			return tonumber(count) or 0;
+		end
+	end
+
+	return 0;
+end
+
 local function GetPetTypeTexturePath(petType)
 	if(type(GetPetTypeTexture) == "function") then
 		local texturePath = GetPetTypeTexture(petType);
@@ -72,11 +151,11 @@ function addon:RegisterEvent(event, handler)
 	if(type(cb) == "function") then
 		-- Wrap to preserve original calling convention: handler(addon, event, ...)
 		local fn = cb;
-		local ok = pcall(RGX.RegisterEvent, RGX, event, function(evt, ...) fn(addon, evt, ...); end, id);
-		return ok;
+		local ok, result = pcall(RGX.RegisterEvent, RGX, event, function(evt, ...) fn(addon, evt, ...); end, id);
+		return ok and result ~= false;
 	else
-		local ok = pcall(RGX.RegisterEvent, RGX, event, cb, id, self);
-		return ok;
+		local ok, result = pcall(RGX.RegisterEvent, RGX, event, cb, id, self);
+		return ok and result ~= false;
 	end
 end
 
@@ -289,13 +368,7 @@ local function TryLoadCollectionsUI()
 		return;
 	end
 
-	if(type(securecallfunction) == "function") then
-		securecallfunction(LoadAddOn, "Blizzard_Collections");
-	elseif(type(securecall) == "function") then
-		securecall(LoadAddOn, "Blizzard_Collections");
-	else
-		pcall(LoadAddOn, "Blizzard_Collections");
-	end
+	pcall(LoadAddOn, "Blizzard_Collections");
 end
 
 function addon:IsFrameMinimized()
@@ -526,18 +599,6 @@ end
 function addon:OnEnable()
 	TryLoadCollectionsUI();
 	
-	addon.SecureFrameToggler = CreateFrame("Button", "PetBuddyFrameToggler", nil, "SecureHandlerClickTemplate");
-	addon.SecureFrameToggler:SetFrameRef("PetBuddyFrame", PetBuddyFrame);
-	
-	addon.SecureFrameToggler:SetAttribute("_onclick", [[
-		local frame = self:GetFrameRef("PetBuddyFrame");
-		if(frame:IsShown()) then
-			frame:Hide();
-		else
-			frame:Show();
-		end
-	]]);
-	
 	addon.LoginTime = GetTime();
 	addon.PetHealTime = 0;
 	
@@ -555,9 +616,7 @@ function addon:OnEnable()
 	
 	addon:RegisterEvent("SPELL_UPDATE_COOLDOWN");
 	
-	if(not addon:RegisterEvent("CURSOR_UPDATE")) then
-		addon:RegisterEvent("CURSOR_CHANGED", addon.CURSOR_UPDATE);
-	end
+	addon:RegisterEvent("CURSOR_CHANGED", addon.CURSOR_UPDATE);
 	
 	addon:RegisterEvent("PLAYER_REGEN_DISABLED");
 	addon:RegisterEvent("PLAYER_REGEN_ENABLED");
@@ -982,14 +1041,103 @@ function addon:UpdatePets()
 	end);
 end
 
+function addon:SaveCurrentTeam()
+  if(not self.db or not self.db.char) then return end
+  if(not C_PetJournal or type(C_PetJournal.GetPetLoadOutInfo) ~= "function") then return end
+
+  local team = {};
+  local hasPets = false;
+
+  for slotIndex = 1, 3 do
+    local petID, ability1, ability2, ability3, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
+    if(petID and not locked) then
+      hasPets = true;
+      team[slotIndex] = {
+        petID = petID,
+        abilities = { ability1, ability2, ability3 },
+      };
+    else
+      team[slotIndex] = nil;
+    end
+  end
+
+  if(hasPets) then
+    self.db.char.LastActiveTeam = team;
+    self.db.char.LastSavedMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player") or nil;
+  end
+end
+
+function addon:RestoreLastTeam()
+  if(not self.db or not self.db.char) then return false end
+  if(not self.db.char.LastActiveTeam) then return false end
+  if(not C_PetJournal or type(C_PetJournal.SetPetLoadOutInfo) ~= "function") then return false end
+
+  local team = self.db.char.LastActiveTeam;
+  local canRestore = true;
+
+  -- Verify all pets in saved team are still valid
+  for slotIndex, data in ipairs(team) do
+    if(data and data.petID) then
+      local speciesID = C_PetJournal.GetPetInfoByPetID(data.petID);
+      if(not speciesID) then
+        canRestore = false;
+        break;
+      end
+    end
+  end
+
+  if(not canRestore) then
+    self.db.char.LastActiveTeam = nil;
+    return false;
+  end
+
+  -- Restore the team
+  for slotIndex, data in ipairs(team) do
+    if(data and data.petID) then
+      C_PetJournal.SetPetLoadOutInfo(slotIndex, data.petID);
+      if(data.abilities) then
+        for spellIndex, abilityID in ipairs(data.abilities) do
+          if(abilityID) then
+            C_PetJournal.SetAbility(slotIndex, spellIndex, abilityID);
+          end
+        end
+      end
+    end
+  end
+
+  self:RefreshPetJournalLoadOut();
+  return true;
+end
+
+function addon:ShouldRestoreLastTeam()
+  if(not self.db or not self.db.char) then return false end
+  if(not self.db.char.LastActiveTeam) then return false end
+
+  -- Check if current loadout is empty (no pets in slots)
+  local hasCurrentPets = false;
+  for slotIndex = 1, 3 do
+    local petID, _, _, _, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
+    if(petID and not locked) then
+      hasCurrentPets = true;
+      break;
+    end
+  end
+
+  -- Only restore if current loadout is empty
+  return not hasCurrentPets;
+end
+
 function addon:_DoUpdatePets()
-	local minimized = self:IsFrameMinimized();
-	local hideMain = self.db and self.db.global.HideMainGUI == true;
-	if(not PetsBattleData and C_PetBattles.IsInBattle()) then
-		addon:UpdateBattleData();
-	end
-	
-	addon:UpdateDatabrokerText();
+  local minimized = self:IsFrameMinimized();
+  local hideMain = self.db and self.db.global.HideMainGUI == true;
+  if(not PetsBattleData and C_PetBattles.IsInBattle()) then
+    addon:UpdateBattleData();
+  end
+
+  -- Auto-save current team whenever pets are updated (for restoration later)
+  addon:SaveCurrentTeam();
+
+  addon:UpdateDatabrokerText();
 	
 	for slotIndex = 1, 3 do
 		local petFrame = _G['PetBuddyFramePet' .. slotIndex];
@@ -1270,7 +1418,7 @@ local function BuildPetCharmNameSet()
 	};
 
 	for _, itemID in ipairs(PET_CHARM_ITEM_IDS) do
-		local itemName = GetItemInfo(itemID);
+		local itemName = GetItemInfoCompat(itemID);
 		if(itemName and itemName ~= "") then
 			names[string.lower(itemName)] = true;
 		end
@@ -1300,7 +1448,7 @@ local function GetTrackedItemCount(itemID)
 		end
 	end
 
-	return tonumber(GetItemCount(itemID, true)) or tonumber(GetItemCount(itemID)) or 0;
+	return GetItemCountCompat(itemID, true);
 end
 
 function addon:GetPetCharmsInfo()
@@ -1311,8 +1459,8 @@ function addon:GetPetCharmsInfo()
 
 	for _, itemID in ipairs(PET_CHARM_ITEM_IDS) do
 		local amount = GetTrackedItemCount(itemID);
-		local itemName = GetItemInfo(itemID);
-		local itemIcon = GetItemIcon(itemID);
+		local itemName = GetItemInfoCompat(itemID);
+		local itemIcon = GetItemIconCompat(itemID);
 
 		if(itemIcon and not displayIcon) then
 			displayIcon = itemIcon;
@@ -1356,7 +1504,7 @@ function addon:GetPetCharmsInfo()
 	end
 
 	if(not displayIcon) then
-		displayIcon = GetItemIcon(PET_CHARM_ITEM_IDS[1]) or "Interface\\Icons\\INV_Misc_QuestionMark";
+		displayIcon = GetItemIconCompat(PET_CHARM_ITEM_IDS[1]) or "Interface\\Icons\\INV_Misc_QuestionMark";
 	end
 
 	return displayIcon, totalAmount, entries;
@@ -1832,8 +1980,8 @@ end
 
 function addon:IsPlayerEating()
 	-- Find localized name for the food/drink buff, there are too many buff ids to manually check
-	local localizedFood = GetSpellInfo(33264);
-	local localizedDrink = GetSpellInfo(160599);
+	local localizedFood = GetSpellInfoCompat(33264);
+	local localizedDrink = GetSpellInfoCompat(160599);
 	return UnitAuraByNameOrId("player", localizedFood) ~= nil or UnitAuraByNameOrId("player", localizedDrink) ~= nil;
 end
 
@@ -1844,8 +1992,8 @@ local UNGORO_MAP_ID = 78;
 
 function addon:IsDoingMountQuest()
 	local checkMapId = nil;
-	if(GetItemCount(WINTERSPRING_CUB_ID)    >= 1) then checkMapId = WINTERSPRING_MAP_ID end
-	if(GetItemCount(VENOMHIDE_HATCHLING_ID) >= 1) then checkMapId = UNGORO_MAP_ID end
+	if(GetItemCountCompat(WINTERSPRING_CUB_ID)    >= 1) then checkMapId = WINTERSPRING_MAP_ID end
+	if(GetItemCountCompat(VENOMHIDE_HATCHLING_ID) >= 1) then checkMapId = UNGORO_MAP_ID end
 	return checkMapId ~= nil and C_Map.GetBestMapForUnit("player") == checkMapId;
 end
 
@@ -1899,19 +2047,28 @@ function addon:UpdateAutoResummon(forceSummon)
 end
 
 function addon:PLAYER_ENTERING_WORLD(event, isInitialLogin, isReloadingUi)
-	if(isInitialLogin or isReloadingUi) then
-		addon.LoginTime = GetTime();
-	end
+  if(isInitialLogin or isReloadingUi) then
+    addon.LoginTime = GetTime();
+  end
 
-	if(isInitialLogin or isReloadingUi) then
-		addon:ShowWelcomeMessage();
-	end
+  if(isInitialLogin or isReloadingUi) then
+    addon:ShowWelcomeMessage();
+  end
 
-	addon:HandleAutoSummonTrigger("PLAYER_ENTERING_WORLD");
-	addon.PendingStartupRefreshes = 0;
-	addon:RunStartupRefresh();
-	addon:QueueStartupRefresh(0.5);
-	addon:QueueStartupRefresh(1.5);
+  -- Try to restore last team on initial login/reload if current loadout is empty
+  if(isInitialLogin or isReloadingUi) then
+    addon:ScheduleTimer(function()
+      if(addon:ShouldRestoreLastTeam()) then
+        addon:RestoreLastTeam();
+      end
+    end, 2.0);
+  end
+
+  addon:HandleAutoSummonTrigger("PLAYER_ENTERING_WORLD");
+  addon.PendingStartupRefreshes = 0;
+  addon:RunStartupRefresh();
+  addon:QueueStartupRefresh(0.5);
+  addon:QueueStartupRefresh(1.5);
 end
 
 function addon:ZONE_CHANGED_NEW_AREA()
@@ -1944,7 +2101,7 @@ function addon:PET_JOURNAL_LIST_UPDATE()
 end
 
 function addon:SPELL_UPDATE_COOLDOWN()
-	addon.PetHealTime = GetSpellCooldown(125439);
+	addon.PetHealTime = GetSpellCooldownCompat(125439);
 	
 	if((GetTime() - addon.LoginTime) > 3 or addon.PetHealTime > 0) then
 		addon:UnregisterEvent("SPELL_UPDATE_COOLDOWN");
@@ -1993,6 +2150,9 @@ function addon:OnInitialize()
 	addon:InitializeDatabroker();
 	if(type(addon.InitializeMinimapIcon) == "function") then
 		addon:InitializeMinimapIcon();
+		if(type(addon.UpdateMinimapIconVisibility) == "function") then
+			addon:UpdateMinimapIconVisibility();
+		end
 	end
 	addon:RegisterEvent("ZONE_CHANGED_NEW_AREA");
 	addon:RegisterEvent("ZONE_CHANGED");
@@ -2029,6 +2189,12 @@ local function EnableAddon()
 
 	if(type(addon.OnEnable) == "function") then
 		addon:OnEnable();
+	end
+
+	if(addon._pendingItemButtonRefresh and PetBuddyFrameButtons and PetBuddyFrameButtons:IsShown()
+		and type(PetBuddyFrameButtons_OnShow) == "function") then
+		addon._pendingItemButtonRefresh = nil;
+		PetBuddyFrameButtons_OnShow(PetBuddyFrameButtons);
 	end
 end
 

@@ -10,10 +10,7 @@ local function GetMinimapStorage()
 end
 
 function addon:InitializeMinimapIcon()
-    local MM = RGX:GetMinimap()
-    if not MM then return end
-
-    self.minimapBtn = MM:Create({
+    self.minimapBtn = RGX:CreateMinimapButton({
         name         = "PetBuddy2MinimapButton",
         icon         = self.LOGO_TEXTURE or "Interface\\AddOns\\PetBuddy2\\media\\logo.tga",
         defaultAngle = DEFAULT_ANGLE,
@@ -28,13 +25,16 @@ function addon:InitializeMinimapIcon()
             local s = GetMinimapStorage()
             if s then s.angle = v end
         end,
+        storage = GetMinimapStorage() or {},
+        angleKey = "angle",
+        enabledKey = "enabled",
 
         tooltip = {
             title       = "|TInterface\\AddOns\\PetBuddy2\\media\\logo.tga:18:18:0:0|t |cffb512fcPetBuddy2|r |cffd9c6ffBattle Pet HUD|r",
             description = "|cffd9c6ffYour compact pet team, loadouts, and tracker hub.|r",
             lines = {
                 { left = "|cffb512fcLeft-Click|r",       right = "Show or hide PetBuddy2" },
-                { left = "|cff4ecdc4Right-Click|r",      right = "Open options" },
+                { left = "|cff4ecdc4Right-Click|r",      right = "Open options menu" },
                 { left = "|cffe67e22Drag|r",             right = "Move around minimap" },
                 { left = "|cffe74c3cCtrl+Right-Click|r", right = "Hide minimap icon" },
             },
@@ -53,5 +53,6 @@ function addon:UpdateMinimapIconVisibility()
     if not self.minimapBtn then return end
 
     local s = GetMinimapStorage()
-    self.minimapBtn:SetVisible(not s or s.enabled ~= false)
+    local show = not s or s.enabled ~= false
+    self.minimapBtn:SetVisible(show)
 end

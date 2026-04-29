@@ -339,7 +339,6 @@
 				<Scripts>
 					<OnLoad>
 						self:SetScale(0.6);
-						PetBuddyFrameButtons_OnShow(self);
 					</OnLoad>
 					<OnShow>
 						PetBuddyFrameButtons_OnShow(self);
