@@ -9,111 +9,30 @@
 local ADDON_NAME, addon = ...;
 local E = addon.E;
 local DEFAULT_STATUSBAR_NAME = "RenAscensionL";
-local DEFAULT_STATUSBAR_PATH = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]];
 
-local function GetRGX()
-	local rgx = rawget(_G, "RGXFramework");
-	if(type(rgx) == "table") then
-		return rgx;
-	end
-
-	return nil;
-end
-
-local function GetRGXModule(name, globalName)
-	local rgx = GetRGX();
-	if(type(rgx) == "table" and type(rgx.RequireModule) == "function") then
-		local module = rgx:RequireModule(name);
-		if(type(module) == "table") then
-			return module;
-		end
-	end
-
-	if(type(rgx) == "table" and type(rgx.GetModule) == "function") then
-		local module = rgx:GetModule(name);
-		if(type(module) == "table") then
-			return module;
-		end
-	end
-
-	if(type(globalName) == "string") then
-		local module = rawget(_G, globalName);
-		if(type(module) == "table") then
-			return module;
-		end
-	end
-
-	return nil;
-end
-
-local function GetRGXFonts()
-	return GetRGXModule("fonts", "RGXFonts");
-end
-
-local function GetRGXTextures()
-	return GetRGXModule("textures", "RGXTextures");
-end
-
-local function GetDefaultFontName()
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) == "table" and type(rgxFonts.GetDefault) == "function") then
-		local defaultName = rgxFonts:GetDefault();
-		if(type(defaultName) == "string" and defaultName ~= "") then
-			return defaultName;
-		end
-	end
-
-	return "FRIZQT";
-end
-
-addon.Media = addon.Media or {
-	statusbar = {},
-	defaults = {
-		statusbar = DEFAULT_STATUSBAR_NAME,
-	},
-};
+local RGX      = _G.RGXFramework;
+local Fonts    = _G.RGXFonts;
+local Textures = _G.RGXTextures;
 
 local function BuildDefaultTextStyle(size, flags, extras)
-	local style = {
-		font = GetDefaultFontName(),
-		size = size,
-		flags = flags or "",
-	};
-
-	if(type(extras) == "table") then
-		for key, value in pairs(extras) do
-			style[key] = value;
-		end
+	local style = { font = Fonts:GetDefault(), size = size, flags = flags or "" };
+	if type(extras) == "table" then
+		for key, value in pairs(extras) do style[key] = value; end
 	end
-
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) == "table" and type(rgxFonts.CreateStyle) == "function") then
-		return rgxFonts:CreateStyle(style);
-	end
-
-	return style;
+	return Fonts:CreateStyle(style);
 end
 
 local function EnsurePB2TextStyles(db)
-	if(type(db) ~= "table") then
-		return;
-	end
+	if type(db) ~= "table" then return; end
 
-	if(type(db.titleText) ~= "table" or type(db.normalText) ~= "table" or type(db.smallText) ~= "table") then
-		local legacyFont = db.fontFace or GetDefaultFontName();
+	if type(db.titleText) ~= "table" or type(db.normalText) ~= "table" or type(db.smallText) ~= "table" then
+		local legacyFont = db.fontFace or Fonts:GetDefault();
 		local legacySize = tonumber(db.fontSize) or 10;
-
 		db.titleText = BuildDefaultTextStyle(legacySize + 2, "OUTLINE", {
-			font = legacyFont,
-			shadowColor = "shadow",
-			shadowOffset = { x = 1, y = -1 },
+			font = legacyFont, shadowColor = "shadow", shadowOffset = { x = 1, y = -1 },
 		});
-		db.normalText = BuildDefaultTextStyle(legacySize, "", {
-			font = legacyFont,
-		});
-		db.smallText = BuildDefaultTextStyle(math.max(8, legacySize - 1), "", {
-			font = legacyFont,
-		});
+		db.normalText = BuildDefaultTextStyle(legacySize, "",         { font = legacyFont });
+		db.smallText  = BuildDefaultTextStyle(math.max(8, legacySize - 1), "", { font = legacyFont });
 	end
 
 	db.fontFace = nil;
@@ -121,20 +40,16 @@ local function EnsurePB2TextStyles(db)
 end
 
 local function EnsureTable(tbl, key)
-	if(type(tbl[key]) ~= "table") then
-		tbl[key] = {};
-	end
+	if type(tbl[key]) ~= "table" then tbl[key] = {}; end
 	return tbl[key];
 end
 
 local function CopyDefaults(dst, src)
 	for key, value in pairs(src) do
-		if(type(value) == "table") then
-			if(type(dst[key]) ~= "table") then
-				dst[key] = {};
-			end
+		if type(value) == "table" then
+			if type(dst[key]) ~= "table" then dst[key] = {}; end
 			CopyDefaults(dst[key], value);
-		elseif(dst[key] == nil) then
+		elseif dst[key] == nil then
 			dst[key] = value;
 		end
 	end
@@ -146,156 +61,12 @@ local function GetCharacterKey()
 	return characterName .. " - " .. realmName;
 end
 
-function addon:RegisterMedia(mediaType, name, path)
-	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
-	if(not mediaTable or type(name) ~= "string" or type(path) ~= "string") then
-		return;
-	end
-
-	mediaTable[name] = path;
-
-	if(string.lower(mediaType or "") == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(rgxTextures) == "table" and type(rgxTextures.RegisterBar) == "function") then
-			rgxTextures:RegisterBar(name, path);
-		end
-	end
-end
-
-function addon:HasMedia(mediaType, name)
-	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
-	if(type(mediaTable) == "table" and mediaTable[name] ~= nil) then
-		return true;
-	end
-
-	if(string.lower(mediaType or "") == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		return type(rgxTextures) == "table"
-			and type(rgxTextures.bars) == "table"
-			and rgxTextures.bars[name] ~= nil;
-	end
-
-	return false;
-end
-
-function addon:FetchMedia(mediaType, name)
-	local mediaKey = string.lower(mediaType or "");
-	local mediaTable = self.Media and self.Media[mediaKey];
-	if(type(mediaTable) ~= "table") then
-		return nil;
-	end
-
-	if(type(name) == "string" and mediaTable[name]) then
-		return mediaTable[name];
-	end
-
-	if(mediaKey == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(name) == "string"
-			and type(rgxTextures) == "table"
-			and type(rgxTextures.bars) == "table"
-			and rgxTextures.bars[name] ~= nil
-			and type(rgxTextures.GetBar) == "function") then
-			return rgxTextures:GetBar(name);
-		end
-	end
-
-	local defaultName = self.Media.defaults and self.Media.defaults[mediaKey];
-	if(type(defaultName) == "string" and mediaTable[defaultName]) then
-		return mediaTable[defaultName];
-	end
-
-	if(mediaKey == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(defaultName) == "string"
-			and type(rgxTextures) == "table"
-			and type(rgxTextures.bars) == "table"
-			and rgxTextures.bars[defaultName] ~= nil
-			and type(rgxTextures.GetBar) == "function") then
-			return rgxTextures:GetBar(defaultName);
-		end
-	end
-
-	for _, path in pairs(mediaTable) do
-		return path;
-	end
-
-	if(mediaKey == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(rgxTextures) == "table"
-			and type(rgxTextures.ListBars) == "function"
-			and type(rgxTextures.GetBar) == "function") then
-			local bars = rgxTextures:ListBars();
-			local first = bars and bars[1];
-			if(type(first) == "string" and first ~= "") then
-				return rgxTextures:GetBar(first);
-			end
-		end
-	end
-
-	return nil;
-end
-
-function addon:ListMedia(mediaType)
-	local mediaTable = self.Media and self.Media[string.lower(mediaType or "")];
-	if(type(mediaTable) ~= "table") then
-		mediaTable = {};
-	end
-
-	local list, seen = {}, {};
-	for name, path in pairs(mediaTable) do
-		if(type(name) == "string" and name ~= "" and not seen[name]) then
-			seen[name] = true;
-			tinsert(list, name);
-		end
-	end
-
-	if(string.lower(mediaType or "") == "statusbar") then
-		local rgxTextures = GetRGXTextures();
-		if(type(rgxTextures) == "table" and type(rgxTextures.ListBars) == "function") then
-			for _, name in ipairs(rgxTextures:ListBars()) do
-				if(type(name) == "string" and name ~= "" and not seen[name]) then
-					seen[name] = true;
-					tinsert(list, name);
-				end
-			end
-		end
-	end
-
-	table.sort(list);
-	return list;
-end
-
-local function ImportExternalStatusbars()
-	local libStubObject = rawget(_G, "LibStub");
-	if(type(libStubObject) ~= "table" or type(libStubObject.GetLibrary) ~= "function") then
-		return;
-	end
-
-	local ok, externalLSM = pcall(libStubObject.GetLibrary, libStubObject, "LibSharedMedia-3.0", true);
-	if(not ok or not externalLSM) then
-		return;
-	end
-
-	local mediaType = "statusbar";
-	local mediaList = externalLSM:List(mediaType) or {};
-	for _, mediaName in ipairs(mediaList) do
-		local mediaPath = externalLSM:Fetch(mediaType, mediaName, true) or externalLSM:Fetch(mediaType, mediaName);
-		if(type(mediaPath) == "string" and mediaPath ~= "") then
-			addon:RegisterMedia(mediaType, mediaName, mediaPath);
-		end
-	end
-end
-
-addon:RegisterMedia("statusbar", DEFAULT_STATUSBAR_NAME, DEFAULT_STATUSBAR_PATH);
-addon:RegisterMedia("statusbar", "Blizzard", "Interface\\TargetingFrame\\UI-StatusBar");
-addon:RegisterMedia("statusbar", "Smooth", "Interface\\RaidFrame\\Raid-Bar-Hp-Fill");
-addon:RegisterMedia("statusbar", "Flat", "Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar");
-addon:RegisterMedia("statusbar", "Glamour", "Interface\\AddOns\\PetBuddy2\\media\\renascensionl.tga");
-addon:RegisterMedia("statusbar", "Minimalist", "Interface\\Tooltips\\UI-Tooltip-Background");
-addon:RegisterMedia("statusbar", "Perl", "Interface\\TargetingFrame\\UI-StatusBar");
-addon:RegisterMedia("statusbar", "Smoother", "Interface\\AddOns\\PetBuddy2\\media\\backdrop.tga");
-ImportExternalStatusbars();
+-- Register PB2's bundled textures into the shared framework pool
+Textures:RegisterBars("PetBuddy2", {
+	[DEFAULT_STATUSBAR_NAME] = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]],
+	["Glamour"]              = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]],
+	["Smoother"]             = [[Interface\AddOns\PetBuddy2\media\backdrop.tga]],
+});
 
 E.VISIBILITY_MODE = {
 	DO_NOTHING 	= 0x1,
@@ -310,10 +81,12 @@ E.AUTO_SUMMON_MODE = {
 };
 
 function addon:InitializeDatabase()
-	local defaults = {
-		char = {
-			AutoSummonLastPetID = nil,
-		},
+  local defaults = {
+    char = {
+      AutoSummonLastPetID = nil,
+      LastActiveTeam = nil,
+      LastSavedMapID = nil,
+    },
 		
 		global = {
 			Visible = true,
@@ -361,14 +134,14 @@ function addon:InitializeDatabase()
 				RemainingExperience = true,
 			},			
 			
-			PetUtilityMenuState = 1,
+			PetUtilityMenuState = 3,
 			
 			ShowPepe = true,
 			PepeOnLeft = false,
 			ShowWelcomeMessage = true,
 			
 			ShowPetItems = true,
-			ShowPetLoadouts = false,
+			ShowPetLoadouts = true,
 			PetItemCategories = {
 				heal_spell = true,
 				battle_bandage = true,
@@ -403,6 +176,21 @@ function addon:InitializeDatabase()
 
 	CopyDefaults(globalData, defaults.global);
 	CopyDefaults(charRoot[charKey], defaults.char);
+
+	if(globalData._pb2DefaultInit_v237 ~= true) then
+		if((tonumber(globalData.PetUtilityMenuState) or 0) == 1 and globalData.ShowPetLoadouts == false) then
+			globalData.PetUtilityMenuState = 3;
+			globalData.ShowPetLoadouts = true;
+			globalData.ShowPetItems = true;
+		end
+		if(globalData.ShowZoneTracker == nil) then
+			globalData.ShowZoneTracker = true;
+		end
+		if(globalData.ShowZoneTrackerPetList == nil) then
+			globalData.ShowZoneTrackerPetList = true;
+		end
+		globalData._pb2DefaultInit_v237 = true;
+	end
 
 	self.db = {
 		global = globalData,
@@ -482,25 +270,36 @@ function addon:RestoreSavedSettings()
 	end
 end
 
+function addon:ListMedia(mediaType)
+	if mediaType == "statusbar" then
+		return Textures:ListBars();
+	end
+	return {};
+end
+
+function addon:FetchMedia(mediaType, name)
+	if mediaType == "statusbar" then
+		return Textures:GetBar(name);
+	end
+	return nil;
+end
+
 function addon:RefreshMedia(_, barTexture)
 	local selectedBarTexture = barTexture or self.db.global.barTexture;
-	if(not addon:HasMedia("statusbar", selectedBarTexture)) then
+	if not Textures:Exists(selectedBarTexture) then
 		selectedBarTexture = DEFAULT_STATUSBAR_NAME;
 		self.db.global.barTexture = selectedBarTexture;
 	end
 
-	local statusBarPath = addon:FetchMedia("statusbar", selectedBarTexture);
+	local statusBarPath = Textures:GetBar(selectedBarTexture);
 
 	EnsurePB2TextStyles(self.db.global);
 
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) == "table" and type(rgxFonts.ApplyStyleMap) == "function") then
-		rgxFonts:ApplyStyleMap({
-			titleText = PetBuddyFontTitle,
-			normalText = PetBuddyFontNormal,
-			smallText = PetBuddyFontSmall,
-		}, self.db.global);
-	end
+	Fonts:ApplyStyleMap({
+		titleText = PetBuddyFontTitle,
+		normalText = PetBuddyFontNormal,
+		smallText = PetBuddyFontSmall,
+	}, self.db.global);
 	
 	for i=1,3 do
 		local petFrame = _G['PetBuddyFramePet'..i];
@@ -536,12 +335,7 @@ function addon:CreateTextStyleOptionsFrame()
 		return self.TextStyleOptionsFrame;
 	end
 
-	local rgxFonts = GetRGXFonts();
-	if(type(rgxFonts) ~= "table" or type(rgxFonts.CreateStyleEditorFrame) ~= "function") then
-		return nil;
-	end
-
-	local frame = rgxFonts:CreateStyleEditorFrame({
+	local frame = Fonts:CreateStyleEditorFrame({
 		name = "PetBuddyTextStyleOptionsFrame",
 		parent = UIParent,
 		title = "PetBuddy2 Text Styles",
@@ -598,6 +392,89 @@ function addon:ToggleTextStyleOptionsFrame()
 	frame:Toggle();
 end
 
+function addon:GetTextStyleMenuData()
+	EnsurePB2TextStyles(self.db and self.db.global);
+
+	local menu = {
+		{ text = "Text Style Options", isTitle = true, notCheckable = true },
+	};
+
+	local styleDefs = {
+		{
+			key = "titleText",
+			label = "Title Text",
+			default = BuildDefaultTextStyle(12, "OUTLINE", {
+				shadowColor = "shadow",
+				shadowOffset = { x = 1, y = -1 },
+			}),
+		},
+		{
+			key = "normalText",
+			label = "Normal Text",
+			default = BuildDefaultTextStyle(10, ""),
+		},
+		{
+			key = "smallText",
+			label = "Small Text",
+			default = BuildDefaultTextStyle(9, ""),
+		},
+	};
+
+	local function RefreshTextStyleMenu()
+		addon:RefreshMedia();
+		RefreshDropdownMenu(addon.ContextMenu);
+	end
+
+	local function GetCurrentFont()
+		if(Fonts and type(Fonts.NormalizeStyle) == "function") then
+			local style = Fonts:NormalizeStyle(self.db.global.normalText or styleDefs[2].default);
+			return style.font;
+		end
+		return nil;
+	end
+
+	local function ApplySharedFont(fontName)
+		if(not Fonts or type(Fonts.NormalizeStyle) ~= "function") then
+			return;
+		end
+
+		for _, styleDef in ipairs(styleDefs) do
+			local nextStyle = Fonts:NormalizeStyle(self.db.global[styleDef.key] or styleDef.default);
+			nextStyle.font = fontName;
+			self.db.global[styleDef.key] = nextStyle;
+		end
+
+		RefreshTextStyleMenu();
+	end
+
+	local fontMenuItems = (Fonts and type(Fonts.CreateFontMenuItems) == "function") and Fonts:CreateFontMenuItems({
+		current = GetCurrentFont,
+		keepShownOnClick = true,
+		onSelect = ApplySharedFont,
+	}) or nil;
+	addon._fontMenuItems = fontMenuItems;
+	if(DEFAULT_CHAT_FRAME) then
+		local total, available, defaultName = 0, 0, "nil";
+		if(Fonts and type(Fonts.GetDebugCounts) == "function") then
+			total, available, defaultName = Fonts:GetDebugCounts();
+		end
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffbc6fa8[PB2:fonts]|r menuItems=%d total=%d available=%d default=%s",
+			type(fontMenuItems) == "table" and #fontMenuItems or 0,
+			total or 0,
+			available or 0,
+			tostring(defaultName)
+		));
+	end
+
+	tinsert(menu, {
+		text = "Applies to title, normal, and small text.",
+		disabled = true,
+		notCheckable = true,
+	});
+
+	return menu;
+end
+
 function addon:GetWindowScaleMenu()
 	local windowScales = { 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, };
 	local menu = {};
@@ -644,9 +521,9 @@ local function RefreshDropdownMenu(menuFrame)
 	end
 
 	if(type(UIDropDownMenu_Refresh) == "function" and menuFrame) then
-		UIDropDownMenu_Refresh(menuFrame);
+		pcall(UIDropDownMenu_Refresh, menuFrame);
 	elseif(type(CloseDropDownMenus) == "function") then
-		CloseDropDownMenus();
+		pcall(CloseDropDownMenus);
 	end
 end
 
@@ -695,6 +572,12 @@ local function CreateMenuInfo(entry)
 		info[k] = v;
 	end
 
+	if(type(entry.menuList) == "table") then
+		info.hasArrow = true;
+		info.menuList = entry.menuList;
+		info.value = entry.value or entry.menuList;
+	end
+
 	return info;
 end
 
@@ -703,7 +586,9 @@ local function InitializeMenuLevel(self, level, menuList)
 	level = level or 1;
 	local currentList;
 
-	if(type(menuList) == "table") then
+	if(menuList == "pb2_fonts") then
+		currentList = addon._fontMenuItems;
+	elseif(type(menuList) == "table") then
 		currentList = menuList;
 	else
 		currentList = self._pbMenuData;
@@ -761,6 +646,14 @@ function addon:GetPrimaryMenuData()
 		});
 	end
 	
+	local _fontLabel = "Default"
+	if Fonts and type(Fonts.NormalizeStyle) == "function" and type(Fonts.GetDropdownFontLabel) == "function" then
+		local _style = Fonts:NormalizeStyle(self.db and self.db.global and self.db.global.normalText)
+		if _style and _style.font then
+			_fontLabel = Fonts:GetDropdownFontLabel(_style.font)
+		end
+	end
+
 	local data = {
 		{
 			text = "PetBuddy2 Options", isTitle = true, notCheckable = true,
@@ -1105,8 +998,8 @@ function addon:GetPrimaryMenuData()
 			end,
 			isNotRadio = true,
 			keepShownOnClick = true,
-			tooltipTitle = "Ctrl+Right-click minimap icon to hide",
-			tooltipText = "You can also use |cffb07fff/pb2 icon off|r to hide or |cffb07fff/pb2 icon on|r to show.",
+			tooltipTitle = "Minimap icon visibility",
+			tooltipText = "You can also right-click the minimap button for options, or use |cffb07fff/pb2 icon off|r and |cffb07fff/pb2 icon on|r.",
 		},
 		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,
@@ -1117,9 +1010,14 @@ function addon:GetPrimaryMenuData()
 		{
 			text = "Text styles",
 			notCheckable = true,
-			func = function()
-				addon:ToggleTextStyleOptionsFrame();
-			end,
+			hasArrow = true,
+			menuList = addon:GetTextStyleMenuData(),
+		},
+		{
+			text = "Font: " .. _fontLabel,
+			notCheckable = true,
+			hasArrow = true,
+			menuList = "pb2_fonts",
 		},
 		{
 			text = "Bar texture",
@@ -1171,13 +1069,20 @@ function addon:OpenDropDownMenu(menuData, menuFrame, anchor, x, y, displayMode, 
 	-- Store menu data on the frame for the init function to access
 	menuFrame._pbMenuData = menuData;
 
-	-- Initialize using the native UIDropDownMenu API (same pattern BLU uses)
-	UIDropDownMenu_Initialize(menuFrame, InitializeMenuLevel, displayMode or "MENU");
+	-- Initialize using the native UIDropDownMenu API (same pattern BLU uses).
+	local okInit = pcall(UIDropDownMenu_Initialize, menuFrame, InitializeMenuLevel, displayMode or "MENU");
+	if(not okInit) then
+		if(type(addon.PrintMessage) == "function") then
+			addon:PrintMessage("|cffff5555Unable to initialize dropdown menu.|r");
+		end
+		return false;
+	end
 
 	-- Open the dropdown
 	if(type(ToggleDropDownMenu) == "function") then
-		ToggleDropDownMenu(1, nil, menuFrame, anchor or "cursor", x or 0, y or 0, menuData, nil, autoHideDelay or 5);
+		local okToggle = pcall(ToggleDropDownMenu, 1, nil, menuFrame, anchor or "cursor", x or 0, y or 0, menuData, nil, autoHideDelay or 5);
+		return okToggle == true;
 	end
 
-	return true;
+	return false;
 end

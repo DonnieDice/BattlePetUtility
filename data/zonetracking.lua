@@ -1,4 +1,5 @@
 local ADDON_NAME, addon = ...;
+local RGX = _G.RGXFramework;
 
 local ZONE_TRACKER_TITLE = "Zone Pets";
 local MAX_TRACKED_PET_NAMES = 3;
@@ -7,10 +8,84 @@ local MAX_VISIBLE_ZONE_LINES = 4;
 local TOOLTIP_ICON_SIZE = 12;
 local MISSING_SEGMENT_COLOR = CreateColor(0.62, 0.62, 0.62);
 local MAP_ALIASES = {
-	-- Stormwind City and its modern city-map variant should use the
-	-- nearest outdoor wild-pet dataset instead of showing as unavailable.
-	[84] = 37,
-	[301] = 37,
+  -- Stormwind City and its modern city-map variant should use the
+  -- nearest outdoor wild-pet dataset instead of showing as unavailable.
+  [84] = 37,    -- Stormwind City -> Elwynn Forest
+  [301] = 37,   -- Stormwind City (modern variant)
+
+  -- Orgrimmar -> Durotar
+  [85] = 1,     -- Orgrimmar
+  [321] = 1,    -- Orgrimmar (modern variant)
+
+  -- Ironforge -> Dun Morogh
+  [87] = 27,    -- Ironforge
+
+  -- Darnassus -> Teldrassil
+  [89] = 57,    -- Darnassus
+
+  -- Thunder Bluff -> Mulgore
+  [88] = 7,     -- Thunder Bluff
+
+  -- Undercity -> Tirisfal Glades
+  [90] = 20,    -- Undercity
+
+  -- Silvermoon City -> Eversong Woods (Ghostlands is 95)
+  [110] = 94,   -- Silvermoon City -> Eversong Woods
+
+  -- Exodar -> Azuremyst Isle
+  [103] = 104,  -- Exodar
+
+  -- Dalaran (Northrend)
+  [125] = 127,  -- Dalaran -> Crystalsong Forest
+  [126] = 127,  -- Dalaran Underbelly
+
+  -- Dalaran (Broken Isles)
+  [627] = 634,  -- Dalaran (Legion) -> Stormheim
+  [628] = 634,  -- Dalaran (Legion Underbelly)
+
+  -- Shattrath City
+  [111] = 108,  -- Shattrath -> Terokkar Forest
+
+  -- The War Within - Khaz Algar Subzones -> Main Zones
+  [2248] = 2249, -- Dornogal (subzone) -> Isle of Dorn
+  [2214] = 2250, -- The Ringing Deeps (various subzones)
+  [2215] = 2251, -- Hallowfall (various subzones)
+  [2255] = 2252, -- Azj-Kahet (various subzones)
+  [2256] = 2252, -- Azj-Kahet (alternate)
+
+  -- Dragonflight - Major Cities/Hubs
+  [2112] = 2025, -- Valdrakken -> Thaldraszus
+  [2022] = 2022, -- Wingrest Embassy -> Waking Shores (self)
+
+  -- Shadowlands - Covenant Sanctuaries
+  [1690] = 1525, -- Sinfall -> Revendreth
+  [1691] = 1533, -- Bastion Covenant
+  [1692] = 1536, -- Maldraxxus Covenant
+  [1693] = 1565, -- Ardenweald Covenant
+  [1694] = 1543, -- The Maw Covenant
+
+  -- Instances/Dungeons that share outdoor areas
+  [1477] = 630,  -- Eye of Azshara instance -> Azsuna
+  [1456] = 680,  -- The Nighthold instance -> Suramar
+  [1466] = 634,  -- Maw of Souls instance -> Stormheim
+  [1501] = 641,  -- Black Rook Hold instance -> Val'sharah
+  [1516] = 630,  -- The Arcway instance -> Azsuna
+
+  -- BFA - Major Cities
+  [1161] = 895,  -- Boralus -> Tiragarde Sound
+  [1165] = 862,  -- Dazar'alor -> Zuldazar
+
+  -- Mechagon
+  [1462] = 1462, -- Mechagon Island (self)
+  [1490] = 1462, -- Operation: Mechagon
+
+  -- Nazjatar
+  [1355] = 1355, -- Nazjatar (self)
+
+  -- Instances that can have outdoor pet spawns nearby
+  [1205] = 2022, -- Vault of the Incarnates -> Waking Shores
+  [1209] = 2022, -- Aberrus -> Waking Shores
+  [1208] = 2024, -- Amirdrassil -> Azure Span
 };
 local PET_QUALITY_COLORS = {
 	[1] = CreateColor(1.00, 1.00, 1.00), -- poor shown as white per requested bar palette
@@ -333,7 +408,7 @@ local function UpdateQualityBars(frame, snapshot)
 	local qualityCounts = snapshot.qualityCounts or {};
 	local containerWidth = frame.bar:GetWidth() or 0;
 	if(containerWidth <= 0) then
-		C_Timer.After(0, function()
+		RGX:After(0, function()
 			if(frame and frame.bar and frame.snapshot == snapshot) then
 				UpdateQualityBars(frame, snapshot);
 			end
