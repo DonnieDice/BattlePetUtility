@@ -150,6 +150,7 @@ function addon:InitializeDatabroker()
         OnTooltipShow = function(tooltip)
             if not tooltip or not tooltip.AddLine then return end
             tooltip:AddLine(TEX_PET_BUDDY_ICON .. " PetBuddy2")
+            tooltip:AddLine("|cffd9c6ffBattle Pet HUD|r")
             tooltip:AddLine(" ")
             tooltip:AddLine("Active Pets")
 
