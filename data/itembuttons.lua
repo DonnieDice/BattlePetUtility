@@ -217,20 +217,20 @@ local function SafeSetButtonAttribute(button, key, value)
 	end
 
 	if(InCombatLockdown and InCombatLockdown()) then
-		button._pb2AttributeRefreshPending = true;
+		button._bpuAttributeRefreshPending = true;
 		return false;
 	end
 
 	local ok, err = pcall(button.SetAttribute, button, key, value);
 	if(not ok and RGX and type(RGX.Debug) == "function") then
-		RGX:Debug("[PB2] SetAttribute failed", tostring(key), tostring(err));
+		RGX:Debug("[BPU] SetAttribute failed", tostring(key), tostring(err));
 	end
 
 	return ok;
 end
 
 local function ClearButtonSecureAction(button)
-	if(not button or not button._pb2HasSecureAction) then
+	if(not button or not button._bpuHasSecureAction) then
 		return;
 	end
 
@@ -238,26 +238,26 @@ local function ClearButtonSecureAction(button)
 	SafeSetButtonAttribute(button, "unit", nil);
 	SafeSetButtonAttribute(button, "spell", nil);
 	SafeSetButtonAttribute(button, "item", nil);
-	button._pb2HasSecureAction = nil;
-	button._pb2SecureActionKind = nil;
+	button._bpuHasSecureAction = nil;
+	button._bpuSecureActionKind = nil;
 end
 
 local function DispatchItemButtonEvent(event, ...)
-	if(event == "BAG_UPDATE_DELAYED" and PetBuddyFrameButtons and PetBuddyFrameButtons:IsShown()) then
+	if(event == "BAG_UPDATE_DELAYED" and BattlePetUtilityFrameButtons and BattlePetUtilityFrameButtons:IsShown()) then
 		addon:UpdateItemButtons();
 	end
 
 	for i = 1, MAX_ITEM_BUTTONS do
-		local button = PetBuddyFrameButtons and PetBuddyFrameButtons["itemButton" .. i];
+		local button = BattlePetUtilityFrameButtons and BattlePetUtilityFrameButtons["itemButton" .. i];
 		if(button and button:IsShown() and button.actionType) then
-			PetBuddyFrameButton_OnEvent(button, event, ...);
+			BattlePetUtilityFrameButton_OnEvent(button, event, ...);
 		end
 	end
 
 	for i = 1, 20 do
-		local button = _G["PetBuddyFlyoutButton" .. i];
+		local button = _G["BattlePetUtilityFlyoutButton" .. i];
 		if(button and button:IsShown() and button.actionType) then
-			PetBuddyFrameButton_OnEvent(button, event, ...);
+			BattlePetUtilityFrameButton_OnEvent(button, event, ...);
 		end
 	end
 end
@@ -267,9 +267,9 @@ local function EnsureItemButtonEventBridge()
 		return;
 	end
 
-	RGX:RegisterEvent("SPELL_UPDATE_COOLDOWN", DispatchItemButtonEvent, "PB2_ItemButton_SPELL_UPDATE_COOLDOWN");
-	RGX:RegisterEvent("BAG_UPDATE_DELAYED", DispatchItemButtonEvent, "PB2_ItemButton_BAG_UPDATE_DELAYED");
-	RGX:RegisterEvent("BAG_UPDATE_COOLDOWN", DispatchItemButtonEvent, "PB2_ItemButton_BAG_UPDATE_COOLDOWN");
+	RGX:RegisterEvent("SPELL_UPDATE_COOLDOWN", DispatchItemButtonEvent, "BPU_ItemButton_SPELL_UPDATE_COOLDOWN");
+	RGX:RegisterEvent("BAG_UPDATE_DELAYED", DispatchItemButtonEvent, "BPU_ItemButton_BAG_UPDATE_DELAYED");
+	RGX:RegisterEvent("BAG_UPDATE_COOLDOWN", DispatchItemButtonEvent, "BPU_ItemButton_BAG_UPDATE_COOLDOWN");
 	itemButtonEventBridgeRegistered = true;
 end
 
@@ -551,7 +551,7 @@ local function EnsureFlyoutBorder(button)
 	local border = GetFlyoutBorder(button);
 	if(not border) then
 		border = button:CreateTexture(nil, "OVERLAY", nil, 5);
-		border:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\border");
+		border:SetTexture("Interface\\AddOns\\BattlePetUtility\\media\\border");
 		border:SetPoint("TOPLEFT", button, "TOPLEFT", -11, 11);
 		border:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 11, -11);
 	end
@@ -603,7 +603,7 @@ end
 
 function addon:UpdateItemButtons()
 	if(InCombatLockdown()) then return end
-	if(not PetBuddyFrame:IsShown()) then return end
+	if(not BattlePetUtilityFrame:IsShown()) then return end
 
 	addon:InitializePetItemCategoryDefaults();
 	
@@ -671,15 +671,15 @@ function addon:UpdateItemButtons()
 	
 	-- if(not isSameItems) then
 		for i=1,MAX_ITEM_BUTTONS do
-			local currentButton = PetBuddyFrameButtons['itemButton' .. i];
+			local currentButton = BattlePetUtilityFrameButtons['itemButton' .. i];
 			if(currentButton) then currentButton:Hide() end
 		end
 		
 		for currentButtonIndex, buttonData in ipairs(extraButtonData) do
 			if(currentButtonIndex > MAX_ITEM_BUTTONS) then break end
-			local currentButton = PetBuddyFrameButtons['itemButton' .. currentButtonIndex];
+			local currentButton = BattlePetUtilityFrameButtons['itemButton' .. currentButtonIndex];
 			if(currentButton) then
-				PetBuddyFrameButton_Initialize(currentButton, buttonData.type, buttonData.actionData, buttonData.target or nil);
+				BattlePetUtilityFrameButton_Initialize(currentButton, buttonData.type, buttonData.actionData, buttonData.target or nil);
 			end
 		end
 		-- print("Updating buttons")
@@ -690,7 +690,7 @@ function addon:UpdateItemButtons()
 	addon.previousItems = totalItems;
 end
 
-function PetBuddyFrameButtons_OnShow(self)
+function BattlePetUtilityFrameButtons_OnShow(self)
 	if(not addon._enabled) then
 		addon._pendingItemButtonRefresh = true;
 		return;
@@ -701,15 +701,15 @@ function PetBuddyFrameButtons_OnShow(self)
 	addon:UpdateItemButtons();
 end
 
-function PetBuddyFrameButtons_OnHide(self)
+function BattlePetUtilityFrameButtons_OnHide(self)
 end
 
-function PetBuddyFrameButtons_OnEvent(self, event, ...)
-	PetBuddyFlyout_Close();
+function BattlePetUtilityFrameButtons_OnEvent(self, event, ...)
+	BattlePetUtilityFlyout_Close();
 	addon:UpdateItemButtons();
 end
 
-function PetBuddyFrameButton_Initialize(self, type, actionData, target)
+function BattlePetUtilityFrameButton_Initialize(self, type, actionData, target)
 	self.icon = self.icon or self.Icon;
 	self.cooldown = self.cooldown or self.Cooldown;
 	self.Count = self.Count or self.count;
@@ -770,8 +770,8 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 		SafeSetButtonAttribute(self, "type", "spell");
 		SafeSetButtonAttribute(self, "unit", target or "player");
 		SafeSetButtonAttribute(self, "spell", spellName);
-		self._pb2HasSecureAction = true;
-		self._pb2SecureActionKind = "spell";
+		self._bpuHasSecureAction = true;
+		self._bpuSecureActionKind = "spell";
 		
 		if(IsSpellKnownCompat(self.actionData) and IsSpellUsableCompat(self.actionData)) then
 			self.icon:SetVertexColor(1, 1, 1);
@@ -789,8 +789,8 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 		SafeSetButtonAttribute(self, "type", "item");
 		SafeSetButtonAttribute(self, "unit", target or "player");
 		SafeSetButtonAttribute(self, "item", itemName or ("item:" .. tostring(self.actionData)));
-		self._pb2HasSecureAction = true;
-		self._pb2SecureActionKind = "item";
+		self._bpuHasSecureAction = true;
+		self._bpuSecureActionKind = "item";
 		
 		-- self:SetScript("PreClick", function()
 		-- 	print(self.actionData, target, itemName);
@@ -836,14 +836,14 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 		end
 		
 		self:SetScript("PreClick", function()
-			if(PetBuddyFlyout:IsShown() and PetBuddyFlyout.anchorFrame ~= self) then
-				PetBuddyFlyout_Close();
+			if(BattlePetUtilityFlyout:IsShown() and BattlePetUtilityFlyout.anchorFrame ~= self) then
+				BattlePetUtilityFlyout_Close();
 			end
 			
-			if(not PetBuddyFlyout:IsShown()) then
-				PetBuddyFlyout_Open(self);
+			if(not BattlePetUtilityFlyout:IsShown()) then
+				BattlePetUtilityFlyout_Open(self);
 			else
-				PetBuddyFlyout_Close();
+				BattlePetUtilityFlyout_Close();
 			end
 		end);
 	elseif(self.actionType == "custom") then
@@ -861,12 +861,12 @@ function PetBuddyFrameButton_Initialize(self, type, actionData, target)
 	end
 end
 
-function PetBuddyFlyout_Open(parentButton)
+function BattlePetUtilityFlyout_Open(parentButton)
 	if(not parentButton) then return false end
 	
-	PetBuddyFlyout.anchorFrame = parentButton;
+	BattlePetUtilityFlyout.anchorFrame = parentButton;
 	
-	PetBuddyFlyout_SetFlyoutButtons(parentButton.actionData.buttons);
+	BattlePetUtilityFlyout_SetFlyoutButtons(parentButton.actionData.buttons);
 	
 	local border = EnsureFlyoutBorder(parentButton);
 	if(border) then border:Show(); end
@@ -878,72 +878,72 @@ function PetBuddyFlyout_Open(parentButton)
 	
 	-- parentButton:SetChecked(false);
 	
-	PetBuddyFlyout:SetPoint("TOP", parentButton, "BOTTOM", 0, 0);
-	PetBuddyFlyout:Show();
+	BattlePetUtilityFlyout:SetPoint("TOP", parentButton, "BOTTOM", 0, 0);
+	BattlePetUtilityFlyout:Show();
 end
 
-function PetBuddyFlyout_Close()
-	if(PetBuddyFlyout.anchorFrame) then
-		PetBuddyFlyout.anchorFrame:SetChecked(false);
+function BattlePetUtilityFlyout_Close()
+	if(BattlePetUtilityFlyout.anchorFrame) then
+		BattlePetUtilityFlyout.anchorFrame:SetChecked(false);
 	
-		local border = GetFlyoutBorder(PetBuddyFlyout.anchorFrame);
+		local border = GetFlyoutBorder(BattlePetUtilityFlyout.anchorFrame);
 		if(border) then border:Hide(); end
-		local arrow = GetFlyoutArrow(PetBuddyFlyout.anchorFrame);
+		local arrow = GetFlyoutArrow(BattlePetUtilityFlyout.anchorFrame);
 		if(arrow) then
-			arrow:SetPoint("BOTTOM", PetBuddyFlyout.anchorFrame, "BOTTOM", 0, -7);
+			arrow:SetPoint("BOTTOM", BattlePetUtilityFlyout.anchorFrame, "BOTTOM", 0, -7);
 		end
 		
-		PetBuddyFlyout.anchorFrame = nil;
+		BattlePetUtilityFlyout.anchorFrame = nil;
 	end
 	
-	PetBuddyFlyout:Hide();
+	BattlePetUtilityFlyout:Hide();
 end
 
-function PetBuddyFlyout_CreateFlyoutButton(index)
-	local previousButton = _G["PetBuddyFlyoutButton" .. (index-1)];
+function BattlePetUtilityFlyout_CreateFlyoutButton(index)
+	local previousButton = _G["BattlePetUtilityFlyoutButton" .. (index-1)];
 	if(not previousButton) then return false end
 	
-	if(_G["PetBuddyFlyoutButton" .. index]) then return _G["PetBuddyFlyoutButton" .. index] end
+	if(_G["BattlePetUtilityFlyoutButton" .. index]) then return _G["BattlePetUtilityFlyoutButton" .. index] end
 	
-	local button = CreateFrame("Button", "PetBuddyFlyoutButton" .. index, previousButton, "PetBuddyButtonTemplate", index);
+	local button = CreateFrame("Button", "BattlePetUtilityFlyoutButton" .. index, previousButton, "BattlePetUtilityButtonTemplate", index);
 	button:ClearAllPoints();
 	button:SetPoint("TOP", previousButton, "BOTTOM", 0, -5);
 	
 	return button;
 end
 
-function PetBuddyFlyout_SetFlyoutButtons(buttonData)
+function BattlePetUtilityFlyout_SetFlyoutButtons(buttonData)
 	for index = 1, 20 do
-		local button = _G['PetBuddyFlyoutButton' .. index];
+		local button = _G['BattlePetUtilityFlyoutButton' .. index];
 		if(button) then
 			button:Hide();
 		end
 	end
 	
 	for index, data in pairs(buttonData) do
-		local button = _G['PetBuddyFlyoutButton' .. index];
+		local button = _G['BattlePetUtilityFlyoutButton' .. index];
 		if(not button) then
-			button = PetBuddyFlyout_CreateFlyoutButton(index);
+			button = BattlePetUtilityFlyout_CreateFlyoutButton(index);
 		end
 		
-		PetBuddyFrameButton_Initialize(button, data.type, data.actionID, data.target);
+		BattlePetUtilityFrameButton_Initialize(button, data.type, data.actionID, data.target);
 		button:Show();
 		
 		button:SetScript("PostClick", function()
-			PetBuddyFlyout_Close();
+			BattlePetUtilityFlyout_Close();
 		end);
 	end
 end
 
-function PetBuddyFlyout_OnShow(self)
+function BattlePetUtilityFlyout_OnShow(self)
 	CloseMenus();
 end
 
-function PetBuddyFlyout_OnHide(self)
-	PetBuddyFlyout_Close();
+function BattlePetUtilityFlyout_OnHide(self)
+	BattlePetUtilityFlyout_Close();
 end
 
-function PetBuddyFrameButton_OnEvent(self, event, ...)
+function BattlePetUtilityFrameButton_OnEvent(self, event, ...)
 	if(event == "SPELL_UPDATE_COOLDOWN") then
 		local start, duration = GetSpellCooldownCompat(self.actionData);
 		ApplyCooldownSafely(self, start, duration)
@@ -977,7 +977,7 @@ function addon:IsPlayerInCelestialTournament()
 	return difficulty == 12 and mapID == 1161;
 end
 
-function PetBuddyFrameButton_OnEnter(self)
+function BattlePetUtilityFrameButton_OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT");
 	
 	if(self.actionType == "spell") then
@@ -1021,9 +1021,9 @@ function PetBuddyFrameButton_OnEnter(self)
 	GameTooltip:Show();
 end
 
-function PetBuddyFrameButton_OnLeave(self)
+function BattlePetUtilityFrameButton_OnLeave(self)
 	if(self.actionType == "flyout") then
-		if(not PetBuddyFlyout:IsShown() or PetBuddyFlyout.anchorFrame ~= self) then
+		if(not BattlePetUtilityFlyout:IsShown() or BattlePetUtilityFlyout.anchorFrame ~= self) then
 			local border = GetFlyoutBorder(self);
 			if(border) then border:Hide(); end
 			-- self.FlyoutBorderShadow:Hide();

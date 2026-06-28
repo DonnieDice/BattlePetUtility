@@ -1,6 +1,6 @@
 # Media Assets
 
-This directory stores bundled visual assets used by PetBuddy2.
+This directory stores bundled visual assets used by BattlePetUtility.
 
 ## Asset Types
 

@@ -94,7 +94,7 @@ local PET_QUALITY_COLORS = {
 	[4] = CreateColor(0.00, 0.44, 0.87), -- rare
 };
 
-PetBuddy_ZoneTrackerMixin = {};
+BattlePetUtility_ZoneTrackerMixin = {};
 
 local function IsPetTrackerLoaded()
 	return rawget(_G, "PetTracker") ~= nil;
@@ -540,7 +540,7 @@ local function EnsureSpeciesLines(frame)
 			line.subIcon:SetSize(10, 10);
 			line.subIcon:SetPoint("BOTTOMRIGHT", line.icon, "BOTTOMRIGHT", 1, -1);
 
-			line.text = line:CreateFontString(nil, "OVERLAY", "PetBuddyFontSmall");
+			line.text = line:CreateFontString(nil, "OVERLAY", "BattlePetUtilityFontSmall");
 			line.text:SetPoint("LEFT", line.icon, "RIGHT", 4, 0);
 			line.text:SetPoint("RIGHT", line, "RIGHT", 0, 0);
 			line.text:SetJustifyH("LEFT");
@@ -725,31 +725,31 @@ end
 
 function addon:GetZoneTrackerAnchorTarget()
 	if(addon and addon.db and addon.db.global.HideMainGUI == true) then
-		return PetBuddyFrameTitle;
+		return BattlePetUtilityFrameTitle;
 	end
 
 	local utilityState = tonumber(addon.db.global.PetUtilityMenuState) or 0;
 	local showItems = (utilityState == 1 or utilityState == 3);
 	local showLoadouts = (utilityState == 2 or utilityState == 3);
 
-	if(showLoadouts and PetBuddyFrameLoadouts) then
-		local scrollFrame = PetBuddyFrameLoadouts.scrollFrame or rawget(_G, "PetBuddyFrameLoadoutsScrollFrame");
+	if(showLoadouts and BattlePetUtilityFrameLoadouts) then
+		local scrollFrame = BattlePetUtilityFrameLoadouts.scrollFrame or rawget(_G, "BattlePetUtilityFrameLoadoutsScrollFrame");
 		if(scrollFrame and scrollFrame:IsShown()) then
 			return scrollFrame;
 		end
 
-		return PetBuddyFrameLoadouts;
+		return BattlePetUtilityFrameLoadouts;
 	end
 
-	if(showItems and PetBuddyFrameButtons) then
-		return PetBuddyFrameButtons;
+	if(showItems and BattlePetUtilityFrameButtons) then
+		return BattlePetUtilityFrameButtons;
 	end
 
-	return PetBuddyFramePet3;
+	return BattlePetUtilityFramePet3;
 end
 
 function addon:RefreshZoneTrackerAnchor()
-	local frame = PetBuddyFrameZoneTracker;
+	local frame = BattlePetUtilityFrameZoneTracker;
 	if(not frame) then
 		return;
 	end
@@ -771,7 +771,7 @@ function addon:RefreshZoneTrackerAnchor()
 	local yOffset;
 	if(hideMain) then
 		yOffset = -2;
-	elseif(anchorTarget == (PetBuddyFrameLoadouts and PetBuddyFrameLoadouts.scrollFrame) or anchorTarget == rawget(_G, "PetBuddyFrameLoadoutsScrollFrame")) then
+	elseif(anchorTarget == (BattlePetUtilityFrameLoadouts and BattlePetUtilityFrameLoadouts.scrollFrame) or anchorTarget == rawget(_G, "BattlePetUtilityFrameLoadoutsScrollFrame")) then
 		yOffset = -6;
 	elseif(showItems or showLoadouts) then
 		yOffset = -6;
@@ -790,7 +790,7 @@ function addon:RefreshZoneTracker()
 	end
 	self._lastZoneTrackerRefresh = now;
 
-	local frame = PetBuddyFrameZoneTracker;
+	local frame = BattlePetUtilityFrameZoneTracker;
 	if(not frame or not self.db or not self.db.global) then
 		return;
 	end
@@ -870,27 +870,27 @@ function addon:RefreshZoneTracker()
 	frame:SetHeight(zoneHeight);
 
 	-- Update main frame height to accommodate zone tracker expansion
-	if(PetBuddyFrame and type(PetBuddyFrame.SetHeight) == "function") then
+	if(BattlePetUtilityFrame and type(BattlePetUtilityFrame.SetHeight) == "function") then
 		local minimized = addon and addon:IsFrameMinimized();
 		local hideMain = addon and addon.db and addon.db.global.HideMainGUI == true;
 		if(hideMain) then
 			local titleHeight = 24;
-			if(PetBuddyFrameTitle and type(PetBuddyFrameTitle.GetHeight) == "function") then
-				titleHeight = PetBuddyFrameTitle:GetHeight() or titleHeight;
+			if(BattlePetUtilityFrameTitle and type(BattlePetUtilityFrameTitle.GetHeight) == "function") then
+				titleHeight = BattlePetUtilityFrameTitle:GetHeight() or titleHeight;
 			end
-			PetBuddyFrame:SetHeight(titleHeight + zoneHeight + 6);
+			BattlePetUtilityFrame:SetHeight(titleHeight + zoneHeight + 6);
 		elseif(minimized) then
 			-- Minimized: zone tracker is hidden, just use title height
 			local titleHeight = 24;
-			if(PetBuddyFrameTitle and type(PetBuddyFrameTitle.GetHeight) == "function") then
-				titleHeight = PetBuddyFrameTitle:GetHeight() or titleHeight;
+			if(BattlePetUtilityFrameTitle and type(BattlePetUtilityFrameTitle.GetHeight) == "function") then
+				titleHeight = BattlePetUtilityFrameTitle:GetHeight() or titleHeight;
 			end
-			PetBuddyFrame:SetHeight(titleHeight + 6);
+			BattlePetUtilityFrame:SetHeight(titleHeight + 6);
 		else
 			-- For expanded state, recalculate using the stored expanded height
 			if(addon and addon.ExpandedFrameHeight) then
 				local zoneExtra = zoneHeight - 30;
-				PetBuddyFrame:SetHeight(addon.ExpandedFrameHeight + zoneExtra);
+				BattlePetUtilityFrame:SetHeight(addon.ExpandedFrameHeight + zoneExtra);
 			end
 		end
 	end
@@ -898,11 +898,11 @@ function addon:RefreshZoneTracker()
 	frame:Show();
 end
 
-function PetBuddy_ZoneTrackerMixin:OnEnter()
+function BattlePetUtility_ZoneTrackerMixin:OnEnter()
 	local snapshot = self.snapshot or addon:GetZoneTrackerSnapshot();
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 	GameTooltip:ClearLines();
-	local logoPath = addon.LOGO_TEXTURE or "Interface\\AddOns\\PetBuddy2\\Media\\logo.tga";
+	local logoPath = addon.LOGO_TEXTURE or "Interface\\AddOns\\BattlePetUtility\\Media\\logo.tga";
 	GameTooltip:AddLine("|T" .. logoPath .. ":18:18:0:0|t |cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r  |cffb07fff" .. ZONE_TRACKER_TITLE .. "|r");
 
 	if(snapshot.state == "ready") then
@@ -921,11 +921,11 @@ function PetBuddy_ZoneTrackerMixin:OnEnter()
 	GameTooltip:Show();
 end
 
-function PetBuddy_ZoneTrackerMixin:OnLeave()
+function BattlePetUtility_ZoneTrackerMixin:OnLeave()
 	GameTooltip:Hide();
 end
 
-function PetBuddy_ZoneTrackerMixin:OnMouseUp(button)
+function BattlePetUtility_ZoneTrackerMixin:OnMouseUp(button)
 	if(button == "RightButton" and type(addon.OpenContextMenu) == "function") then
 		GameTooltip:Hide();
 		addon:OpenContextMenu(nil, self, "cursor", "TOPLEFT", "CENTER");

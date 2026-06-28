@@ -1,6 +1,6 @@
 # Workflow Files
 
-This directory contains GitHub Actions workflows for PetBuddy2.
+This directory contains GitHub Actions workflows for BattlePetUtility.
 
 ## Current Workflow
 
@@ -15,4 +15,4 @@ This directory contains GitHub Actions workflows for PetBuddy2.
 ## Maintenance Rules
 
 - Keep changelog extraction limited to the newest version section for Discord.
-- Keep release links aligned with the canonical repository location: `DonnieDice/PetBuddy2`.
+- Keep release links aligned with the canonical repository location: `DonnieDice/BattlePetUtility`.

@@ -1,6 +1,6 @@
 # GitHub Automation
 
-This directory holds GitHub-specific project automation for PetBuddy2.
+This directory holds GitHub-specific project automation for BattlePetUtility.
 
 ## Purpose
 

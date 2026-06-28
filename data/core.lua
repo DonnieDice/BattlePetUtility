@@ -10,10 +10,10 @@ local ADDON_NAME, addon = ...;
 _G[ADDON_NAME] = addon;
 
 addon.E = addon.E or {};
-addon.ADDON_TITLE = "PetBuddy2";
+addon.ADDON_TITLE = "BattlePetUtility";
 local E = addon.E;
 local unpackFunc = unpack or table.unpack;
-local RGX = assert(_G.RGXFramework, "PetBuddy2: RGX-Framework not loaded");
+local RGX = assert(_G.RGXFramework, "BattlePetUtility: RGX-Framework not loaded");
 local PET_TYPE_TEXTURE_SUFFIX = {
 	[1] = "Humanoid",
 	[2] = "Dragon",
@@ -147,7 +147,7 @@ addon._timers = addon._timers or {};
 function addon:RegisterEvent(event, handler)
 	if(not event) then return end
 	local cb = handler or event;
-	local id = "PB2_" .. event;
+	local id = "BPU_" .. event;
 	if(type(cb) == "function") then
 		-- Wrap to preserve original calling convention: handler(addon, event, ...)
 		local fn = cb;
@@ -161,7 +161,7 @@ end
 
 function addon:UnregisterEvent(event)
 	if(not event) then return end
-	RGX:UnregisterEvent(event, "PB2_" .. event);
+	RGX:UnregisterEvent(event, "BPU_" .. event);
 end
 
 local function RunTimerCallback(callback, args)
@@ -215,10 +215,10 @@ function addon:CancelAllTimers()
 	end
 end
 
-addon.CHAT_PREFIX = "|TInterface\\AddOns\\PetBuddy2\\Media\\logo.tga:16:16:0:0|t - |cffffffff[|r|cffb512fcPB2|r|cffffffff]|r ";
-addon.CHAT_DEBUG_PREFIX = "|TInterface\\AddOns\\PetBuddy2\\Media\\logo.tga:16:16:0:0|t - |cffffffff[|r|cffb512fcPB2|r|cffffffff]|r |cff808080[DEBUG]|r ";
-addon.LOGO_TEXTURE = "Interface\\AddOns\\PetBuddy2\\Media\\logo.tga";
-addon.HEADER_TITLE_TEXT = "|cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r";
+addon.CHAT_PREFIX = "|TInterface\\AddOns\\BattlePetUtility\\Media\\logo.tga:16:16:0:0|t - |cffffffff[|r|cffb512fcBPU|r|cffffffff]|r ";
+addon.CHAT_DEBUG_PREFIX = "|TInterface\\AddOns\\BattlePetUtility\\Media\\logo.tga:16:16:0:0|t - |cffffffff[|r|cffb512fcBPU|r|cffffffff]|r |cff808080[DEBUG]|r ";
+addon.LOGO_TEXTURE = "Interface\\AddOns\\BattlePetUtility\\Media\\logo.tga";
+addon.HEADER_TITLE_TEXT = "|cffb512fcBattle Pet Utility|r";
 
 local function GetAddonVersion()
 	if(C_AddOns and type(C_AddOns.GetAddOnMetadata) == "function") then
@@ -251,7 +251,7 @@ end
 function addon:ShowWelcomeMessage()
 	if(not self.db or self.db.global.ShowWelcomeMessage == false) then return end
 
-	self:PrintMessage("Welcome! Use |cffb07fff/pb2|r to toggle, and |cffb07fff/pb2 help|r for commands.");
+	self:PrintMessage("Welcome! Use |cffb07fff/BPU|r to toggle, and |cffb07fff/BPU help|r for commands.");
 	self:PrintMessage("|cffffff00Version:|r |cff8080ff" .. GetAddonVersion() .. "|r");
 end
 
@@ -267,12 +267,12 @@ function addon:ToggleWelcomeMessage()
 end
 
 function addon:PrintHelp()
-	self:PrintMessage("|cffffff00PetBuddy2 Commands:|r");
-	self:PrintMessage(" |cffb07fff/pb2|r - Toggle PetBuddy2");
-	self:PrintMessage(" |cffb07fff/pb2 help|r - Show command help");
-	self:PrintMessage(" |cffb07fff/pb2 welcome|r - Toggle login welcome message");
-	self:PrintMessage(" |cffb07fff/pb2 version|r - Show current version");
-	self:PrintMessage(" |cffb07fff/pb2 icon on|r or |cffb07fffoff|r - Show/hide minimap icon");
+	self:PrintMessage("|cffffff00BattlePetUtility Commands:|r");
+	self:PrintMessage(" |cffb07fff/BPU|r - Toggle BattlePetUtility");
+	self:PrintMessage(" |cffb07fff/BPU help|r - Show command help");
+	self:PrintMessage(" |cffb07fff/BPU welcome|r - Toggle login welcome message");
+	self:PrintMessage(" |cffb07fff/BPU version|r - Show current version");
+	self:PrintMessage(" |cffb07fff/BPU icon on|r or |cffb07fffoff|r - Show/hide minimap icon");
 end
 
 -- Function to toggle the minimap icon visibility
@@ -288,7 +288,7 @@ function addon:ToggleMinimapIcon(show)
 		self:UpdateMinimapIconVisibility();
 	end
 	if(show == false) then
-		self:PrintMessage("|cffffcc00Minimap icon hidden.|r Use |cffb07fff/pb2 icon on|r to show it again.");
+		self:PrintMessage("|cffffcc00Minimap icon hidden.|r Use |cffb07fff/BPU icon on|r to show it again.");
 	elseif(show == true) then
 		self:PrintMessage("|cff00ff00Minimap icon shown.|r");
 	end
@@ -316,36 +316,36 @@ local function UpdateHeaderButtonVisual(button, hovered)
 end
 
 local function UpdatePepePlacement()
-	if(not PetBuddyFrameTitle or not PetBuddyFrameTitle.pepeFrame) then
+	if(not BattlePetUtilityFrameTitle or not BattlePetUtilityFrameTitle.pepeFrame) then
 		return;
 	end
 
-	local pepeFrame = PetBuddyFrameTitle.pepeFrame;
+	local pepeFrame = BattlePetUtilityFrameTitle.pepeFrame;
 	pepeFrame:ClearAllPoints();
 
 	local useLeftSide = addon.db and addon.db.global and addon.db.global.PepeOnLeft == true;
 	if(useLeftSide) then
-		pepeFrame:SetPoint("BOTTOM", PetBuddyFrameTitle.logo, "TOP", 2, -5);
+		pepeFrame:SetPoint("BOTTOM", BattlePetUtilityFrameTitle.logo, "TOP", 2, -5);
 	else
-		pepeFrame:SetPoint("BOTTOM", PetBuddyFrameTitle.closeButton, "TOP", 0, -7);
+		pepeFrame:SetPoint("BOTTOM", BattlePetUtilityFrameTitle.closeButton, "TOP", 0, -7);
 	end
 end
 
 local function RefreshHeaderArt()
-	if(PetBuddyFrameTitle and PetBuddyFrameTitle.logo) then
-		PetBuddyFrameTitle.logo:SetTexture(addon.LOGO_TEXTURE);
+	if(BattlePetUtilityFrameTitle and BattlePetUtilityFrameTitle.logo) then
+		BattlePetUtilityFrameTitle.logo:SetTexture(addon.LOGO_TEXTURE);
 	end
 
-	if(PetBuddyFrameTitle and PetBuddyFrameTitle.titleText) then
-		PetBuddyFrameTitle.titleText:SetText(addon.HEADER_TITLE_TEXT);
+	if(BattlePetUtilityFrameTitle and BattlePetUtilityFrameTitle.titleText) then
+		BattlePetUtilityFrameTitle.titleText:SetText(addon.HEADER_TITLE_TEXT);
 	end
 
-	if(PetBuddyFrameTitle and PetBuddyFrameTitle.closeButton) then
-		UpdateHeaderButtonVisual(PetBuddyFrameTitle.closeButton, false);
+	if(BattlePetUtilityFrameTitle and BattlePetUtilityFrameTitle.closeButton) then
+		UpdateHeaderButtonVisual(BattlePetUtilityFrameTitle.closeButton, false);
 	end
 
-	if(PetBuddyFrameTitle and PetBuddyFrameTitle.minimizeButton) then
-		UpdateHeaderButtonVisual(PetBuddyFrameTitle.minimizeButton, false);
+	if(BattlePetUtilityFrameTitle and BattlePetUtilityFrameTitle.minimizeButton) then
+		UpdateHeaderButtonVisual(BattlePetUtilityFrameTitle.minimizeButton, false);
 	end
 
 	UpdatePepePlacement();
@@ -380,7 +380,7 @@ function addon:IsFrameMinimized()
 end
 
 function addon:UpdateMinimizeState()
-	if(not self.db or not PetBuddyFrame or InCombatLockdown()) then
+	if(not self.db or not BattlePetUtilityFrame or InCombatLockdown()) then
 		return;
 	end
 
@@ -399,37 +399,37 @@ end
 
 function addon:_DoUpdateMinimizeState()
 	local minimized = self:IsFrameMinimized();
-	PetBuddyFrame.minimized = minimized;
+	BattlePetUtilityFrame.minimized = minimized;
 
 	-- HideMainGUI: hide everything except title bar + zone tracker (compact)
 	-- Minimized: hide everything except title bar (no zone tracker)
 	local hideMain = self.db.global.HideMainGUI == true;
 
 	local titleHeight = 24;
-	if(PetBuddyFrameTitle and type(PetBuddyFrameTitle.GetHeight) == "function") then
-		titleHeight = PetBuddyFrameTitle:GetHeight() or titleHeight;
+	if(BattlePetUtilityFrameTitle and type(BattlePetUtilityFrameTitle.GetHeight) == "function") then
+		titleHeight = BattlePetUtilityFrameTitle:GetHeight() or titleHeight;
 	end
 
 	if(minimized) then
 		-- Minimized: show only title bar, hide everything else including zone tracker
-		PetBuddyFrame:SetHeight(titleHeight + FRAME_MINIMIZED_PADDING);
+		BattlePetUtilityFrame:SetHeight(titleHeight + FRAME_MINIMIZED_PADDING);
 
 		-- Immediately hide zone tracker; RefreshZoneTracker's debounce may skip
 		-- the pending call and leave stale text (e.g. value "8 / 12") hanging
 		-- outside the collapsed frame.
-		if(PetBuddyFrameZoneTracker) then
-			PetBuddyFrameZoneTracker:Hide();
+		if(BattlePetUtilityFrameZoneTracker) then
+			BattlePetUtilityFrameZoneTracker:Hide();
 		end
-		if(type(PetBuddyFlyout_Close) == "function") then
-			PetBuddyFlyout_Close();
+		if(type(BattlePetUtilityFlyout_Close) == "function") then
+			BattlePetUtilityFlyout_Close();
 		end
 	elseif(hideMain) then
 		-- Hide main GUI body: show title bar + compact zone tracker
 		local zoneHeight = 40;
 		if(self.db.global.ShowZoneTracker) then
-			PetBuddyFrame:SetHeight(titleHeight + zoneHeight + FRAME_MINIMIZED_PADDING);
+			BattlePetUtilityFrame:SetHeight(titleHeight + zoneHeight + FRAME_MINIMIZED_PADDING);
 		else
-			PetBuddyFrame:SetHeight(titleHeight + FRAME_MINIMIZED_PADDING);
+			BattlePetUtilityFrame:SetHeight(titleHeight + FRAME_MINIMIZED_PADDING);
 		end
 	else
 		-- Expanded: full height with pet frames + zone tracker
@@ -439,12 +439,12 @@ function addon:_DoUpdateMinimizeState()
 			expandedHeight = expandedHeight + ZONE_TRACKER_RESERVED_HEIGHT;
 		end
 		self.ExpandedFrameHeight = expandedHeight;
-		PetBuddyFrame:SetHeight(self.ExpandedFrameHeight or expandedHeight);
+		BattlePetUtilityFrame:SetHeight(self.ExpandedFrameHeight or expandedHeight);
 	end
 
 	-- Hide/show pet frames
 	for i = 1, 3 do
-		local petFrame = _G["PetBuddyFramePet" .. i];
+		local petFrame = _G["BattlePetUtilityFramePet" .. i];
 		if(petFrame) then
 			if(minimized or hideMain) then
 				petFrame:Hide();
@@ -459,54 +459,54 @@ function addon:_DoUpdateMinimizeState()
 	end
 
 	-- Hide spell selection when minimized or hidden
-	if((minimized or hideMain) and PetBuddyFrame.spellSelect) then
-		PetBuddyFrame.spellSelect:Hide();
-		if(type(PetBuddyPetFrame_ResetAbilitySwitches) == "function") then
-			PetBuddyPetFrame_ResetAbilitySwitches();
+	if((minimized or hideMain) and BattlePetUtilityFrame.spellSelect) then
+		BattlePetUtilityFrame.spellSelect:Hide();
+		if(type(BattlePetUtilityPetFrame_ResetAbilitySwitches) == "function") then
+			BattlePetUtilityPetFrame_ResetAbilitySwitches();
 		end
 	end
 
 	-- Hide/show buttons and loadouts
-	if(PetBuddyFrameButtons) then
+	if(BattlePetUtilityFrameButtons) then
 		if(minimized or hideMain) then
-			PetBuddyFrameButtons:Hide();
+			BattlePetUtilityFrameButtons:Hide();
 		else
 			-- Restore button visibility based on utility menu state
 			if(self.db.global.ShowPetItems) then
-				PetBuddyFrameButtons:Show();
+				BattlePetUtilityFrameButtons:Show();
 				self:UpdateItemButtons();
 			end
 		end
 	end
 
-	if(PetBuddyFrameLoadouts) then
+	if(BattlePetUtilityFrameLoadouts) then
 		if(minimized or hideMain) then
-			PetBuddyFrameLoadouts:Hide();
-			if(PetBuddyFrameLoadouts.toggleButton) then
-				PetBuddyFrameLoadouts.toggleButton:SetEnabled(false);
-				if(PetBuddyFrameLoadouts.toggleButton.icon) then
-					PetBuddyFrameLoadouts.toggleButton.icon:SetDesaturated(true);
+			BattlePetUtilityFrameLoadouts:Hide();
+			if(BattlePetUtilityFrameLoadouts.toggleButton) then
+				BattlePetUtilityFrameLoadouts.toggleButton:SetEnabled(false);
+				if(BattlePetUtilityFrameLoadouts.toggleButton.icon) then
+					BattlePetUtilityFrameLoadouts.toggleButton.icon:SetDesaturated(true);
 				end
 			end
 		else
 			-- Restore loadout visibility based on utility menu state
 			if(self.db.global.ShowPetLoadouts) then
-				PetBuddyFrameLoadouts:Show();
-				if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
-					PetBuddyFrameLoadouts_UpdateList();
+				BattlePetUtilityFrameLoadouts:Show();
+				if(type(BattlePetUtilityFrameLoadouts_UpdateList) == "function") then
+					BattlePetUtilityFrameLoadouts_UpdateList();
 				end
 			end
-			if(PetBuddyFrameLoadouts.toggleButton) then
-				PetBuddyFrameLoadouts.toggleButton:SetEnabled(true);
-				if(PetBuddyFrameLoadouts.toggleButton.icon) then
-					PetBuddyFrameLoadouts.toggleButton.icon:SetDesaturated(false);
+			if(BattlePetUtilityFrameLoadouts.toggleButton) then
+				BattlePetUtilityFrameLoadouts.toggleButton:SetEnabled(true);
+				if(BattlePetUtilityFrameLoadouts.toggleButton.icon) then
+					BattlePetUtilityFrameLoadouts.toggleButton.icon:SetDesaturated(false);
 				end
 			end
 		end
 	end
 
 	-- Update minimize button icon
-	local minimizeButton = PetBuddyFrameTitle and PetBuddyFrameTitle.minimizeButton;
+	local minimizeButton = BattlePetUtilityFrameTitle and BattlePetUtilityFrameTitle.minimizeButton;
 	if(minimizeButton) then
 		if(minimized) then
 			minimizeButton.label:SetText("+");
@@ -537,7 +537,7 @@ function addon:HasLoadedTeamSelection()
 end
 
 function addon:RunStartupRefresh()
-	if(not PetBuddyFrame) then
+	if(not BattlePetUtilityFrame) then
 		return false;
 	end
 
@@ -653,26 +653,26 @@ function addon:RefreshPetJournalLoadOut()
 	end
 end
 
-function PetBuddySetUtility(utility_id)
+function BattlePetUtilitySetUtility(utility_id)
 	if(not addon or not addon.db) then return end
 	if(InCombatLockdown()) then return end
 	
-	PetBuddyFrame:Show();
+	BattlePetUtilityFrame:Show();
 	
 	addon.db.global.PetUtilityMenuState = utility_id or 0;
 	addon:UpdateUtilityMenuState();
 end
 
-function PetBuddyFocusSearch()
-	PetBuddySetUtility(2);
-	if(type(PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
-		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(true);
+function BattlePetUtilityFocusSearch()
+	BattlePetUtilitySetUtility(2);
+	if(type(BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
+		BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility(true);
 	end
 end
 
-function PetBuddyPetFrame_ResetAbilitySwitches(self)
+function BattlePetUtilityPetFrame_ResetAbilitySwitches(self)
 	for slotIndex = 1, 3 do
-		local petFrame = _G['PetBuddyFramePet' .. slotIndex];
+		local petFrame = _G['BattlePetUtilityFramePet' .. slotIndex];
 		if(petFrame ~= self) then
 			petFrame.SwitchingAbilities = false;
 			petFrame.stats:Show();
@@ -685,11 +685,11 @@ function PetBuddyPetFrame_ResetAbilitySwitches(self)
 	end
 end
 
-function PetBuddyPetFrame_OnClick(self, button)
+function BattlePetUtilityPetFrame_OnClick(self, button)
 	if(InCombatLockdown()) then return end
 	
 	if(button == "LeftButton") then
-		PetBuddyPetFrame_ResetAbilitySwitches(self);
+		BattlePetUtilityPetFrame_ResetAbilitySwitches(self);
 		
 		self.SwitchingAbilities = not self.SwitchingAbilities;
 		if(self.SwitchingAbilities) then
@@ -700,11 +700,11 @@ function PetBuddyPetFrame_OnClick(self, button)
 			self.abilities:Hide();
 		end
 		
-		if(PetBuddyFrame.spellSelect.currentAnchor) then
-			-- PetBuddyFrame.spellSelect.selected:Hide();
-			PetBuddyFrame.spellSelect.currentAnchor:SetChecked(false);
+		if(BattlePetUtilityFrame.spellSelect.currentAnchor) then
+			-- BattlePetUtilityFrame.spellSelect.selected:Hide();
+			BattlePetUtilityFrame.spellSelect.currentAnchor:SetChecked(false);
 		end
-		PetBuddyFrame.spellSelect:Hide();
+		BattlePetUtilityFrame.spellSelect:Hide();
 		
 	elseif(button == "RightButton") then
 		addon:OpenContextMenu();
@@ -725,37 +725,37 @@ function addon:UpdateUtilityMenuState()
 
 	local showItems = (menuState == 1 or menuState == 3);
 	local showLoadouts = (menuState == 2 or menuState == 3);
-	local scrollFrame = PetBuddyFrameLoadoutsScrollFrame;
+	local scrollFrame = BattlePetUtilityFrameLoadoutsScrollFrame;
 	local showLoadoutList = (showLoadouts and scrollFrame and scrollFrame:IsShown()) and true or false;
 
 	addon.db.global.ShowPetItems = showItems;
 	addon.db.global.ShowPetLoadouts = showLoadouts;
 
-	PetBuddyFrameButtons:ClearAllPoints();
-	PetBuddyFrameButtons:SetPoint("TOPLEFT", PetBuddyFramePet3, "BOTTOMLEFT", 0, 0);
-	PetBuddyFrameLoadouts:ClearAllPoints();
+	BattlePetUtilityFrameButtons:ClearAllPoints();
+	BattlePetUtilityFrameButtons:SetPoint("TOPLEFT", BattlePetUtilityFramePet3, "BOTTOMLEFT", 0, 0);
+	BattlePetUtilityFrameLoadouts:ClearAllPoints();
 	if(showItems) then
-		PetBuddyFrameLoadouts:SetPoint("TOPLEFT", PetBuddyFrameButtons, "TOPLEFT", 0, 0);
+		BattlePetUtilityFrameLoadouts:SetPoint("TOPLEFT", BattlePetUtilityFrameButtons, "TOPLEFT", 0, 0);
 	else
-		PetBuddyFrameLoadouts:SetPoint("TOPLEFT", PetBuddyFramePet3, "BOTTOMLEFT", 0, 0);
+		BattlePetUtilityFrameLoadouts:SetPoint("TOPLEFT", BattlePetUtilityFramePet3, "BOTTOMLEFT", 0, 0);
 	end
 
 	if(showItems and not minimized and not hideMain) then
-		PetBuddyFrameButtons:Show();
+		BattlePetUtilityFrameButtons:Show();
 		addon:UpdateItemButtons();
 	else
-		PetBuddyFrameButtons:Hide();
+		BattlePetUtilityFrameButtons:Hide();
 	end
 
 	if(showLoadouts and not minimized and not hideMain) then
-		PetBuddyFrameLoadouts:Show();
-		PetBuddyFrameLoadouts_UpdateList();
+		BattlePetUtilityFrameLoadouts:Show();
+		BattlePetUtilityFrameLoadouts_UpdateList();
 	else
-		PetBuddyFrameLoadouts:Hide();
+		BattlePetUtilityFrameLoadouts:Hide();
 	end
 
-	if(type(PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
-		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showLoadoutList and not minimized and not hideMain);
+	if(type(BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
+		BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility(showLoadoutList and not minimized and not hideMain);
 	end
 
 	if(type(addon.RefreshZoneTracker) == "function") then
@@ -794,7 +794,7 @@ function addon:SyncUtilityMenuState()
 	return menuState;
 end
 
-function PetBuddyFrame_OnMouseWheel(self, delta)
+function BattlePetUtilityFrame_OnMouseWheel(self, delta)
 	if(InCombatLockdown() or C_PetBattles.IsInBattle()) then return end
 
 	local cycle = { 0, 1, 3, 2 };
@@ -824,7 +824,7 @@ function PetBuddyFrame_OnMouseWheel(self, delta)
 	CloseMenus();
 end
 
-function PetBuddyFrame_GetRequiredLevel(petFrame, abilityID)
+function BattlePetUtilityFrame_GetRequiredLevel(petFrame, abilityID)
 	for i=1, 6 do
 		if(petFrame.petAbilities[i] == abilityID) then
 			return petFrame.petAbilityLevels[i];
@@ -833,7 +833,7 @@ function PetBuddyFrame_GetRequiredLevel(petFrame, abilityID)
 	return 0;
 end
 
-function PetBuddyFrame_ShowPetSelect(self)
+function BattlePetUtilityFrame_ShowPetSelect(self)
 	local slotFrame = self:GetParent():GetParent();
 	local abilities = slotFrame.petAbilities;
 	local slotIndex = slotFrame:GetID();
@@ -847,97 +847,97 @@ function PetBuddyFrame_ShowPetSelect(self)
 	--Get the info for the pet that has this ability
 	local speciesID, customName, level, xp, maxXp, displayID, isFavorite, petName, petIcon, petType = C_PetJournal.GetPetInfoByPetID(slotFrame.petID);
 	
-	if PetBuddyFrame.spellSelect:IsShown() then 
-		if PetBuddyFrame.spellSelect.slotIndex == slotIndex and 
-			PetBuddyFrame.spellSelect.abilityIndex == abilityIndex then
-			PetBuddyFrame.spellSelect:Hide();
+	if BattlePetUtilityFrame.spellSelect:IsShown() then 
+		if BattlePetUtilityFrame.spellSelect.slotIndex == slotIndex and 
+			BattlePetUtilityFrame.spellSelect.abilityIndex == abilityIndex then
+			BattlePetUtilityFrame.spellSelect:Hide();
 			self.selected:Hide();
 			return;
-		elseif(PetBuddyFrame.spellSelect.currentAnchor and PetBuddyFrame.spellSelect.currentAnchor ~= self) then
-			PetBuddyFrame.spellSelect.currentAnchor:SetChecked(false);
-			PetBuddyFrame.spellSelect.currentAnchor.selected:Hide();
-			PetBuddyFrame.spellSelect.currentAnchor = nil;
-			-- PetBuddyFrame.Loadout["Pet"..PetBuddyFrame.spellSelect.slotIndex]["spell"..PetBuddyFrame.spellSelect.abilityIndex].selected:Hide();
+		elseif(BattlePetUtilityFrame.spellSelect.currentAnchor and BattlePetUtilityFrame.spellSelect.currentAnchor ~= self) then
+			BattlePetUtilityFrame.spellSelect.currentAnchor:SetChecked(false);
+			BattlePetUtilityFrame.spellSelect.currentAnchor.selected:Hide();
+			BattlePetUtilityFrame.spellSelect.currentAnchor = nil;
+			-- BattlePetUtilityFrame.Loadout["Pet"..BattlePetUtilityFrame.spellSelect.slotIndex]["spell"..BattlePetUtilityFrame.spellSelect.abilityIndex].selected:Hide();
 		end
 	end
 	
 	self.selected:Show();
-	PetBuddyFrame.spellSelect.slotIndex = slotIndex;
-	PetBuddyFrame.spellSelect.abilityIndex = abilityIndex;
-	PetBuddyFrame.spellSelect:SetFrameLevel(PetJournalLoadoutBorder:GetFrameLevel()+1);
+	BattlePetUtilityFrame.spellSelect.slotIndex = slotIndex;
+	BattlePetUtilityFrame.spellSelect.abilityIndex = abilityIndex;
+	BattlePetUtilityFrame.spellSelect:SetFrameLevel(PetJournalLoadoutBorder:GetFrameLevel()+1);
 	PetJournal_HideAbilityTooltip();
 	
 	--Setup spell one
 	local name, icon, petType, requiredLevel;
 	if (abilities[spellIndex1]) then
 		name, icon, petType = C_PetJournal.GetPetAbilityInfo(abilities[spellIndex1]);
-		requiredLevel = PetBuddyFrame_GetRequiredLevel(slotFrame, abilities[spellIndex1]);
-		PetBuddyFrame.spellSelect.Spell1:SetEnabled(requiredLevel <= level);
+		requiredLevel = BattlePetUtilityFrame_GetRequiredLevel(slotFrame, abilities[spellIndex1]);
+		BattlePetUtilityFrame.spellSelect.Spell1:SetEnabled(requiredLevel <= level);
 	else
 		name = "";
 		icon = "";
 		petType = "";
 		requiredLevel = 0;
-		PetBuddyFrame.spellSelect.Spell1:SetEnabled(false);
+		BattlePetUtilityFrame.spellSelect.Spell1:SetEnabled(false);
 	end
 
 	if ( requiredLevel > level ) then
-		PetBuddyFrame.spellSelect.Spell1.additionalText = format(PET_ABILITY_REQUIRES_LEVEL, requiredLevel);
+		BattlePetUtilityFrame.spellSelect.Spell1.additionalText = format(PET_ABILITY_REQUIRES_LEVEL, requiredLevel);
 	else
-		PetBuddyFrame.spellSelect.Spell1.additionalText = nil;
+		BattlePetUtilityFrame.spellSelect.Spell1.additionalText = nil;
 	end
-	PetBuddyFrame.spellSelect.Spell1.icon:SetTexture(icon);
-	PetBuddyFrame.spellSelect.Spell1.icon:SetDesaturated(requiredLevel > level);
-	PetBuddyFrame.spellSelect.Spell1.BlackCover:SetShown(requiredLevel > level);
-	PetBuddyFrame.spellSelect.Spell1.LevelRequirement:SetShown(requiredLevel > level);
-	PetBuddyFrame.spellSelect.Spell1.LevelRequirement:SetText(requiredLevel);
-	PetBuddyFrame.spellSelect.Spell1.slotIndex = slotIndex;
-	PetBuddyFrame.spellSelect.Spell1.abilityIndex = abilityIndex;
-	PetBuddyFrame.spellSelect.Spell1.abilityID = abilities[spellIndex1];
-	PetBuddyFrame.spellSelect.Spell1.petID = slotFrame.petID;
-	PetBuddyFrame.spellSelect.Spell1.speciesID = slotFrame.speciesID;
+	BattlePetUtilityFrame.spellSelect.Spell1.icon:SetTexture(icon);
+	BattlePetUtilityFrame.spellSelect.Spell1.icon:SetDesaturated(requiredLevel > level);
+	BattlePetUtilityFrame.spellSelect.Spell1.BlackCover:SetShown(requiredLevel > level);
+	BattlePetUtilityFrame.spellSelect.Spell1.LevelRequirement:SetShown(requiredLevel > level);
+	BattlePetUtilityFrame.spellSelect.Spell1.LevelRequirement:SetText(requiredLevel);
+	BattlePetUtilityFrame.spellSelect.Spell1.slotIndex = slotIndex;
+	BattlePetUtilityFrame.spellSelect.Spell1.abilityIndex = abilityIndex;
+	BattlePetUtilityFrame.spellSelect.Spell1.abilityID = abilities[spellIndex1];
+	BattlePetUtilityFrame.spellSelect.Spell1.petID = slotFrame.petID;
+	BattlePetUtilityFrame.spellSelect.Spell1.speciesID = slotFrame.speciesID;
 	
 	--Setup spell two
 	if (abilities[spellIndex2]) then
 		name, icon, petType = C_PetJournal.GetPetAbilityInfo(abilities[spellIndex2]);
-		requiredLevel = PetBuddyFrame_GetRequiredLevel(slotFrame, abilities[spellIndex2]);
-		PetBuddyFrame.spellSelect.Spell2:SetEnabled(requiredLevel <= level);
+		requiredLevel = BattlePetUtilityFrame_GetRequiredLevel(slotFrame, abilities[spellIndex2]);
+		BattlePetUtilityFrame.spellSelect.Spell2:SetEnabled(requiredLevel <= level);
 	else
 		name = "";
 		icon = "";
 		petType = "";
 		requiredLevel = 0;
-		PetBuddyFrame.spellSelect.Spell2:SetEnabled(false);
+		BattlePetUtilityFrame.spellSelect.Spell2:SetEnabled(false);
 	end
 
 	if ( requiredLevel > level ) then
-		PetBuddyFrame.spellSelect.Spell2.additionalText = format(PET_ABILITY_REQUIRES_LEVEL, requiredLevel);
+		BattlePetUtilityFrame.spellSelect.Spell2.additionalText = format(PET_ABILITY_REQUIRES_LEVEL, requiredLevel);
 	else
-		PetBuddyFrame.spellSelect.Spell2.additionalText = nil;
+		BattlePetUtilityFrame.spellSelect.Spell2.additionalText = nil;
 	end
-	PetBuddyFrame.spellSelect.Spell2.icon:SetTexture(icon);
-	PetBuddyFrame.spellSelect.Spell2.BlackCover:SetShown(requiredLevel > level);
-	PetBuddyFrame.spellSelect.Spell2.icon:SetDesaturated(requiredLevel > level);
-	PetBuddyFrame.spellSelect.Spell2.LevelRequirement:SetShown(requiredLevel > level);
-	PetBuddyFrame.spellSelect.Spell2.LevelRequirement:SetText(requiredLevel);
-	PetBuddyFrame.spellSelect.Spell2.slotIndex = slotIndex;
-	PetBuddyFrame.spellSelect.Spell2.abilityIndex = abilityIndex;
-	PetBuddyFrame.spellSelect.Spell2.abilityID = abilities[spellIndex2];
-	PetBuddyFrame.spellSelect.Spell2.petID = slotFrame.petID;
-	PetBuddyFrame.spellSelect.Spell2.speciesID = slotFrame.speciesID;
+	BattlePetUtilityFrame.spellSelect.Spell2.icon:SetTexture(icon);
+	BattlePetUtilityFrame.spellSelect.Spell2.BlackCover:SetShown(requiredLevel > level);
+	BattlePetUtilityFrame.spellSelect.Spell2.icon:SetDesaturated(requiredLevel > level);
+	BattlePetUtilityFrame.spellSelect.Spell2.LevelRequirement:SetShown(requiredLevel > level);
+	BattlePetUtilityFrame.spellSelect.Spell2.LevelRequirement:SetText(requiredLevel);
+	BattlePetUtilityFrame.spellSelect.Spell2.slotIndex = slotIndex;
+	BattlePetUtilityFrame.spellSelect.Spell2.abilityIndex = abilityIndex;
+	BattlePetUtilityFrame.spellSelect.Spell2.abilityID = abilities[spellIndex2];
+	BattlePetUtilityFrame.spellSelect.Spell2.petID = slotFrame.petID;
+	BattlePetUtilityFrame.spellSelect.Spell2.speciesID = slotFrame.speciesID;
 	
-	PetBuddyFrame.spellSelect.Spell1:SetChecked(self.abilityID == abilities[spellIndex1]);
-	PetBuddyFrame.spellSelect.Spell2:SetChecked(self.abilityID == abilities[spellIndex2]);
+	BattlePetUtilityFrame.spellSelect.Spell1:SetChecked(self.abilityID == abilities[spellIndex1]);
+	BattlePetUtilityFrame.spellSelect.Spell2:SetChecked(self.abilityID == abilities[spellIndex2]);
 	
-	PetBuddyFrame.spellSelect:SetPoint("TOP", self, "BOTTOM", 0, 0);
-	PetBuddyFrame.spellSelect:Show();
+	BattlePetUtilityFrame.spellSelect:SetPoint("TOP", self, "BOTTOM", 0, 0);
+	BattlePetUtilityFrame.spellSelect:Show();
 	
-	PetBuddyFrame.spellSelect.currentAnchor = self;
+	BattlePetUtilityFrame.spellSelect.currentAnchor = self;
 end
 
 function addon:UpdatePetAbility(abilityFrame, abilityID, petID)
 	local speciesID, customName, level, xp, maxXp, displayID, isFavorite, petName, petIcon, petType = C_PetJournal.GetPetInfoByPetID(petID);
-	local requiredLevel = PetBuddyFrame_GetRequiredLevel(abilityFrame:GetParent():GetParent(), abilityID);
+	local requiredLevel = BattlePetUtilityFrame_GetRequiredLevel(abilityFrame:GetParent():GetParent(), abilityID);
 	
 	local name, icon, typeEnum = C_PetJournal.GetPetAbilityInfo(abilityID);
 	abilityFrame.icon:SetTexture(icon);
@@ -981,11 +981,11 @@ function addon:UpdateBattleData()
 end
 
 function addon:PET_BATTLE_OPENING_START()
-	if(self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.SHOW and not PetBuddyFrame:IsShown()) then
-		PetBuddyFrame:Show();
+	if(self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.SHOW and not BattlePetUtilityFrame:IsShown()) then
+		BattlePetUtilityFrame:Show();
 		addon.BattleVisibilityChange = true;
-	elseif(self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.HIDE and PetBuddyFrame:IsShown()) then
-		PetBuddyFrame:Hide();
+	elseif(self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.HIDE and BattlePetUtilityFrame:IsShown()) then
+		BattlePetUtilityFrame:Hide();
 		addon.BattleVisibilityChange = true;
 	end
 	
@@ -1002,9 +1002,9 @@ end
 function addon:PET_BATTLE_CLOSE()
 	if(addon.BattleVisibilityChange) then
 		if(self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.SHOW) then
-			PetBuddyFrame:Hide();
+			BattlePetUtilityFrame:Hide();
 		elseif(self.db.global.PetBattleVisiblityMode == E.VISIBILITY_MODE.HIDE) then
-			PetBuddyFrame:Show();
+			BattlePetUtilityFrame:Show();
 		end
 		
 		addon.BattleVisibilityChange = false;
@@ -1140,7 +1140,7 @@ function addon:_DoUpdatePets()
   addon:UpdateDatabrokerText();
 	
 	for slotIndex = 1, 3 do
-		local petFrame = _G['PetBuddyFramePet' .. slotIndex];
+		local petFrame = _G['BattlePetUtilityFramePet' .. slotIndex];
 		if(not petFrame) then return end
 		
 		local hasActivePetInSlot = true;
@@ -1285,11 +1285,11 @@ function addon:_DoUpdatePets()
 					petFrame.slotInfoText:Show();
 					
 					if(self.db.global.ShowPetItems and not minimized) then
-						PetBuddyFrameButtons:Show();
+						BattlePetUtilityFrameButtons:Show();
 					end
 					
 					if(slotIndex == 1) then
-						PetBuddyFrameButtons:Hide();
+						BattlePetUtilityFrameButtons:Hide();
 						petFrame.slotInfoText:SetText("Learn Battle Pet Training to Unlock This Slot");
 					elseif(slotIndex == 2) then
 						petFrame.slotInfoText:SetText("Earn Achievement |cffffff00[Newbie]|r to Unlock This Slot");
@@ -1316,8 +1316,8 @@ function addon:_DoUpdatePets()
 		end
 	end
 
-	if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
-		local ok, err = pcall(PetBuddyFrameLoadouts_UpdateList);
+	if(type(BattlePetUtilityFrameLoadouts_UpdateList) == "function") then
+		local ok, err = pcall(BattlePetUtilityFrameLoadouts_UpdateList);
 		if(not ok) then
 			self:PrintDebug("Loadout list refresh failed: " .. tostring(err));
 		end
@@ -1328,27 +1328,27 @@ function addon:_DoUpdatePets()
 	end
 end
 
-function PetBuddyFrame_StartMoving(button)
+function BattlePetUtilityFrame_StartMoving(button)
 	if(button and button ~= "LeftButton") then return end
 
 	if(addon.db.global.IsFrameLocked) then return end
 	
 	CloseMenus();
 	
-	PetBuddyFrame:StartMoving();
-	PetBuddyFrame:SetUserPlaced(false);
-	PetBuddyFrame.IsMoving = true;
+	BattlePetUtilityFrame:StartMoving();
+	BattlePetUtilityFrame:SetUserPlaced(false);
+	BattlePetUtilityFrame.IsMoving = true;
 	
-	-- PetBuddyPetFrame_ResetAbilitySwitches();
+	-- BattlePetUtilityPetFrame_ResetAbilitySwitches();
 end
 
-function PetBuddyFrame_StopMoving(button)
+function BattlePetUtilityFrame_StopMoving(button)
 	if(button and button ~= "LeftButton") then return end
 
-	if(PetBuddyFrame.IsMoving) then
-		PetBuddyFrame:StopMovingOrSizing();
-		PetBuddyFrame.IsMoving = false;
-		PetBuddyFrame_SavePosition();
+	if(BattlePetUtilityFrame.IsMoving) then
+		BattlePetUtilityFrame:StopMovingOrSizing();
+		BattlePetUtilityFrame.IsMoving = false;
+		BattlePetUtilityFrame_SavePosition();
 	end
 end
 
@@ -1385,10 +1385,10 @@ end
 
 ----------------------------
 
-PetBuddy_PetCharmsMixin = {}
+BattlePetUtility_PetCharmsMixin = {}
 
 function addon:RefreshPetCharms()
-	local frame = PetBuddyFrameTitlePetCharms;
+	local frame = BattlePetUtilityFrameTitlePetCharms;
 	if(not frame) then return end;
 	local charmIcon, charmsNumAmount = self:GetPetCharmsInfo();
 	if(charmIcon ~= nil and charmsNumAmount ~= nil) then
@@ -1398,11 +1398,11 @@ function addon:RefreshPetCharms()
 	self:UpdateDatabrokerText();
 end
 
-function PetBuddy_PetCharmsMixin:OnShow()
+function BattlePetUtility_PetCharmsMixin:OnShow()
 	addon:RefreshPetCharms();
 end
 
-function PetBuddy_PetCharmsMixin:OnHide()
+function BattlePetUtility_PetCharmsMixin:OnHide()
 end
 
 local PET_CHARM_ITEM_IDS = {
@@ -1510,7 +1510,7 @@ function addon:GetPetCharmsInfo()
 	return displayIcon, totalAmount, entries;
 end
 
-function PetBuddy_PetCharmsMixin:OnEvent(event, ...)
+function BattlePetUtility_PetCharmsMixin:OnEvent(event, ...)
 	local charmIcon, charmsNumAmount = addon:GetPetCharmsInfo();
 	if(charmIcon ~= nil and charmsNumAmount ~= nil) then
 		self.text:SetText(tostring(charmsNumAmount));
@@ -1519,7 +1519,7 @@ function PetBuddy_PetCharmsMixin:OnEvent(event, ...)
 	addon:UpdateDatabrokerText();
 end
 
-function PetBuddy_PetCharmsMixin:OnEnter()
+function BattlePetUtility_PetCharmsMixin:OnEnter()
 	local _, charmsNumAmount, charmEntries = addon:GetPetCharmsInfo();
 	GameTooltip:SetOwner(self, "ANCHOR_CURSOR");
 	GameTooltip:ClearLines();
@@ -1540,13 +1540,13 @@ function PetBuddy_PetCharmsMixin:OnEnter()
 	GameTooltip:Show();
 end
 
-function PetBuddy_PetCharmsMixin:OnLeave()
+function BattlePetUtility_PetCharmsMixin:OnLeave()
 	GameTooltip:Hide();
 end
 
 -------------------------
 
-function PetBuddyFrameDragButton_OnClick(self, button)
+function BattlePetUtilityFrameDragButton_OnClick(self, button)
 	local type, petID = GetCursorInfo();
 	if(type == "battlepet") then
 		local _, dialog = StaticPopup_Visible("BATTLE_PET_RELEASE");
@@ -1583,7 +1583,7 @@ function PetBuddyFrameDragButton_OnClick(self, button)
 	CloseMenus();
 end
 	
-function PetBuddyFrameDragButton_OnDragStart(self)
+function BattlePetUtilityFrameDragButton_OnDragStart(self)
 	local parent = self:GetParent();
 	local petID = parent.petID;
 	if(not petID) then return end
@@ -1595,8 +1595,8 @@ function PetBuddyFrameDragButton_OnDragStart(self)
 
 	local _, _, _, _, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
 	if(locked) then
-		PetBuddyFrame._dragSourceSlot = nil;
-		PetBuddyFrame._dragSourcePetID = nil;
+		BattlePetUtilityFrame._dragSourceSlot = nil;
+		BattlePetUtilityFrame._dragSourcePetID = nil;
 		return;
 	end
 
@@ -1604,16 +1604,16 @@ function PetBuddyFrameDragButton_OnDragStart(self)
 		C_PetJournal.PickupPet(petID);
 		-- Remember the slot the pet was picked up from so OnReceiveDrag can
 		-- perform a swap between two loadout slots.
-		PetBuddyFrame._dragSourceSlot = slotIndex;
-		PetBuddyFrame._dragSourcePetID = petID;
+		BattlePetUtilityFrame._dragSourceSlot = slotIndex;
+		BattlePetUtilityFrame._dragSourcePetID = petID;
 
 		CloseMenus();
 	end
 end
 
-local function ClearPetBuddyDragState()
-	PetBuddyFrame._dragSourceSlot = nil;
-	PetBuddyFrame._dragSourcePetID = nil;
+local function ClearBattlePetUtilityDragState()
+	BattlePetUtilityFrame._dragSourceSlot = nil;
+	BattlePetUtilityFrame._dragSourcePetID = nil;
 end
 
 local function TrySwapPetLoadoutSlots(sourceSlot, targetSlot)
@@ -1641,21 +1641,21 @@ local function TrySwapPetLoadoutSlots(sourceSlot, targetSlot)
 	return true;
 end
 
-function PetBuddyFrameDragButton_OnReceiveDrag(self)
+function BattlePetUtilityFrameDragButton_OnReceiveDrag(self)
 	local parent = self:GetParent();
 	local targetSlot = parent:GetID();
 	local _, _, _, _, locked = C_PetJournal.GetPetLoadOutInfo(targetSlot);
 	if(locked) then
 		ClearCursor();
-		ClearPetBuddyDragState();
+		ClearBattlePetUtilityDragState();
 		return;
 	end
 
-	local sourceSlot = PetBuddyFrame._dragSourceSlot;
+	local sourceSlot = BattlePetUtilityFrame._dragSourceSlot;
 	if(TrySwapPetLoadoutSlots(sourceSlot, targetSlot)) then
 		addon:RefreshPetJournalLoadOut();
 		ClearCursor();
-		ClearPetBuddyDragState();
+		ClearBattlePetUtilityDragState();
 		CloseMenus();
 		return;
 	end
@@ -1669,7 +1669,7 @@ function PetBuddyFrameDragButton_OnReceiveDrag(self)
 		if ( PetJournal_IsPendingCage(petID) ) then
 			UIErrorsFrame:AddMessage(ERR_PET_JOURNAL_PET_PENDING_CAGE, 1.0, 0.1, 0.1, 1.0);
 			ClearCursor();
-			ClearPetBuddyDragState();
+			ClearBattlePetUtilityDragState();
 			return;
 		end
 
@@ -1679,11 +1679,11 @@ function PetBuddyFrameDragButton_OnReceiveDrag(self)
 		ClearCursor();
 	end
 
-	ClearPetBuddyDragState();
+	ClearBattlePetUtilityDragState();
 	CloseMenus();
 end
 
-function PetBuddyFrameDragButton_OnEnter(self)
+function BattlePetUtilityFrameDragButton_OnEnter(self)
 	if(not addon.db.global.ShowPetTooltips) then return end
 	
 	-- local slotIndex = self:GetParent():GetID();
@@ -1702,14 +1702,14 @@ function PetBuddyFrameDragButton_OnEnter(self)
 	end
 end
 
-function PetBuddyFrameDragButton_OnLeave(self)
+function BattlePetUtilityFrameDragButton_OnLeave(self)
 	GameTooltip:Hide();
 	BattlePetTooltip:Hide();
 end
 
-function PetBuddyFrame_OnClick(self, button, ...)
+function BattlePetUtilityFrame_OnClick(self, button, ...)
 	if(button == "RightButton") then
-		if(PetBuddyFrameLoadouts and PetBuddyFrameLoadouts:IsShown() and IsCursorOverFrame(PetBuddyFrameLoadouts)) then
+		if(BattlePetUtilityFrameLoadouts and BattlePetUtilityFrameLoadouts:IsShown() and IsCursorOverFrame(BattlePetUtilityFrameLoadouts)) then
 			return;
 		end
 
@@ -1717,26 +1717,26 @@ function PetBuddyFrame_OnClick(self, button, ...)
 	end
 end
 
-function PetBuddyFrameTitle_OnMouseDown(self, button)
+function BattlePetUtilityFrameTitle_OnMouseDown(self, button)
 	if(button == "LeftButton") then
-		PetBuddyFrame_StartMoving(button);
+		BattlePetUtilityFrame_StartMoving(button);
 	end
 end
 
-function PetBuddyFrameTitle_OnMouseUp(self, button)
+function BattlePetUtilityFrameTitle_OnMouseUp(self, button)
 	if(button == "LeftButton") then
-		PetBuddyFrame_StopMoving(button);
+		BattlePetUtilityFrame_StopMoving(button);
 	elseif(button == "RightButton") then
 		addon:OpenContextMenu();
 	end
 end
 
-function PetBuddyFrameMinimizeButton_OnClick(self)
+function BattlePetUtilityFrameMinimizeButton_OnClick(self)
 	if(not addon) then return end
 	addon:ToggleFrameMinimized();
 end
 
-function PetBuddyHeaderButton_OnLoad(self, kind)
+function BattlePetUtilityHeaderButton_OnLoad(self, kind)
 	self.buttonKind = kind;
 	self:RegisterForClicks("LeftButtonUp");
 	self:SetFrameStrata("HIGH");
@@ -1744,54 +1744,54 @@ function PetBuddyHeaderButton_OnLoad(self, kind)
 	UpdateHeaderButtonVisual(self, false);
 end
 
-function PetBuddyHeaderButton_OnClick(self, button)
+function BattlePetUtilityHeaderButton_OnClick(self, button)
 	if(button ~= "LeftButton") then
 		return;
 	end
 
 	if(self.buttonKind == "close") then
-		if(PetBuddyFrame) then
-			PetBuddyFrame:Hide();
+		if(BattlePetUtilityFrame) then
+			BattlePetUtilityFrame:Hide();
 		end
 	else
-		PetBuddyFrameMinimizeButton_OnClick(self);
+		BattlePetUtilityFrameMinimizeButton_OnClick(self);
 	end
 end
 
-function PetBuddyHeaderButton_OnEnter(self)
+function BattlePetUtilityHeaderButton_OnEnter(self)
 	UpdateHeaderButtonVisual(self, true);
 	if(self.buttonKind == "minimize") then
-		PetBuddyFrameMinimizeButton_OnEnter(self);
+		BattlePetUtilityFrameMinimizeButton_OnEnter(self);
 	end
 end
 
-function PetBuddyHeaderButton_OnLeave(self)
+function BattlePetUtilityHeaderButton_OnLeave(self)
 	UpdateHeaderButtonVisual(self, false);
 	if(self.buttonKind == "minimize") then
-		PetBuddyFrameMinimizeButton_OnLeave(self);
+		BattlePetUtilityFrameMinimizeButton_OnLeave(self);
 	end
 end
 
-function PetBuddyFrameMinimizeButton_OnEnter(self)
+function BattlePetUtilityFrameMinimizeButton_OnEnter(self)
 	if(not addon) then return end
 
 	GameTooltip:SetOwner(self, "ANCHOR_LEFT");
 	GameTooltip:ClearLines();
 	if(addon:IsFrameMinimized()) then
-		GameTooltip:AddLine("Restore PetBuddy2");
+		GameTooltip:AddLine("Restore BattlePetUtility");
 		GameTooltip:AddLine("Show the full battle pet HUD.", 0.9, 0.9, 0.9, true);
 	else
-		GameTooltip:AddLine("Minimize PetBuddy2");
+		GameTooltip:AddLine("Minimize BattlePetUtility");
 		GameTooltip:AddLine("Collapse to the title bar.", 0.9, 0.9, 0.9, true);
 	end
 	GameTooltip:Show();
 end
 
-function PetBuddyFrameMinimizeButton_OnLeave(self)
+function BattlePetUtilityFrameMinimizeButton_OnLeave(self)
 	GameTooltip:Hide();
 end
 
-function PetBuddyFrame_OnShow(self)
+function BattlePetUtilityFrame_OnShow(self)
 	if(not addon.db) then return end
 
 	addon.db.global.Visible = true;
@@ -1810,11 +1810,11 @@ function PetBuddyFrame_OnShow(self)
 	addon:QueueStartupRefresh(0.3);
 	addon:QueueStartupRefresh(1.0);
 
-	PetBuddyPetFrame_ResetAbilitySwitches();
-	PetBuddyFrameTitlePetCharms:OnShow();
+	BattlePetUtilityPetFrame_ResetAbilitySwitches();
+	BattlePetUtilityFrameTitlePetCharms:OnShow();
 end
 
-function PetBuddyFrame_OnHide(self)
+function BattlePetUtilityFrame_OnHide(self)
 	if(not addon.db) then return end
 	
 	-- if(InCombatLockdown()) then
@@ -1836,8 +1836,8 @@ function addon:PLAYER_REGEN_DISABLED()
 	self.CombatExitTimer = 0;
 	self:PrintDebug("Entered combat, summon blocked");
 
-	if(self.db.global.HideInCombat and PetBuddyFrame:IsShown()) then
-		PetBuddyFrame:Hide();
+	if(self.db.global.HideInCombat and BattlePetUtilityFrame:IsShown()) then
+		BattlePetUtilityFrame:Hide();
 		addon.CombatHidden = true;
 	end
 end
@@ -1847,11 +1847,11 @@ function addon:PLAYER_REGEN_ENABLED()
 	self:PrintDebug("Exited combat, will attempt summon in " .. AUTOSUMMON_BLOCK_AFTER_COMBAT .. "s");
 
 	if(self.db.global.HideInCombat and self.CombatHidden) then
-		PetBuddyFrame:Show();
+		BattlePetUtilityFrame:Show();
 		addon.CombatHidden = false;
 	end
 
-	self.db.global.Visible = PetBuddyFrame:IsShown();
+	self.db.global.Visible = BattlePetUtilityFrame:IsShown();
 	addon:UpdateUtilityMenuState();
 	addon:ScheduleTimer(function()
 		addon:UpdateAutoResummon(false);
@@ -1880,12 +1880,12 @@ function addon:CURSOR_UPDATE()
 		if(addon.CurrentCursor ~= lastCursor) then
 			if(addon.CurrentCursor == "battlepet") then
 				for i=1,3 do
-					local button = _G['PetBuddyFramePet'..i..'DragButton'];
+					local button = _G['BattlePetUtilityFramePet'..i..'DragButton'];
 					button:GetParent().glowHighlight:Show();
 				end
 			else
 				for i=1,3 do
-					local button = _G['PetBuddyFramePet'..i..'DragButton'];
+					local button = _G['BattlePetUtilityFramePet'..i..'DragButton'];
 					button:GetParent().glowHighlight:Hide();
 				end
 			end
@@ -2092,8 +2092,8 @@ end
 function addon:PET_JOURNAL_LIST_UPDATE()
 	-- Lightweight handler: only update pets and loadout list
 	self:UpdatePets();
-	if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
-		PetBuddyFrameLoadouts_UpdateList();
+	if(type(BattlePetUtilityFrameLoadouts_UpdateList) == "function") then
+		BattlePetUtilityFrameLoadouts_UpdateList();
 	end
 	if(type(self.RefreshZoneTracker) == "function") then
 		self:RefreshZoneTracker();
@@ -2108,27 +2108,27 @@ function addon:SPELL_UPDATE_COOLDOWN()
 	end
 end
 
-function TogglePetBuddy()
+function ToggleBattlePetUtility()
 	if(InCombatLockdown()) then
-		DEFAULT_CHAT_FRAME:AddMessage("|cffcc22PetBuddy2:|r Cannot toggle in combat");
+		DEFAULT_CHAT_FRAME:AddMessage("|cffcc22BattlePetUtility:|r Cannot toggle in combat");
 		return;
 	end
 	
-	if(PetBuddyFrame:IsShown()) then
-		PetBuddyFrame:Hide();
+	if(BattlePetUtilityFrame:IsShown()) then
+		BattlePetUtilityFrame:Hide();
 	else
-		PetBuddyFrame:Show();
+		BattlePetUtilityFrame:Show();
 	end
 	
-	addon.db.global.Visible = PetBuddyFrame:IsShown();
+	addon.db.global.Visible = BattlePetUtilityFrame:IsShown();
 end
 	
 function addon:OnInitialize()
-	RGX:RegisterSlashCommand({"/pb2", "/pb", "/bpb"}, function(command)
+	RGX:RegisterSlashCommand({"/BPU", "/pb", "/bpu"}, function(command)
 		command = string.lower(strtrim(command or ""));
 
 		if(command == "") then
-			TogglePetBuddy();
+			ToggleBattlePetUtility();
 		elseif(command == "help") then
 			addon:PrintHelp();
 		elseif(command == "welcome") then
@@ -2140,11 +2140,11 @@ function addon:OnInitialize()
 		elseif(command == "icon off" or command == "icon disable" or command == "icon hide") then
 			addon:ToggleMinimapIcon(false);
 		elseif(command == "icon") then
-			addon:PrintMessage("|cffffff00Usage:|r |cffb07fff/pb2 icon on|r or |cffb07fffoff|r");
+			addon:PrintMessage("|cffffff00Usage:|r |cffb07fff/BPU icon on|r or |cffb07fffoff|r");
 		else
-			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cffb07fff/pb2 help|r.");
+			addon:PrintMessage("|cffffcc00Unknown command.|r Type |cffb07fff/BPU help|r.");
 		end
-	end, "PB2");
+	end, "BPU");
 
 	addon:InitializeDatabase();
 	addon:InitializeDatabroker();
@@ -2191,15 +2191,15 @@ local function EnableAddon()
 		addon:OnEnable();
 	end
 
-	if(addon._pendingItemButtonRefresh and PetBuddyFrameButtons and PetBuddyFrameButtons:IsShown()
-		and type(PetBuddyFrameButtons_OnShow) == "function") then
+	if(addon._pendingItemButtonRefresh and BattlePetUtilityFrameButtons and BattlePetUtilityFrameButtons:IsShown()
+		and type(BattlePetUtilityFrameButtons_OnShow) == "function") then
 		addon._pendingItemButtonRefresh = nil;
-		PetBuddyFrameButtons_OnShow(PetBuddyFrameButtons);
+		BattlePetUtilityFrameButtons_OnShow(BattlePetUtilityFrameButtons);
 	end
 end
 
 RGX:RegisterEvent("PLAYER_LOGIN", function()
 	InitializeAddon();
 	EnableAddon();
-	RGX:UnregisterEvent("PLAYER_LOGIN", "PB2_Bootstrap");
-end, "PB2_Bootstrap");
+	RGX:UnregisterEvent("PLAYER_LOGIN", "BPU_Bootstrap");
+end, "BPU_Bootstrap");

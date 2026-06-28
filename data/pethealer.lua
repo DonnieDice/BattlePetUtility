@@ -204,7 +204,7 @@ function addon:GOSSIP_SHOW()
 	local isGarrisonNPC = type == "Creature" and C_Garrison.IsOnGarrisonMap();
 	local isFreeNPC = type == "Creature" and (npc_id == "85418" or npc_id == "79858");
 	
-	PetBuddyAutoHealButton:Show();
+	BattlePetUtilityAutoHealButton:Show();
 	
 	local numQuests = GetNumGossipAvailableQuests() + GetNumGossipActiveQuests();
 	if(GetNumGossipAvailableQuests() > 0) then numQuests = numQuests + 1 end
@@ -225,8 +225,8 @@ function addon:GOSSIP_SHOW()
 end
 
 function addon:GOSSIP_CLOSED()
-	if(PetBuddyAutoHealButton) then
-		PetBuddyAutoHealButton:Hide();
+	if(BattlePetUtilityAutoHealButton) then
+		BattlePetUtilityAutoHealButton:Hide();
 	end
 end
 

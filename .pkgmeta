@@ -1,4 +1,4 @@
-package-as: PetBuddy2
+package-as: BattlePetUtility
 
 enable-nolib-creation: no
 

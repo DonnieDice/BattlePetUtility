@@ -1,11 +1,11 @@
 # UI Layout Files
 
-This directory contains the XML layout files for the PetBuddy2 interface.
+This directory contains the XML layout files for the BattlePetUtility interface.
 
 ## Files
 
-- `petbuddytemplates.xml` - Shared templates, reusable widgets, and styling primitives.
-- `petbuddyframe.xml` - Main HUD frame layout, title bar, pet slots, loadout area, and zone tracker frame.
+- `BattlePetUtilitytemplates.xml` - Shared templates, reusable widgets, and styling primitives.
+- `BattlePetUtilityframe.xml` - Main HUD frame layout, title bar, pet slots, loadout area, and zone tracker frame.
 
 ## Purpose
 

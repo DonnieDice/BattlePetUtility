@@ -1,6 +1,6 @@
-# PetBuddy2 Docs
+# BattlePetUtility Docs
 
-Documentation index for PetBuddy2.
+Documentation index for BattlePetUtility.
 
 Current addon version: `v2.3.17`
 
@@ -14,7 +14,7 @@ Current addon version: `v2.3.17`
 
 ## Documentation Rules
 
-1. `PetBuddy2.toc` is the source of truth for addon version metadata.
+1. `BattlePetUtility.toc` is the source of truth for addon version metadata.
 2. Every shipped change should be reflected in `docs/CHANGES.md`.
 3. Keep README command lists aligned with actual slash behavior.
 4. Keep roadmap items tied to active maintenance priorities.

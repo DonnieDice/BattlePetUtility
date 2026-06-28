@@ -1,11 +1,11 @@
-# PetBuddy2 Release Workflow
+# BattlePetUtility Release Workflow
 
 This mirrors the RGX/BLU release flow: bump metadata, land a focused commit, tag it, then push both the commit and tag.
 
 ## 1. Prep the release
 1. Pick the new semantic version (`vX.Y.Z`).
 2. Update every version string:
-   - `PetBuddy2.toc`
+   - `BattlePetUtility.toc`
    - README badge + compatibility table
    - `docs/README.md`
    - `docs/CHANGES.md` (add a dated section for the release)
@@ -29,7 +29,7 @@ git push origin vX.Y.Z
 - The annotated tag keeps automation and Curse/Wago packagers happy.
 
 ## 4. Publish
-1. Open GitHub → Releases → “Draft new release”.
+1. Open GitHub â†’ Releases â†’ â€œDraft new releaseâ€.
 2. Select the new tag, give it the version title, and paste the matching `docs/CHANGES.md` entry.
 3. Attach the packaged zip if needed, then publish.
 
@@ -38,4 +38,4 @@ git push origin vX.Y.Z
 2. Use `workflow_dispatch` when you need to resend release notifications or retry the packager without cutting a new feature tag.
 3. For manual reruns tied to an existing release, pass the original tag name (for example `v2.0.0`) through the workflow inputs so Discord links and release references stay correct.
 
-Following these steps keeps PetBuddy2’s release hygiene identical to BLU, with clean history and reproducible tags.
+Following these steps keeps BattlePetUtilityâ€™s release hygiene identical to BLU, with clean history and reproducible tags.

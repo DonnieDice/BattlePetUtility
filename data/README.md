@@ -1,6 +1,6 @@
 # Runtime Data Modules
 
-This directory contains the Lua modules that drive PetBuddy2 at runtime.
+This directory contains the Lua modules that drive BattlePetUtility at runtime.
 
 ## Purpose
 
@@ -13,7 +13,7 @@ This directory contains the Lua modules that drive PetBuddy2 at runtime.
 - `options.lua` - Saved variable defaults, dropdown options, media selection, and frame settings.
 - `petloadouts.lua` - Native loadout management and Rematch-aware team handling.
 - `zonetracking.lua` - Zone pet tracker rendering and progress logic.
-- `zonespecies.lua` - Built-in PB2 zone pet species data.
+- `zonespecies.lua` - Built-in BPU zone pet species data.
 - `itembuttons.lua` - Pet-related utility item buttons and quick actions.
 - `databroker.lua` - DataBroker launcher and tooltip support.
 - `pethealer.lua` - Healing and stable-master support logic.

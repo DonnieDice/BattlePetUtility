@@ -15,7 +15,7 @@ local function BuildDefaultTextStyle(size, flags, extras)
 	return Fonts:CreateStyle(style)
 end
 
-local function EnsurePB2TextStyles(db)
+local function EnsureBPUTextStyles(db)
 	if type(db) ~= "table" then return end
 	if type(db.titleText) ~= "table" or type(db.normalText) ~= "table" or type(db.smallText) ~= "table" then
 		local legacyFont = db.fontFace or Fonts:GetDefault()
@@ -53,27 +53,27 @@ function addon:RefreshMedia(_, barTexture)
 
 	local statusBarPath = Textures:GetBar(selectedBarTexture)
 
-	EnsurePB2TextStyles(self.db.global)
+	EnsureBPUTextStyles(self.db.global)
 	if type(self.PrepareFontMenuItems) == "function" then
 		self:PrepareFontMenuItems()
 	end
 
 	Fonts:ApplyStyleMap({
-		titleText = PetBuddyFontTitle,
-		normalText = PetBuddyFontNormal,
-		smallText = PetBuddyFontSmall,
+		titleText = BattlePetUtilityFontTitle,
+		normalText = BattlePetUtilityFontNormal,
+		smallText = BattlePetUtilityFontSmall,
 	}, self.db.global)
 
 	for i = 1, 3 do
-		local petFrame = _G['PetBuddyFramePet' .. i]
+		local petFrame = _G['BattlePetUtilityFramePet' .. i]
 
 		petFrame.stats.petHealth:SetStatusBarTexture(statusBarPath)
 		petFrame.stats.petExperience:SetStatusBarTexture(statusBarPath)
 	end
 
-	if PetBuddyFrameZoneTracker and PetBuddyFrameZoneTracker.bar then
-		PetBuddyFrameZoneTracker.bar:SetStatusBarTexture(statusBarPath)
-		local qualityBars = PetBuddyFrameZoneTracker.bar.qualityBars
+	if BattlePetUtilityFrameZoneTracker and BattlePetUtilityFrameZoneTracker.bar then
+		BattlePetUtilityFrameZoneTracker.bar:SetStatusBarTexture(statusBarPath)
+		local qualityBars = BattlePetUtilityFrameZoneTracker.bar.qualityBars
 		if type(qualityBars) == "table" then
 			for _, qBar in pairs(qualityBars) do
 				if qBar and qBar.SetStatusBarTexture then
@@ -90,7 +90,7 @@ end
 
 function addon:SetWindowScale(scale)
 	self.db.global.WindowScale = scale or 1.0
-	PetBuddyFrame:SetScale(self.db.global.WindowScale)
+	BattlePetUtilityFrame:SetScale(self.db.global.WindowScale)
 end
 
 local function GetStyleDefs()
@@ -108,7 +108,7 @@ local function GetStyleDefs()
 end
 
 function addon:PrepareFontMenuItems()
-	EnsurePB2TextStyles(self.db and self.db.global)
+	EnsureBPUTextStyles(self.db and self.db.global)
 	local styleDefs = GetStyleDefs()
 
 	local function GetCurrentFont()
@@ -138,7 +138,7 @@ function addon:PrepareFontMenuItems()
 end
 
 function addon:GetCurrentFontSize()
-	EnsurePB2TextStyles(self.db and self.db.global)
+	EnsureBPUTextStyles(self.db and self.db.global)
 	if Fonts and type(Fonts.NormalizeStyle) == "function" then
 		local style = Fonts:NormalizeStyle(self.db.global.normalText)
 		return tonumber(style.size) or 10
@@ -147,7 +147,7 @@ function addon:GetCurrentFontSize()
 end
 
 function addon:GetTextSizeMenuData()
-	EnsurePB2TextStyles(self.db and self.db.global)
+	EnsureBPUTextStyles(self.db and self.db.global)
 	local styleDefs = GetStyleDefs()
 
 	local function ApplySize(baseSize)

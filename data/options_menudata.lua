@@ -57,13 +57,13 @@ function addon:GetPrimaryMenuData()
 
 	local data = {
 		{
-			text = "PetBuddy2 Options", isTitle = true, notCheckable = true,
+			text = "BattlePetUtility Options", isTitle = true, notCheckable = true,
 		},
 		{
 			text = "Battle Pet HUD and utility menu", isTitle = true, notCheckable = true, disabled = true,
 		},
 		{
-			text = "Lock PetBuddy2",
+			text = "Lock BattlePetUtility",
 			func = function() self.db.global.IsFrameLocked = not self.db.global.IsFrameLocked end,
 			checked = function() return self.db.global.IsFrameLocked end,
 			isNotRadio = true,
@@ -175,7 +175,7 @@ function addon:GetPrimaryMenuData()
 		},
 		{
 			text = "Automatically heal pets at stables",
-			func = function() self.db.global.AutoHealPets = not self.db.global.AutoHealPets; AutoHealButton_OnShow(PetBuddyAutoHealButton) end,
+			func = function() self.db.global.AutoHealPets = not self.db.global.AutoHealPets; AutoHealButton_OnShow(BattlePetUtilityAutoHealButton) end,
 			checked = function() return self.db.global.AutoHealPets end,
 			isNotRadio = true,
 			keepShownOnClick = true,
@@ -203,9 +203,9 @@ function addon:GetPrimaryMenuData()
 				self.db.global.ShowPepe = not self.db.global.ShowPepe
 				addon:RefreshHeaderArt()
 				if self.db.global.ShowPepe then
-					PetBuddyFrameTitle.pepeFrame:Show()
+					BattlePetUtilityFrameTitle.pepeFrame:Show()
 				else
-					PetBuddyFrameTitle.pepeFrame:Hide()
+					BattlePetUtilityFrameTitle.pepeFrame:Hide()
 				end
 			end,
 			checked = function() return self.db.global.ShowPepe end,
@@ -391,7 +391,7 @@ function addon:GetPrimaryMenuData()
 			isNotRadio = true,
 			keepShownOnClick = true,
 			tooltipTitle = "Minimap icon visibility",
-			tooltipText = "You can also right-click the minimap button for options, or use |cffb07fff/pb2 icon off|r and |cffb07fff/pb2 icon on|r.",
+			tooltipText = "You can also right-click the minimap button for options, or use |cffb07fff/BPU icon off|r and |cffb07fff/BPU icon on|r.",
 		},
 		{
 			text = "", isTitle = true, notCheckable = true, disabled = true,
@@ -403,7 +403,7 @@ function addon:GetPrimaryMenuData()
 			text = "Font: " .. _fontLabel,
 			notCheckable = true,
 			hasArrow = true,
-			menuList = "pb2_fonts",
+			menuList = "bpu_fonts",
 		},
 		{
 			text = string.format("Font size (%d pt)", addon:GetCurrentFontSize()),

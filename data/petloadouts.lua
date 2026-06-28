@@ -8,7 +8,7 @@
 
 local ADDON_NAME, addon = ...;
 
-local PETBUDDY_LOADOUT_TEXT = "Enter a name for current pet loadout:|n|n%s";
+local BattlePetUtility_LOADOUT_TEXT = "Enter a name for current pet loadout:|n|n%s";
 local CURRENT_LOADOUT_NAME = nil;
 local unpackFunc = unpack or table.unpack;
 
@@ -71,8 +71,8 @@ local function EnsureSavedLoadoutsTable()
 end
 
 local function RefreshLoadoutUI(keepListOpen)
-	if(type(PetBuddyFrameLoadouts_UpdateList) == "function") then
-		PetBuddyFrameLoadouts_UpdateList();
+	if(type(BattlePetUtilityFrameLoadouts_UpdateList) == "function") then
+		BattlePetUtilityFrameLoadouts_UpdateList();
 	end
 
 	if(type(addon.UpdateUtilityMenuState) == "function") then
@@ -87,12 +87,12 @@ local function RefreshLoadoutUI(keepListOpen)
 		addon:RefreshZoneTracker();
 	end
 
-	if(not keepListOpen and type(PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
-		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
+	if(not keepListOpen and type(BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility) == "function") then
+		BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility(false);
 	end
 end
 
-StaticPopupDialogs["PETBUDDY_LOADOUT_ERROR_LOCKED"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_ERROR_LOCKED"] = {
 	text = "Cannot save loadout: all pet battle slots are not unlocked.",
 	button1 = ACCEPT,
 	timeout = 0,
@@ -100,7 +100,7 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_ERROR_LOCKED"] = {
 	hideOnEscape = 1,
 };
 
-StaticPopupDialogs["PETBUDDY_LOADOUT_ERROR_NOT_FOUND"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_ERROR_NOT_FOUND"] = {
 	text = "Cannot restore loadout: all saved pets cannot be found.",
 	button1 = ACCEPT,
 	timeout = 0,
@@ -108,7 +108,7 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_ERROR_NOT_FOUND"] = {
 	hideOnEscape = 1,
 };
 
-StaticPopupDialogs["PETBUDDY_LOADOUT_SAVE_EXISTS"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_SAVE_EXISTS"] = {
 	text = "Another loadout with the same name already exists. Do you want to overwrite?",
 	button1 = YES,
 	button2 = NO,
@@ -130,7 +130,7 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_SAVE_EXISTS"] = {
 	hideOnEscape = 1,
 };
 
-StaticPopupDialogs["PETBUDDY_LOADOUT_OVERWRITE"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_OVERWRITE"] = {
 	text = "Are you sure you want to overwrite \"%s\" with current loadout?",
 	button1 = YES,
 	button2 = NO,
@@ -144,7 +144,7 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_OVERWRITE"] = {
 	hideOnEscape = 1,
 };
 
-StaticPopupDialogs["PETBUDDY_LOADOUT_RESTORE"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_RESTORE"] = {
 	text = "Are you sure you want to restore loadout \"%s\"?",
 	button1 = YES,
 	button2 = NO,
@@ -157,7 +157,7 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_RESTORE"] = {
 	hideOnEscape = 1,
 };
 
-StaticPopupDialogs["PETBUDDY_LOADOUT_DELETE"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_DELETE"] = {
 	text = "Are you sure you want to |cffff5555delete|r loadout \"%s\"? The action cannot be undone.",
 	button1 = YES,
 	button2 = NO,
@@ -170,7 +170,7 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_DELETE"] = {
 	hideOnEscape = 1,
 };
 
-StaticPopupDialogs["PETBUDDY_LOADOUT_REMATCH_MANAGED"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_REMATCH_MANAGED"] = {
 	text = "Loadouts are managed by Rematch while it is enabled. Create, rename, and delete teams in Rematch.",
 	button1 = ACCEPT,
 	timeout = 0,
@@ -178,7 +178,7 @@ StaticPopupDialogs["PETBUDDY_LOADOUT_REMATCH_MANAGED"] = {
 	hideOnEscape = 1,
 };
 	
-StaticPopupDialogs["PETBUDDY_LOADOUT_SAVE"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_SAVE"] = {
 	text = "Enter a name for current pet loadout:",
 	button1 = ACCEPT,
 	button2 = CANCEL,
@@ -325,7 +325,7 @@ function addon:GetRematchLoadouts()
 	return loadoutData, #loadoutData;
 end
 	
-StaticPopupDialogs["PETBUDDY_LOADOUT_RENAME"] = {
+StaticPopupDialogs["BattlePetUtility_LOADOUT_RENAME"] = {
 	text = "Enter a new name for the loadout:",
 	button1 = ACCEPT,
 	button2 = CANCEL,
@@ -431,7 +431,7 @@ function addon:SaveLoadout(loadout_name)
 	if(not savedLoadouts) then return false end
 	
 	if(savedLoadouts[loadout_name]) then
-		StaticPopup_Show("PETBUDDY_LOADOUT_SAVE_EXISTS", loadout_name, nil, {
+		StaticPopup_Show("BattlePetUtility_LOADOUT_SAVE_EXISTS", loadout_name, nil, {
 			newSave = true,
 			name = loadout_name,
 		});
@@ -443,7 +443,7 @@ function addon:SaveLoadout(loadout_name)
 	for slotIndex = 1, 3 do
 		local petID, ability1, ability2, ability3, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
 		if(locked) then
-			StaticPopup_Show("PETBUDDY_LOADOUT_ERROR_LOCKED");
+			StaticPopup_Show("BattlePetUtility_LOADOUT_ERROR_LOCKED");
 			return false;
 		end
 		
@@ -475,8 +475,8 @@ function addon:RestoreLoadout(loadout_info)
 	if(rematchTeamID and addon:IsRematchLoadoutsEnabled()) then
 		Rematch.loadTeam:LoadTeamID(rematchTeamID);
 		addon:UpdatePets();
-		PetBuddyPetFrame_ResetAbilitySwitches();
-		PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(false);
+		BattlePetUtilityPetFrame_ResetAbilitySwitches();
+		BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility(false);
 		CloseMenus();
 		return true;
 	end
@@ -488,7 +488,7 @@ function addon:RestoreLoadout(loadout_info)
 	
 	for slotIndex, data in ipairs(loadout) do
 		if(not C_PetJournal.GetPetInfoByPetID(data.petID)) then
-			StaticPopup_Show("PETBUDDY_LOADOUT_ERROR_NOT_FOUND");
+			StaticPopup_Show("BattlePetUtility_LOADOUT_ERROR_NOT_FOUND");
 			return;
 		end
 	end
@@ -502,7 +502,7 @@ function addon:RestoreLoadout(loadout_info)
 	end
 	
 	addon:RefreshPetJournalLoadOut();
-	PetBuddyPetFrame_ResetAbilitySwitches();
+	BattlePetUtilityPetFrame_ResetAbilitySwitches();
 	RefreshLoadoutUI(false);
 	-- Enforce known-good static layout so the team change doesn't leave a
 	-- visual gap between the main GUI and the zone pet tracker.
@@ -528,7 +528,7 @@ function addon:RenameLoadout(old_loadout_name, new_loadout_name)
 	if(not savedLoadouts or not savedLoadouts[old_loadout_name]) then return false end
 	
 	if(savedLoadouts[new_loadout_name]) then
-		StaticPopup_Show("PETBUDDY_LOADOUT_SAVE_EXISTS", new_loadout_name, nil, {
+		StaticPopup_Show("BattlePetUtility_LOADOUT_SAVE_EXISTS", new_loadout_name, nil, {
 			newSave = false,
 			name = new_loadout_name,
 			oldName = old_loadout_name,
@@ -605,8 +605,8 @@ function addon:GetSortedLoadouts()
 	return loadoutData, #loadoutData;
 end
 
-function PetBuddyFrameLoadouts_UpdateList()
-	local scrollFrame = PetBuddyFrameLoadouts.scrollFrame;
+function BattlePetUtilityFrameLoadouts_UpdateList()
+	local scrollFrame = BattlePetUtilityFrameLoadouts.scrollFrame;
 	local offset = HybridScrollFrame_GetOffset(scrollFrame);
 	local buttons = scrollFrame.buttons;
 	
@@ -675,8 +675,8 @@ function PetBuddyFrameLoadouts_UpdateList()
 					end
 				end
 				
-				button:SetScript("OnEnter", PetBuddyLoadoutsButton_OnEnter);
-				button:SetScript("OnLeave", PetBuddyLoadoutsButton_OnLeave);
+				button:SetScript("OnEnter", BattlePetUtilityLoadoutsButton_OnEnter);
+				button:SetScript("OnLeave", BattlePetUtilityLoadoutsButton_OnLeave);
 			else
 				for i=1,3 do
 					local petIcon = button['pet'..i];
@@ -704,21 +704,21 @@ function PetBuddyFrameLoadouts_UpdateList()
 	HybridScrollFrame_Update(scrollFrame, totalHeight, scrollFrame:GetHeight());
 end
 
-function PetBuddyLoadoutsButton_OnClick(self, button)
+function BattlePetUtilityLoadoutsButton_OnClick(self, button)
 	if(self.data.notFound) then return end
 	
 	if(button == "LeftButton") then
 		if(self.data.isRematch or not self.hasMissingPet) then
 			addon:RestoreLoadout(self.data);
 		else
-			StaticPopup_Show("PETBUDDY_LOADOUT_DELETE", self.data.name, nil, self.data.name)
+			StaticPopup_Show("BattlePetUtility_LOADOUT_DELETE", self.data.name, nil, self.data.name)
 		end
 	elseif(button == "RightButton") then
-		PetBuddyFrameLoadouts_OpenContextMenu(self)
+		BattlePetUtilityFrameLoadouts_OpenContextMenu(self)
 	end
 end
 
-function PetBuddyLoadoutsButton_OnEnter(self)
+function BattlePetUtilityLoadoutsButton_OnEnter(self)
 	if(not self.data) then return end
 	
 	GameTooltip:ClearLines();
@@ -747,15 +747,15 @@ function PetBuddyLoadoutsButton_OnEnter(self)
 	GameTooltip:Show();
 end
 
-function PetBuddyLoadoutsButton_OnLeave(self)
+function BattlePetUtilityLoadoutsButton_OnLeave(self)
 	GameTooltip:Hide();
 end
 
-function PetBuddyFrameLoadouts_OnLoad(self)
-	self.scrollFrame.update = PetBuddyFrameLoadouts_UpdateList;
+function BattlePetUtilityFrameLoadouts_OnLoad(self)
+	self.scrollFrame.update = BattlePetUtilityFrameLoadouts_UpdateList;
 	-- self.scrollFrame.scrollBar.doNotHide = true;
 	
-	HybridScrollFrame_CreateButtons(self.scrollFrame, "PetBuddyLoadoutsButtonTemplate", 0, 0, nil, nil, 0, 0);
+	HybridScrollFrame_CreateButtons(self.scrollFrame, "BattlePetUtilityLoadoutsButtonTemplate", 0, 0, nil, nil, 0, 0);
 end
 
 function addon:OpenRematchSaveTeamDialog()
@@ -795,49 +795,49 @@ function addon:OpenRematchSaveTeamDialog()
 	return false;
 end
 
-function PetBuddyLoadoutsSaveButton_OnLoad(self)
+function BattlePetUtilityLoadoutsSaveButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\savebuttonicon",
+		iconTexture = "Interface\\AddOns\\BattlePetUtility\\media\\savebuttonicon",
 		-- count = "S",
 		tooltipTitle = "Save Loadout",
-		tooltipDescription = "Save current pets and abilities to PetBuddy loadouts, or open Rematch Save Team when Rematch is available",
+		tooltipDescription = "Save current pets and abilities to BattlePetUtility loadouts, or open Rematch Save Team when Rematch is available",
 		func = function(self)
 			if(addon:IsRematchLoadoutsEnabled()) then
 				if(addon:OpenRematchSaveTeamDialog()) then
 					return;
 				end
 			end
-			StaticPopup_Show("PETBUDDY_LOADOUT_SAVE");
+			StaticPopup_Show("BattlePetUtility_LOADOUT_SAVE");
 		end,
 	};
 	
-	PetBuddyFrameButton_Initialize(self, "custom", actionData);
+	BattlePetUtilityFrameButton_Initialize(self, "custom", actionData);
 end
 
-function PetBuddyLoadoutsToggleButton_OnLoad(self)
+function BattlePetUtilityLoadoutsToggleButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\PetBuddy2\\media\\togglebuttonicondown",
+		iconTexture = "Interface\\AddOns\\BattlePetUtility\\media\\togglebuttonicondown",
 		tooltipTitle = "Toggle Loadout List",
 		tooltipDescription = "Show/hide the list of existing loadouts",
 		func = function(self)
-			local showstate = not PetBuddyFrameLoadoutsScrollFrame:IsShown();
-			PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate);
+			local showstate = not BattlePetUtilityFrameLoadoutsScrollFrame:IsShown();
+			BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility(showstate);
 		end,
 	};
 	
-	PetBuddyFrameButton_Initialize(self, "custom", actionData);
+	BattlePetUtilityFrameButton_Initialize(self, "custom", actionData);
 end
 
-function PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
+function BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
 	local minimized = addon and addon:IsFrameMinimized();
 	local hideMain = addon and addon.db and addon.db.global.HideMainGUI == true;
 	if(minimized or hideMain) then
 		showstate = false;
 	end
 
-	PetBuddyFrameLoadoutsScrollFrame:SetShown(showstate);
+	BattlePetUtilityFrameLoadoutsScrollFrame:SetShown(showstate);
 
-	local button = PetBuddyFrameLoadouts.toggleButton;
+	local button = BattlePetUtilityFrameLoadouts.toggleButton;
 	if(button) then
 		button:SetEnabled(not minimized and not hideMain);
 		if(button.icon) then
@@ -846,25 +846,25 @@ function PetBuddyFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
 	end
 
 	if(showstate) then
-		PetBuddyFrameLoadouts_UpdateList();
-		HybridScrollFrame_SetOffset(PetBuddyFrameLoadouts.scrollFrame, 0);
+		BattlePetUtilityFrameLoadouts_UpdateList();
+		HybridScrollFrame_SetOffset(BattlePetUtilityFrameLoadouts.scrollFrame, 0);
 		if(button and button.icon) then
-			button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\togglebuttoniconup");
+			button.icon:SetTexture("Interface\\AddOns\\BattlePetUtility\\media\\togglebuttoniconup");
 		end
 	else
 		if(button and button.icon) then
-			button.icon:SetTexture("Interface\\AddOns\\PetBuddy2\\media\\togglebuttonicondown");
+			button.icon:SetTexture("Interface\\AddOns\\BattlePetUtility\\media\\togglebuttonicondown");
 		end
 	end
 end
 
-function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
+function BattlePetUtilityFrameLoadouts_OpenContextMenu(relativeFrame)
 	if(not relativeFrame) then return end
 	if(not relativeFrame.data or relativeFrame.data.notFound) then return end
 	
-	if(not PetBuddyFrameLoadouts.ContextMenu) then
-		PetBuddyFrameLoadouts.ContextMenu = CreateFrame("Frame", "PetBuddyLoadoutsContextMenuFrame", UIParent, "UIDropDownMenuTemplate");
-		PetBuddyFrameLoadouts.ContextMenu:SetFrameStrata("DIALOG");
+	if(not BattlePetUtilityFrameLoadouts.ContextMenu) then
+		BattlePetUtilityFrameLoadouts.ContextMenu = CreateFrame("Frame", "BattlePetUtilityLoadoutsContextMenuFrame", UIParent, "UIDropDownMenuTemplate");
+		BattlePetUtilityFrameLoadouts.ContextMenu:SetFrameStrata("DIALOG");
 	end
 	
 	local data = relativeFrame.data;
@@ -883,21 +883,21 @@ function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
 		{
 			text = "Rename",
 			func = function()
-				StaticPopup_Show("PETBUDDY_LOADOUT_RENAME", data.name, nil, data.name);
+				StaticPopup_Show("BattlePetUtility_LOADOUT_RENAME", data.name, nil, data.name);
 			end,
 			notCheckable = true,
 		},
 		{
 			text = "Overwrite",
 			func = function()
-				StaticPopup_Show("PETBUDDY_LOADOUT_OVERWRITE", data.name, nil, data.name);
+				StaticPopup_Show("BattlePetUtility_LOADOUT_OVERWRITE", data.name, nil, data.name);
 			end,
 			notCheckable = true,
 		},
 		{
 			text = "Delete",
 			func = function()
-				StaticPopup_Show("PETBUDDY_LOADOUT_DELETE", data.name, nil, data.name);
+				StaticPopup_Show("BattlePetUtility_LOADOUT_DELETE", data.name, nil, data.name);
 			end,
 			notCheckable = true,
 		},
@@ -922,7 +922,7 @@ function PetBuddyFrameLoadouts_OpenContextMenu(relativeFrame)
 		contextMenuData[2].disabled = true;
 	end
 
-	PetBuddyFrameLoadouts.ContextMenu:ClearAllPoints();
-	PetBuddyFrameLoadouts.ContextMenu:SetPoint("BOTTOMLEFT", relativeFrame, "TOPLEFT", 0, 0);
-	addon:OpenDropDownMenu(contextMenuData, PetBuddyFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
+	BattlePetUtilityFrameLoadouts.ContextMenu:ClearAllPoints();
+	BattlePetUtilityFrameLoadouts.ContextMenu:SetPoint("BOTTOMLEFT", relativeFrame, "TOPLEFT", 0, 0);
+	addon:OpenDropDownMenu(contextMenuData, BattlePetUtilityFrameLoadouts.ContextMenu, "cursor", 0, 0, "MENU", 5);
 end

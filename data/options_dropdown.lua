@@ -95,7 +95,7 @@ local function InitializeMenuLevel(self, level, menuList)
 	level = level or 1
 	local currentList
 
-	if menuList == "pb2_fonts" then
+	if menuList == "bpu_fonts" then
 		currentList = addon._fontMenuItems
 	elseif type(menuList) == "table" then
 		currentList = menuList
@@ -117,7 +117,7 @@ end
 
 function addon:OpenContextMenu(contextMenuData, parentframe, anchor, point, relativePoint)
 	if not addon.ContextMenu then
-		addon.ContextMenu = CreateFrame("Frame", "PetBuddyContextMenuFrame", UIParent, "UIDropDownMenuTemplate")
+		addon.ContextMenu = CreateFrame("Frame", "BattlePetUtilityContextMenuFrame", UIParent, "UIDropDownMenuTemplate")
 		addon.ContextMenu:SetFrameStrata("DIALOG")
 		SuppressDropDownFrameVisuals(addon.ContextMenu)
 	end
@@ -127,7 +127,7 @@ function addon:OpenContextMenu(contextMenuData, parentframe, anchor, point, rela
 	end
 
 	addon.ContextMenu:ClearAllPoints()
-	addon.ContextMenu:SetPoint(point or "TOPLEFT", parentframe or PetBuddyFrame, relativePoint or "CENTER", 0, 5)
+	addon.ContextMenu:SetPoint(point or "TOPLEFT", parentframe or BattlePetUtilityFrame, relativePoint or "CENTER", 0, 5)
 	addon:OpenDropDownMenu(contextMenuData, addon.ContextMenu, anchor or "cursor", 0, 0, "MENU", 5)
 end
 

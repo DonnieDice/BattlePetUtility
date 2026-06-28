@@ -59,7 +59,7 @@ end
 function addon:GetDatabrokerMenuData()
     return {
         {
-            text = "PetBuddy2", isTitle = true, notCheckable = true,
+            text = "BattlePetUtility", isTitle = true, notCheckable = true,
         },
         {
             text = "Show wounded pets",
@@ -119,7 +119,7 @@ function addon:GetDatabrokerMenuData()
             text = "", isTitle = true, notCheckable = true, disabled = true,
         },
         {
-            text         = "PetBuddy2 Options",
+            text         = "BattlePetUtility Options",
             notCheckable = true,
             hasArrow     = true,
             menuList     = addon:GetPrimaryMenuData(),
@@ -136,12 +136,12 @@ function addon:InitializeDatabroker()
 
     addon.databroker = DB:NewDataObject(ADDON_NAME, {
         type  = "data source",
-        label = "PetBuddy2",
-        text  = "PetBuddy2",
+        label = "BattlePetUtility",
+        text  = "BattlePetUtility",
         icon  = PET_BUDDY_ICON,
         OnClick = function(frame, button)
             if button == "LeftButton" then
-                TogglePetBuddy()
+                ToggleBattlePetUtility()
             elseif button == "RightButton" then
                 GameTooltip:Hide()
                 addon:OpenContextMenu(addon:GetDatabrokerMenuData(), frame, frame, "BOTTOM", "BOTTOM")
@@ -149,7 +149,7 @@ function addon:InitializeDatabroker()
         end,
         OnTooltipShow = function(tooltip)
             if not tooltip or not tooltip.AddLine then return end
-            tooltip:AddLine(TEX_PET_BUDDY_ICON .. " PetBuddy2")
+            tooltip:AddLine(TEX_PET_BUDDY_ICON .. " BattlePetUtility")
             tooltip:AddLine("|cffd9c6ffBattle Pet HUD|r")
             tooltip:AddLine(" ")
             tooltip:AddLine("Active Pets")
@@ -226,7 +226,7 @@ function addon:InitializeDatabroker()
                 tooltip:AddLine(" ")
             end
 
-            tooltip:AddLine("Left-Click |cffffffffToggle PetBuddy2|h")
+            tooltip:AddLine("Left-Click |cffffffffToggle BattlePetUtility|h")
             tooltip:AddLine("Right-Click |cffffffffShow options|h")
         end,
         OnLeave = function() end,
@@ -258,7 +258,7 @@ function addon:UpdateDatabrokerText()
     end
 
     if #strings == 0 then
-        table.insert(strings, "PetBuddy2")
+        table.insert(strings, "BattlePetUtility")
     end
 
     addon.databroker.text = table.concat(strings, "  ")

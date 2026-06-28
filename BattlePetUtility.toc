@@ -1,18 +1,18 @@
 ## Interface: 120005
-## Title: |cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r
-## Notes: |n|r |cffb07fff/pb2 -|r Open options panel |n|r |cffb512fcBy DonnieDice|r
+## Title: |cffb512fcBattle Pet Utility|r
+## Notes: |n|r |cffb07fff/bpu -|r Open options panel |n|r |cffb512fcBy DonnieDice|r
 ## Version: v2.3.18
 ## Author: DonnieDice
 ## Email: donniedice@protonmail.com
-## SavedVariables: PetBuddyDB
-## IconTexture: Interface\AddOns\PetBuddy2\media\logo
+## SavedVariables: BattlePetUtilityDB
+## IconTexture: Interface\AddOns\BattlePetUtility\media\logo
 ## DefaultState: Enabled
 ## RequiredDeps: RGX-Framework
 ## OptionalDeps: BattlePetBreedID, Rematch, PetTracker
 
 ## X-Category: UI Media, Pets & Companions, Miscellaneous
 ## X-Curse-Project-ID: 1476629
-## X-Website: https://github.com/donniedice/PetBuddy2
+## X-Website: https://github.com/donniedice/BattlePetUtility
 
 data/compat.lua
 
@@ -29,5 +29,5 @@ data/pethealer.lua
 data/petloadouts.lua
 data/minimapicon.lua
 
-ui/petbuddytemplates.xml
-ui/petbuddyframe.xml
+ui/BattlePetUtilitytemplates.xml
+ui/BattlePetUtilityframe.xml

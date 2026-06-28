@@ -24,20 +24,20 @@ jobs:
       contents: write
 
     steps:
-      - name: 🛠️ Clone Project
+      - name: ðŸ› ï¸ Clone Project
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🧰 Install jq
+      - name: ðŸ§° Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: 🧑‍🔧 Configure Git User
+      - name: ðŸ§‘â€ðŸ”§ Configure Git User
         run: |
           git config --global user.name "donniedice"
           git config --global user.email "donniedice@protonmail.com"
 
-      - name: 🧭 Determine Release Type
+      - name: ðŸ§­ Determine Release Type
         id: release_type
         run: |
           case "${{ github.ref }}" in
@@ -61,10 +61,10 @@ jobs:
               ;;
           esac
 
-      - name: 📦 Extract Version from TOC
+      - name: ðŸ“¦ Extract Version from TOC
         id: version
         run: |
-          version=$(grep -oP '^## Version: \K(.*)' PetBuddy2.toc)
+          version=$(grep -oP '^## Version: \K(.*)' BattlePetUtility.toc)
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" >> $GITHUB_OUTPUT
 
@@ -72,9 +72,9 @@ jobs:
         shell: bash
         run: |
           version="${{ steps.version.outputs.version }}"
-          curse_id="$(grep -oP '^## X-Curse-Project-ID:\s*\K(.*)' PetBuddy2.toc || true)"
-          wago_id="$(grep -oP '^## X-Wago-ID:\s*\K(.*)' PetBuddy2.toc || true)"
-          wowi_id="$(grep -oP '^## X-WoWI-ID:\s*\K(.*)' PetBuddy2.toc || true)"
+          curse_id="$(grep -oP '^## X-Curse-Project-ID:\s*\K(.*)' BattlePetUtility.toc || true)"
+          wago_id="$(grep -oP '^## X-Wago-ID:\s*\K(.*)' BattlePetUtility.toc || true)"
+          wowi_id="$(grep -oP '^## X-WoWI-ID:\s*\K(.*)' BattlePetUtility.toc || true)"
 
           echo "Detected project IDs:"
           echo "  X-Curse-Project-ID: ${curse_id:-missing}"
@@ -82,15 +82,15 @@ jobs:
           echo "  X-WoWI-ID: ${wowi_id:-missing}"
 
           if [[ -z "$curse_id" ]]; then
-            echo "::warning::X-Curse-Project-ID is missing in PetBuddy2.toc. CurseForge upload will be skipped."
+            echo "::warning::X-Curse-Project-ID is missing in BattlePetUtility.toc. CurseForge upload will be skipped."
           fi
 
           if [[ -z "$wago_id" ]]; then
-            echo "::warning::X-Wago-ID is missing in PetBuddy2.toc. Wago upload will be skipped."
+            echo "::warning::X-Wago-ID is missing in BattlePetUtility.toc. Wago upload will be skipped."
           fi
 
           if [[ -z "$wowi_id" ]]; then
-            echo "::warning::X-WoWI-ID is missing in PetBuddy2.toc. WoWInterface upload will be skipped."
+            echo "::warning::X-WoWI-ID is missing in BattlePetUtility.toc. WoWInterface upload will be skipped."
           fi
 
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
@@ -99,7 +99,7 @@ jobs:
             norm_ver="${version#v}"
 
             if [[ "$norm_tag" != "$norm_ver" ]]; then
-              echo "::error::Tag '$tag' does not match PetBuddy2.toc version '$version'."
+              echo "::error::Tag '$tag' does not match BattlePetUtility.toc version '$version'."
               exit 1
             fi
 
@@ -109,7 +109,7 @@ jobs:
             fi
           fi
 
-      - name: 📝 Extract Latest Changelog
+      - name: ðŸ“ Extract Latest Changelog
         id: changelog
         shell: bash
         run: |
@@ -147,15 +147,15 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: 📦 Package and Release
+      - name: ðŸ“¦ Package and Release
         uses: BigWigsMods/packager@master
 
-      - name: ℹ️ Upload Notes
+      - name: â„¹ï¸ Upload Notes
         run: |
           echo "CurseForge, Wago, and WoWInterface uploads are handled by BigWigsMods/packager."
-          echo "Project IDs come from X-Curse-Project-ID, X-Wago-ID, and X-WoWI-ID in PetBuddy2.toc."
+          echo "Project IDs come from X-Curse-Project-ID, X-Wago-ID, and X-WoWI-ID in BattlePetUtility.toc."
 
-      - name: 📢 Send Discord Notification
+      - name: ðŸ“¢ Send Discord Notification
         if: success()
         shell: bash
         env:
@@ -170,55 +170,55 @@ jobs:
 
           case "$release_type" in
             "release")
-              title="PetBuddy2 ${version}"
+              title="BattlePetUtility ${version}"
               color=11866876
-              footer="RGX Mods • Stable Release"
+              footer="RGX Mods â€¢ Stable Release"
               description="A new stable release is live. Manage your pet collection with ease!"
-              release_url="https://github.com/DonnieDice/PetBuddy2/releases/tag/${version}"
-              downloads="[CurseForge](https://www.curseforge.com/wow/addons/petbuddy2) • [GitHub](${release_url})"
+              release_url="https://github.com/DonnieDice/BattlePetUtility/releases/tag/${version}"
+              downloads="[CurseForge](https://www.curseforge.com/wow/addons/BattlePetUtility) â€¢ [GitHub](${release_url})"
               channel="Release"
               ;;
             "beta")
-              title="PetBuddy2 ${version} (Beta)"
+              title="BattlePetUtility ${version} (Beta)"
               color=16744448
-              footer="RGX Mods • Beta Build"
+              footer="RGX Mods â€¢ Beta Build"
               description="Beta build available for testing."
-              release_url="https://github.com/DonnieDice/PetBuddy2/releases/tag/${version}"
-              downloads="[CurseForge](https://www.curseforge.com/wow/addons/petbuddy2) • [GitHub](${release_url})"
+              release_url="https://github.com/DonnieDice/BattlePetUtility/releases/tag/${version}"
+              downloads="[CurseForge](https://www.curseforge.com/wow/addons/BattlePetUtility) â€¢ [GitHub](${release_url})"
               channel="Beta"
               ;;
             "alpha"|"alpha-branch")
-              title="PetBuddy2 ${version} (Alpha)"
+              title="BattlePetUtility ${version} (Alpha)"
               color=9109504
-              footer="RGX Mods • Alpha Build"
+              footer="RGX Mods â€¢ Alpha Build"
               description="Alpha build available for testing."
-              release_url="https://github.com/DonnieDice/PetBuddy2/tree/alpha"
+              release_url="https://github.com/DonnieDice/BattlePetUtility/tree/alpha"
               downloads="[GitHub Alpha Branch](${release_url})"
               channel="Alpha"
               ;;
             "dev")
-              title="PetBuddy2 ${version} (Dev)"
+              title="BattlePetUtility ${version} (Dev)"
               color=3447003
-              footer="RGX Mods • Dev Build"
+              footer="RGX Mods â€¢ Dev Build"
               description="Development build from the dev branch."
-              release_url="https://github.com/DonnieDice/PetBuddy2/tree/dev"
+              release_url="https://github.com/DonnieDice/BattlePetUtility/tree/dev"
               downloads="[GitHub Dev Branch](${release_url})"
               channel="Dev"
               ;;
             *)
-              title="PetBuddy2 ${version}"
+              title="BattlePetUtility ${version}"
               color=10000000
               footer="RGX Mods"
               description="Build completed."
-              release_url="https://github.com/DonnieDice/PetBuddy2/releases"
+              release_url="https://github.com/DonnieDice/BattlePetUtility/releases"
               downloads="[GitHub](${release_url})"
               channel="Unknown"
               ;;
           esac
 
           jq -n \
-            --arg username "PB2 Releases" \
-            --arg avatar_url "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png" \
+            --arg username "BPU Releases" \
+            --arg avatar_url "https://raw.githubusercontent.com/DonnieDice/BattlePetUtility/main/media/logo.png" \
             --arg title "$title" \
             --arg url "$release_url" \
             --arg description "$description" \
@@ -251,7 +251,7 @@ jobs:
             -H "Content-Type: application/json" \
             -X POST -d @payload.json "$DISCORD_WEBHOOK"
 
-      - name: ❌ Send Failure Notification
+      - name: âŒ Send Failure Notification
         if: failure()
         run: |
           jq -n \
@@ -259,16 +259,16 @@ jobs:
             --arg run_id "${{ github.run_id }}" \
             --arg timestamp "${{ steps.version.outputs.timestamp }}" \
             '{
-              username: "PB2 Build Failed",
-              avatar_url: "https://raw.githubusercontent.com/DonnieDice/PetBuddy2/main/media/logo.png",
+              username: "BPU Build Failed",
+              avatar_url: "https://raw.githubusercontent.com/DonnieDice/BattlePetUtility/main/media/logo.png",
               embeds: [{
-                title: "❌ PetBuddy2 Build Failed",
+                title: "âŒ BattlePetUtility Build Failed",
                 description: "The release workflow encountered an error",
-                url: "https://github.com/DonnieDice/PetBuddy2/actions/runs/\($run_id)",
+                url: "https://github.com/DonnieDice/BattlePetUtility/actions/runs/\($run_id)",
                 color: 15158332,
                 fields: [
                   { "name": "Version", "value": $version, "inline": true },
-                  { "name": "Workflow", "value": "[View Logs](https://github.com/DonnieDice/PetBuddy2/actions/runs/\($run_id))", "inline": true }
+                  { "name": "Workflow", "value": "[View Logs](https://github.com/DonnieDice/BattlePetUtility/actions/runs/\($run_id))", "inline": true }
                 ],
                 footer: {
                   "text": "RGX Mods - Build System",
