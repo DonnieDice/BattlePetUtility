@@ -31,28 +31,6 @@ local function EnsurePB2TextStyles(db)
 	db.fontSize = nil
 end
 
-local function EnsureTable(tbl, key)
-	if type(tbl[key]) ~= "table" then tbl[key] = {} end
-	return tbl[key]
-end
-
-local function CopyDefaults(dst, src)
-	for key, value in pairs(src) do
-		if type(value) == "table" then
-			if type(dst[key]) ~= "table" then dst[key] = {} end
-			CopyDefaults(dst[key], value)
-		elseif dst[key] == nil then
-			dst[key] = value
-		end
-	end
-end
-
-local function GetCharacterKey()
-	local characterName = UnitName("player") or "Unknown"
-	local realmName = GetRealmName() or "Unknown"
-	return characterName .. " - " .. realmName
-end
-
 Textures:RegisterBars("PetBuddy2", {
 	[DEFAULT_STATUSBAR_NAME] = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]],
 	["Glamour"] = [[Interface\AddOns\PetBuddy2\media\renascensionl.tga]],
@@ -72,123 +50,121 @@ E.AUTO_SUMMON_MODE = {
 }
 
 function addon:InitializeDatabase()
+	-- Migrate old flat PetBuddyDB to NewDatabase structure
+	if type(PetBuddyDB) == "table" and PetBuddyDB.global and not PetBuddyDB.profiles then
+		local oldGlobal = PetBuddyDB.global or {}
+		local oldChar = PetBuddyDB.char or {}
+
+		-- Run the v2.3.7 one-time migration before moving to profiles
+		if oldGlobal._pb2DefaultInit_v237 ~= true then
+			if (tonumber(oldGlobal.PetUtilityMenuState) or 0) == 1 and oldGlobal.ShowPetLoadouts == false then
+				oldGlobal.PetUtilityMenuState = 3
+				oldGlobal.ShowPetLoadouts = true
+				oldGlobal.ShowPetItems = true
+			end
+			if oldGlobal.ShowZoneTracker == nil then
+				oldGlobal.ShowZoneTracker = true
+			end
+			if oldGlobal.ShowZoneTrackerPetList == nil then
+				oldGlobal.ShowZoneTrackerPetList = true
+			end
+			oldGlobal._pb2DefaultInit_v237 = true
+		end
+
+		-- Rebuild as NewDatabase-compatible structure
+		wipe(PetBuddyDB)
+		PetBuddyDB.profiles = { Default = oldGlobal }
+		PetBuddyDB.global = {}
+		PetBuddyDB.char = oldChar
+		PetBuddyDB.profiles.Default.currentProfile = "Default"
+	end
+
 	local defaults = {
+		Visible = true,
+		Position = {
+			Point = "CENTER",
+			RelativePoint = "CENTER",
+			x = 0,
+			y = 0,
+		},
+
+		barTexture = "RenAscensionL",
+		titleText = BuildDefaultTextStyle(12, "OUTLINE", {
+			shadowColor = "shadow",
+			shadowOffset = { x = 1, y = -1 },
+		}),
+		normalText = BuildDefaultTextStyle(10, ""),
+		smallText = BuildDefaultTextStyle(9, ""),
+
+		SavedLoadouts = {},
+
+		WindowScale = 1.0,
+
+		IsFrameLocked = false,
+		IsMinimized = false,
+		HideMainGUI = false,
+
+		PetBattleVisiblityMode = E.VISIBILITY_MODE.SHOW,
+
+		HideInCombat = true,
+
+		ShowPetTooltips = true,
+		ShowPetCharms = true,
+		ShowZoneTracker = true,
+		ShowZoneTrackerPetList = true,
+
+		MinimapIcon = {
+			enabled = true,
+			angle = 215,
+		},
+
+		PetStatsText = {
+			Enabled = true,
+			ShowHealthPercentage = false,
+			ShowExperiencePercentage = true,
+			RemainingExperience = true,
+		},
+
+		PetUtilityMenuState = 3,
+
+		ShowPepe = true,
+		PepeOnLeft = false,
+		ShowWelcomeMessage = true,
+
+		ShowPetItems = true,
+		ShowPetLoadouts = true,
+		PetItemCategories = {
+			heal_spell = true,
+			battle_bandage = true,
+			battle_stones = false,
+			pet_consumables = false,
+			pet_rewards = false,
+			pet_currencies = false,
+		},
+
+		AutoHealPets = true,
+		AutoHealPetsFee = true,
+
+		AutoSummonPet = true,
+		AutoSummonMode = E.AUTO_SUMMON_MODE.LAST_PET,
+
+		Broker = {
+			ShowWoundedPets = true,
+			ShowPetCharms = true,
+		},
+	}
+
+	self.db = RGX:NewDatabase("PetBuddyDB", defaults, {
 		char = {
 			AutoSummonLastPetID = nil,
 			LastActiveTeam = nil,
 			LastSavedMapID = nil,
 		},
+		profileIsGlobal = true,
+	})
 
-		global = {
-			Visible = true,
-			Position = {
-				Point = "CENTER",
-				RelativePoint = "CENTER",
-				x = 0,
-				y = 0,
-			},
-
-			barTexture = "RenAscensionL",
-			titleText = BuildDefaultTextStyle(12, "OUTLINE", {
-				shadowColor = "shadow",
-				shadowOffset = { x = 1, y = -1 },
-			}),
-			normalText = BuildDefaultTextStyle(10, ""),
-			smallText = BuildDefaultTextStyle(9, ""),
-
-			SavedLoadouts = {},
-
-			WindowScale = 1.0,
-
-			IsFrameLocked = false,
-			IsMinimized = false,
-			HideMainGUI = false,
-
-			PetBattleVisiblityMode = E.VISIBILITY_MODE.SHOW,
-
-			HideInCombat = true,
-
-			ShowPetTooltips = true,
-			ShowPetCharms = true,
-			ShowZoneTracker = true,
-			ShowZoneTrackerPetList = true,
-
-			MinimapIcon = {
-				enabled = true,
-				angle = 215,
-			},
-
-			PetStatsText = {
-				Enabled = true,
-				ShowHealthPercentage = false,
-				ShowExperiencePercentage = true,
-				RemainingExperience = true,
-			},
-
-			PetUtilityMenuState = 3,
-
-			ShowPepe = true,
-			PepeOnLeft = false,
-			ShowWelcomeMessage = true,
-
-			ShowPetItems = true,
-			ShowPetLoadouts = true,
-			PetItemCategories = {
-				heal_spell = true,
-				battle_bandage = true,
-				battle_stones = false,
-				pet_consumables = false,
-				pet_rewards = false,
-				pet_currencies = false,
-			},
-
-			AutoHealPets = true,
-			AutoHealPetsFee = true,
-
-			AutoSummonPet = true,
-			AutoSummonMode = E.AUTO_SUMMON_MODE.LAST_PET,
-
-			Broker = {
-				ShowWoundedPets = true,
-				ShowPetCharms = true,
-			},
-		}
-	}
-
-	PetBuddyDB = type(PetBuddyDB) == "table" and PetBuddyDB or {}
-	local saved = PetBuddyDB
-
-	local globalData = EnsureTable(saved, "global")
-	local charRoot = EnsureTable(saved, "char")
-	local charKey = GetCharacterKey()
-	if type(charRoot[charKey]) ~= "table" then
-		charRoot[charKey] = {}
-	end
-
-	CopyDefaults(globalData, defaults.global)
-	CopyDefaults(charRoot[charKey], defaults.char)
-
-	if globalData._pb2DefaultInit_v237 ~= true then
-		if (tonumber(globalData.PetUtilityMenuState) or 0) == 1 and globalData.ShowPetLoadouts == false then
-			globalData.PetUtilityMenuState = 3
-			globalData.ShowPetLoadouts = true
-			globalData.ShowPetItems = true
-		end
-		if globalData.ShowZoneTracker == nil then
-			globalData.ShowZoneTracker = true
-		end
-		if globalData.ShowZoneTrackerPetList == nil then
-			globalData.ShowZoneTrackerPetList = true
-		end
-		globalData._pb2DefaultInit_v237 = true
-	end
-
-	self.db = {
-		global = globalData,
-		char = charRoot[charKey],
-		_saved = saved,
-	}
-
+	-- db.global returns the active profile (profileIsGlobal=true), so
+	-- EnsurePB2TextStyles reads/writes through the proxy to the profile.
 	EnsurePB2TextStyles(self.db.global)
 
 	if type(addon.InitializePetItemCategoryDefaults) == "function" then
