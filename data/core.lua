@@ -1943,31 +1943,21 @@ function addon:HandleAutoSummonTrigger(event, ...)
 	end
 end
 
-local function UnitHasAuraSpellID(unit, spell_id, filter)
+local function PlayerHasAuraSpellID(spell_id)
 	if(type(spell_id) ~= "number") then
 		return false;
 	end
 
-	if(not C_UnitAuras or type(C_UnitAuras.GetAuraDataByIndex) ~= "function") then
+	if(not C_UnitAuras or type(C_UnitAuras.GetPlayerAuraBySpellID) ~= "function") then
 		return false;
 	end
 
-	for index = 1, 40 do
-		local auraData = C_UnitAuras.GetAuraDataByIndex(unit, index, filter);
-		if(not auraData) then
-			return false;
-		end
-
-		if(auraData.spellId == spell_id) then
-			return true;
-		end
-	end
-
-	return false;
+	local ok, auraData = pcall(C_UnitAuras.GetPlayerAuraBySpellID, spell_id);
+	return ok and auraData ~= nil;
 end
 
 function addon:IsPlayerEating()
-	return UnitHasAuraSpellID("player", 33264) or UnitHasAuraSpellID("player", 160599);
+	return PlayerHasAuraSpellID(33264) or PlayerHasAuraSpellID(160599);
 end
 
 local WINTERSPRING_CUB_ID = 68646;

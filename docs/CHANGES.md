@@ -1,3 +1,9 @@
+# v2.3.20 - 2026-06-30
+
+## Fixes
+
+- Fixed tainted aura scan — eating/combat helper now uses `C_UnitAuras.GetPlayerAuraBySpellID` instead of indexing aura slots, avoiding the secret `spellId` field that triggers hardware-event taint in combat.
+
 # v2.3.19 - 2026-06-30
 
 ## Changes
