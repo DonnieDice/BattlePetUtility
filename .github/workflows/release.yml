@@ -104,8 +104,7 @@ jobs:
             fi
 
             if [[ -n "$curse_id" && -z "${CF_API_KEY:-}" ]]; then
-              echo "::error::CF_API_KEY secret is missing but X-Curse-Project-ID is set. CurseForge upload cannot run."
-              exit 1
+              echo "::warning::CF_API_KEY secret is missing but X-Curse-Project-ID is set. CurseForge upload will be skipped by packager."
             fi
           fi
 
