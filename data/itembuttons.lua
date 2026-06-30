@@ -211,13 +211,18 @@ local ITEM_BUTTON_CATEGORIES = {
 local MAX_ITEM_BUTTONS = 6;
 local itemButtonEventBridgeRegistered = false;
 
+-- Set when a secure-attribute write is refused during combat lockdown so the
+-- buttons can be rebuilt deterministically on PLAYER_REGEN_ENABLED. Without
+-- this, deferred buttons would only recover incidentally on the next bag update.
+local pendingItemButtonAttributeRefresh = false;
+
 local function SafeSetButtonAttribute(button, key, value)
 	if(not button or type(button.SetAttribute) ~= "function") then
 		return false;
 	end
 
 	if(InCombatLockdown and InCombatLockdown()) then
-		button._bpuAttributeRefreshPending = true;
+		pendingItemButtonAttributeRefresh = true;
 		return false;
 	end
 
@@ -243,6 +248,16 @@ local function ClearButtonSecureAction(button)
 end
 
 local function DispatchItemButtonEvent(event, ...)
+	-- Combat ended: if any secure-attribute write was deferred during lockdown,
+	-- rebuild the buttons now so their secure actions are reapplied out of combat.
+	if(event == "PLAYER_REGEN_ENABLED") then
+		if(pendingItemButtonAttributeRefresh) then
+			pendingItemButtonAttributeRefresh = false;
+			addon:UpdateItemButtons();
+		end
+		return;
+	end
+
 	if(event == "BAG_UPDATE_DELAYED" and BattlePetUtilityFrameButtons and BattlePetUtilityFrameButtons:IsShown()) then
 		addon:UpdateItemButtons();
 	end
@@ -270,6 +285,7 @@ local function EnsureItemButtonEventBridge()
 	RGX:RegisterEvent("SPELL_UPDATE_COOLDOWN", DispatchItemButtonEvent, "BPU_ItemButton_SPELL_UPDATE_COOLDOWN");
 	RGX:RegisterEvent("BAG_UPDATE_DELAYED", DispatchItemButtonEvent, "BPU_ItemButton_BAG_UPDATE_DELAYED");
 	RGX:RegisterEvent("BAG_UPDATE_COOLDOWN", DispatchItemButtonEvent, "BPU_ItemButton_BAG_UPDATE_COOLDOWN");
+	RGX:RegisterEvent("PLAYER_REGEN_ENABLED", DispatchItemButtonEvent, "BPU_ItemButton_PLAYER_REGEN_ENABLED");
 	itemButtonEventBridgeRegistered = true;
 end
 
