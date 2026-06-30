@@ -9,6 +9,22 @@ on:
     branches:
       - alpha
       - dev
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: Release channel to publish/notify
+        required: true
+        default: release
+        type: choice
+        options:
+          - release
+          - beta
+          - alpha
+      tag_name:
+        description: Tag name to use in release links and notifications
+        required: false
+        default: v2.3.20
+        type: string
 
 env:
   CF_API_KEY: ${{ secrets.CF_API_KEY }}
@@ -24,44 +40,48 @@ jobs:
       contents: write
 
     steps:
-      - name: ðŸ› ï¸ Clone Project
+      - name: Clone Project
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ðŸ§° Install jq
+      - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: ðŸ§‘â€ðŸ”§ Configure Git User
+      - name: Configure Git User
         run: |
           git config --global user.name "donniedice"
           git config --global user.email "donniedice@protonmail.com"
 
-      - name: ðŸ§­ Determine Release Type
+      - name: Determine Release Type
         id: release_type
         run: |
-          case "${{ github.ref }}" in
-            refs/tags/*)
-              if [[ "${{ github.ref }}" == *"beta"* ]]; then
-                echo "type=beta" >> $GITHUB_OUTPUT
-              elif [[ "${{ github.ref }}" == *"alpha"* ]]; then
-                echo "type=alpha" >> $GITHUB_OUTPUT
-              else
-                echo "type=release" >> $GITHUB_OUTPUT
-              fi
-              ;;
-            refs/heads/dev)
-              echo "type=dev" >> $GITHUB_OUTPUT
-              ;;
-            refs/heads/alpha)
-              echo "type=alpha-branch" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              echo "type=unknown" >> $GITHUB_OUTPUT
-              ;;
-          esac
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "type=${{ inputs.release_type }}" >> $GITHUB_OUTPUT
+          else
+            case "${{ github.ref }}" in
+              refs/tags/*)
+                if [[ "${{ github.ref }}" == *"beta"* ]]; then
+                  echo "type=beta" >> $GITHUB_OUTPUT
+                elif [[ "${{ github.ref }}" == *"alpha"* ]]; then
+                  echo "type=alpha" >> $GITHUB_OUTPUT
+                else
+                  echo "type=release" >> $GITHUB_OUTPUT
+                fi
+                ;;
+              refs/heads/dev)
+                echo "type=dev" >> $GITHUB_OUTPUT
+                ;;
+              refs/heads/alpha)
+                echo "type=alpha-branch" >> $GITHUB_OUTPUT
+                ;;
+              *)
+                echo "type=unknown" >> $GITHUB_OUTPUT
+                ;;
+            esac
+          fi
 
-      - name: ðŸ“¦ Extract Version from TOC
+      - name: Extract Version from TOC
         id: version
         run: |
           version=$(grep -oP '^## Version: \K(.*)' BattlePetUtility.toc)
@@ -82,15 +102,15 @@ jobs:
           echo "  X-WoWI-ID: ${wowi_id:-missing}"
 
           if [[ -z "$curse_id" ]]; then
-            echo "::warning::X-Curse-Project-ID is missing in BattlePetUtility.toc. CurseForge upload will be skipped."
+            echo "::warning::X-Curse-Project-ID is missing. CurseForge upload will be skipped."
           fi
 
           if [[ -z "$wago_id" ]]; then
-            echo "::warning::X-Wago-ID is missing in BattlePetUtility.toc. Wago upload will be skipped."
+            echo "::warning::X-Wago-ID is missing. Wago upload will be skipped."
           fi
 
           if [[ -z "$wowi_id" ]]; then
-            echo "::warning::X-WoWI-ID is missing in BattlePetUtility.toc. WoWInterface upload will be skipped."
+            echo "::warning::X-WoWI-ID is missing. WoWInterface upload will be skipped."
           fi
 
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
@@ -108,7 +128,7 @@ jobs:
             fi
           fi
 
-      - name: ðŸ“ Extract Latest Changelog
+      - name: Extract Latest Changelog
         id: changelog
         shell: bash
         run: |
@@ -146,15 +166,15 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: ðŸ“¦ Package and Release
+      - name: Package and Release
         uses: BigWigsMods/packager@master
 
-      - name: â„¹ï¸ Upload Notes
+      - name: Upload Notes
         run: |
           echo "CurseForge, Wago, and WoWInterface uploads are handled by BigWigsMods/packager."
           echo "Project IDs come from X-Curse-Project-ID, X-Wago-ID, and X-WoWI-ID in BattlePetUtility.toc."
 
-      - name: ðŸ“¢ Send Discord Notification
+      - name: Send Discord Notification
         if: success()
         shell: bash
         env:
@@ -171,25 +191,25 @@ jobs:
             "release")
               title="BattlePetUtility ${version}"
               color=11866876
-              footer="RGX Mods â€¢ Stable Release"
+              footer="RGX Mods - Stable Release"
               description="A new stable release is live. Manage your pet collection with ease!"
               release_url="https://github.com/DonnieDice/BattlePetUtility/releases/tag/${version}"
-              downloads="[CurseForge](https://www.curseforge.com/wow/addons/BattlePetUtility) â€¢ [GitHub](${release_url})"
+              downloads="[CurseForge](https://www.curseforge.com/wow/addons/BattlePetUtility) - [GitHub](${release_url})"
               channel="Release"
               ;;
             "beta")
               title="BattlePetUtility ${version} (Beta)"
               color=16744448
-              footer="RGX Mods â€¢ Beta Build"
+              footer="RGX Mods - Beta Build"
               description="Beta build available for testing."
               release_url="https://github.com/DonnieDice/BattlePetUtility/releases/tag/${version}"
-              downloads="[CurseForge](https://www.curseforge.com/wow/addons/BattlePetUtility) â€¢ [GitHub](${release_url})"
+              downloads="[CurseForge](https://www.curseforge.com/wow/addons/BattlePetUtility) - [GitHub](${release_url})"
               channel="Beta"
               ;;
             "alpha"|"alpha-branch")
               title="BattlePetUtility ${version} (Alpha)"
               color=9109504
-              footer="RGX Mods â€¢ Alpha Build"
+              footer="RGX Mods - Alpha Build"
               description="Alpha build available for testing."
               release_url="https://github.com/DonnieDice/BattlePetUtility/tree/alpha"
               downloads="[GitHub Alpha Branch](${release_url})"
@@ -198,7 +218,7 @@ jobs:
             "dev")
               title="BattlePetUtility ${version} (Dev)"
               color=3447003
-              footer="RGX Mods â€¢ Dev Build"
+              footer="RGX Mods - Dev Build"
               description="Development build from the dev branch."
               release_url="https://github.com/DonnieDice/BattlePetUtility/tree/dev"
               downloads="[GitHub Dev Branch](${release_url})"
@@ -237,7 +257,7 @@ jobs:
                 description: $description,
                 color: $color,
                 fields: [
-                  { name: "What'\''s New", value: $summary, inline: false },
+                  { name: "Whats New", value: $summary, inline: false },
                   { name: "Downloads", value: $downloads, inline: false },
                   { name: "Channel", value: $channel, inline: true }
                 ],
@@ -250,30 +270,33 @@ jobs:
             -H "Content-Type: application/json" \
             -X POST -d @payload.json "$DISCORD_WEBHOOK"
 
-      - name: âŒ Send Failure Notification
+      - name: Send Failure Notification
         if: failure()
         run: |
+          version="${{ steps.version.outputs.version }}"
+          run_id="${{ github.run_id }}"
+          timestamp="${{ steps.version.outputs.timestamp }}"
           jq -n \
-            --arg version "${{ steps.version.outputs.version || 'Unknown' }}" \
-            --arg run_id "${{ github.run_id }}" \
-            --arg timestamp "${{ steps.version.outputs.timestamp }}" \
+            --arg version "${version:-Unknown}" \
+            --arg run_id "$run_id" \
+            --arg timestamp "$timestamp" \
             '{
               username: "BPU Build Failed",
               avatar_url: "https://raw.githubusercontent.com/DonnieDice/BattlePetUtility/main/media/logo.png",
               embeds: [{
-                title: "âŒ BattlePetUtility Build Failed",
+                title: "BattlePetUtility Build Failed",
                 description: "The release workflow encountered an error",
-                url: "https://github.com/DonnieDice/BattlePetUtility/actions/runs/\($run_id)",
+                url: ("https://github.com/DonnieDice/BattlePetUtility/actions/runs/" + $run_id),
                 color: 15158332,
                 fields: [
-                  { "name": "Version", "value": $version, "inline": true },
-                  { "name": "Workflow", "value": "[View Logs](https://github.com/DonnieDice/BattlePetUtility/actions/runs/\($run_id))", "inline": true }
+                  { name: "Version", value: $version, inline: true },
+                  { name: "Workflow", value: ("https://github.com/DonnieDice/BattlePetUtility/actions/runs/" + $run_id), inline: true }
                 ],
                 footer: {
-                  "text": "RGX Mods - Build System",
-                  "icon_url": "https://raw.githubusercontent.com/donniedice/SimpleQuestPlates/main/media/kiwi.gif"
+                  text: "RGX Mods - Build System",
+                  icon_url: "https://raw.githubusercontent.com/donniedice/SimpleQuestPlates/main/media/kiwi.gif"
                 },
                 timestamp: $timestamp
               }]
             }' > payload.json
-          curl -H "Content-Type: application/json" -X POST -d @payload.json $DISCORD_WEBHOOK
+          curl -H "Content-Type: application/json" -X POST -d @payload.json "$DISCORD_WEBHOOK"
