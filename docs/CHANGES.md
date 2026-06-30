@@ -1,3 +1,18 @@
+# v2.3.19 - 2026-06-30
+
+## Changes
+
+- Updated Battle Pet Utility! for WoW Retail 12.0.7 with RGX-Framework dependency support.
+- Completed PetBuddy2 to Battle Pet Utility! naming/branding cleanup across the live addon files.
+- Restored HUD icon and TGA asset paths for the title, minimap, and loadout controls.
+
+## Fixes
+
+- Fixed broken HUD frame/icon rendering after the rename.
+- Fixed BPU database initialization paths that could leave `addon.db` unavailable to frame handlers.
+- Fixed tainted aura checks by avoiding secret aura-name comparisons in the eating/combat helper path.
+- Fixed combat lockdown blocked action from zone tracker frame height updates.
+
 # v2.3.18 - 2026-05-01
 
 ## Changes

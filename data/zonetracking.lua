@@ -657,7 +657,7 @@ local function ResolveZoneProgress()
 		local mapInfo = C_Map.GetMapInfo(mapID);
 		local parentMapID = mapInfo and mapInfo.parentMapID;
 		if(not parentMapID or parentMapID == 0 or parentMapID == mapID) then
-			break;
+			break
 		end
 		mapID = parentMapID;
 	end
@@ -867,6 +867,11 @@ function addon:RefreshZoneTracker()
 	end
 
 	local zoneHeight = 30 + (visibleLines > 0 and (visibleLines * 16 + 2) or 0);
+	if(InCombatLockdown and InCombatLockdown()) then
+		frame:Show();
+		return;
+	end
+
 	frame:SetHeight(zoneHeight);
 
 	-- Update main frame height to accommodate zone tracker expansion
@@ -902,8 +907,8 @@ function BattlePetUtility_ZoneTrackerMixin:OnEnter()
 	local snapshot = self.snapshot or addon:GetZoneTrackerSnapshot();
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 	GameTooltip:ClearLines();
-	local logoPath = addon.LOGO_TEXTURE or "Interface\\AddOns\\BattlePetUtility\\Media\\logo.tga";
-	GameTooltip:AddLine("|T" .. logoPath .. ":18:18:0:0|t |cffb512fcP|r|cffffffffet|r|cffb512fcB|r|cffffffffuddy|r|cffb512fc2|r  |cffb07fff" .. ZONE_TRACKER_TITLE .. "|r");
+	local logoPath = addon.LOGO_TEXTURE or "Interface\\AddOns\\BattlePetUtility\\media\\logo.tga";
+	GameTooltip:AddLine("|T" .. logoPath .. ":18:18:0:0|t |cffffffffBattle Pet Utility|r|cffb512fc!|r  |cffb07fff" .. ZONE_TRACKER_TITLE .. "|r");
 
 	if(snapshot.state == "ready") then
 		GameTooltip:AddDoubleLine("Zone", snapshot.title or "-", 1, 1, 1, 0.9, 0.9, 0.9);

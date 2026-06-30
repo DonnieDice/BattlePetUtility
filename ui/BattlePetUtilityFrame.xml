@@ -22,7 +22,7 @@
 			<Anchor point="CENTER" x="0" y="0"/>
 		</Anchors>
 		<Frames>
-			<Frame name="$parentTitle" enableMouse="true">
+			<Frame name="$parentTitle" inherits="BackdropTemplate" enableMouse="true">
 				<Size>
 					<AbsDimension x="208" y="24"/>
 				</Size>
@@ -31,7 +31,7 @@
 				</Anchors>
 				<Layers>
 					<Layer level="ARTWORK" textureSubLevel="2">
-						<Texture name="$parentLogo" parentKey="logo" file="Interface\\AddOns\\BattlePetUtility\media\logo.tga">
+						<Texture name="$parentLogo" parentKey="logo" file="Interface\AddOns\BattlePetUtility\media\logo.tga">
 							<Size x="20" y="20"/>
 							<Anchors>
 								<Anchor point="LEFT" x="4" y="0"/>
@@ -39,7 +39,7 @@
 						</Texture>
 					</Layer>
 					<Layer level="ARTWORK" textureSubLevel="1">
-						<FontString name="$parentTitleText" inherits="BattlePetUtilityFontNormal" justifyH="LEFT" justifyV="CENTER" parentKey="titleText" text="|cffb512fcBattle Pet Utility|r">
+						<FontString name="$parentTitleText" inherits="BattlePetUtilityFontNormal" justifyH="LEFT" justifyV="CENTER" parentKey="titleText" text="|cffb512fcB|r|cffffffffattle |cffb512fcP|r|cffffffffet |cffb512fcU|r|cfffffffftility|r|cffb512fc!|r">
 							<Size x="136" y="20"/>
 							<Anchors>
 								<Anchor point="LEFT" relativeTo="$parent" x="28" y="0"/>
@@ -48,6 +48,24 @@
 					</Layer>
 				</Layers>
 				<Scripts>
+					<OnLoad>
+						if(self.SetBackdrop) then
+							self:SetBackdrop({
+								bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+								edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+								tile = true,
+								tileSize = 16,
+								edgeSize = 10,
+								insets = { left = 3, right = 3, top = 3, bottom = 3 },
+							});
+						end
+						if(self.SetBackdropColor) then
+							self:SetBackdropColor(0.02, 0.02, 0.035, 0.78);
+						end
+						if(self.SetBackdropBorderColor) then
+							self:SetBackdropBorderColor(0.45, 0.18, 0.85, 0.95);
+						end
+					</OnLoad>
 					<OnMouseDown>
 						BattlePetUtilityFrameTitle_OnMouseDown(self, button);
 					</OnMouseDown>

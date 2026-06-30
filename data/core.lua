@@ -10,7 +10,10 @@ local ADDON_NAME, addon = ...;
 _G[ADDON_NAME] = addon;
 
 addon.E = addon.E or {};
-addon.ADDON_TITLE = "BattlePetUtility";
+addon.ADDON_TITLE = "Battle Pet Utility!";
+addon.ADDON_TITLE_COMPACT = "BattlePetUtility!";
+addon.ADDON_TITLE_COLORED = "|cffb512fcB|r|cffffffffattle |cffb512fcP|r|cffffffffet |cffb512fcU|r|cfffffffftility|r|cffb512fc!|r";
+addon.ADDON_TITLE_COMPACT_COLORED = "|cffb512fcB|r|cffffffffattle|r|cffb512fcP|r|cffffffffet|r|cffb512fcU|r|cfffffffftility|r|cffb512fc!|r";
 local E = addon.E;
 local unpackFunc = unpack or table.unpack;
 local RGX = assert(_G.RGXFramework, "BattlePetUtility: RGX-Framework not loaded");
@@ -215,10 +218,11 @@ function addon:CancelAllTimers()
 	end
 end
 
-addon.CHAT_PREFIX = "|TInterface\\AddOns\\BattlePetUtility\\Media\\logo.tga:16:16:0:0|t - |cffffffff[|r|cffb512fcBPU|r|cffffffff]|r ";
-addon.CHAT_DEBUG_PREFIX = "|TInterface\\AddOns\\BattlePetUtility\\Media\\logo.tga:16:16:0:0|t - |cffffffff[|r|cffb512fcBPU|r|cffffffff]|r |cff808080[DEBUG]|r ";
-addon.LOGO_TEXTURE = "Interface\\AddOns\\BattlePetUtility\\Media\\logo.tga";
-addon.HEADER_TITLE_TEXT = "|cffb512fcBattle Pet Utility|r";
+addon.MEDIA_PATH = "Interface\\AddOns\\BattlePetUtility\\media\\";
+addon.LOGO_TEXTURE = addon.MEDIA_PATH .. "logo.tga";
+addon.CHAT_PREFIX = "|T" .. addon.LOGO_TEXTURE .. ":16:16:0:0|t - |cffffffff[|r|cffb512fcBPU|r|cffffffff]|r ";
+addon.CHAT_DEBUG_PREFIX = addon.CHAT_PREFIX .. "|cff808080[DEBUG]|r ";
+addon.HEADER_TITLE_TEXT = "|cffb512fcB|r|cffffffffattle |cffb512fcP|r|cffffffffet |cffb512fcU|r|cfffffffftility|r|cffb512fc!|r";
 
 local function GetAddonVersion()
 	if(C_AddOns and type(C_AddOns.GetAddOnMetadata) == "function") then
@@ -267,8 +271,8 @@ function addon:ToggleWelcomeMessage()
 end
 
 function addon:PrintHelp()
-	self:PrintMessage("|cffffff00BattlePetUtility Commands:|r");
-	self:PrintMessage(" |cffb07fff/BPU|r - Toggle BattlePetUtility");
+	self:PrintMessage("|cffffff00Battle Pet Utility|r|cffb512fc!|r |cffffff00Commands:|r");
+	self:PrintMessage(" |cffb07fff/BPU|r - Toggle Battle Pet Utility|cffb512fc!|r");
 	self:PrintMessage(" |cffb07fff/BPU help|r - Show command help");
 	self:PrintMessage(" |cffb07fff/BPU welcome|r - Toggle login welcome message");
 	self:PrintMessage(" |cffb07fff/BPU version|r - Show current version");
@@ -541,7 +545,6 @@ function addon:RunStartupRefresh()
 		return false;
 	end
 
-	self:RegisterRuntimeUpdateEvents();
 	if(type(self.RestoreSavedSettings) == "function") then
 		self:RestoreSavedSettings();
 	else
@@ -803,7 +806,7 @@ function BattlePetUtilityFrame_OnMouseWheel(self, delta)
 	for i, state in ipairs(cycle) do
 		if(state == menuState) then
 			cycleIndex = i;
-			break;
+			break
 		end
 	end
 
@@ -1081,7 +1084,7 @@ function addon:RestoreLastTeam()
       local speciesID = C_PetJournal.GetPetInfoByPetID(data.petID);
       if(not speciesID) then
         canRestore = false;
-        break;
+        break
       end
     end
   end
@@ -1119,7 +1122,7 @@ function addon:ShouldRestoreLastTeam()
     local petID, _, _, _, locked = C_PetJournal.GetPetLoadOutInfo(slotIndex);
     if(petID and not locked) then
       hasCurrentPets = true;
-      break;
+      break
     end
   end
 
@@ -1331,6 +1334,7 @@ end
 function BattlePetUtilityFrame_StartMoving(button)
 	if(button and button ~= "LeftButton") then return end
 
+	if(not addon.db or not addon.db.global) then return end
 	if(addon.db.global.IsFrameLocked) then return end
 	
 	CloseMenus();
@@ -1684,6 +1688,7 @@ function BattlePetUtilityFrameDragButton_OnReceiveDrag(self)
 end
 
 function BattlePetUtilityFrameDragButton_OnEnter(self)
+	if(not addon.db or not addon.db.global) then return end
 	if(not addon.db.global.ShowPetTooltips) then return end
 	
 	-- local slotIndex = self:GetParent():GetID();
@@ -1778,10 +1783,10 @@ function BattlePetUtilityFrameMinimizeButton_OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_LEFT");
 	GameTooltip:ClearLines();
 	if(addon:IsFrameMinimized()) then
-		GameTooltip:AddLine("Restore BattlePetUtility");
+		GameTooltip:AddLine("Restore Battle Pet Utility|cffb512fc!|r");
 		GameTooltip:AddLine("Show the full battle pet HUD.", 0.9, 0.9, 0.9, true);
 	else
-		GameTooltip:AddLine("Minimize BattlePetUtility");
+		GameTooltip:AddLine("Minimize Battle Pet Utility|cffb512fc!|r");
 		GameTooltip:AddLine("Collapse to the title bar.", 0.9, 0.9, 0.9, true);
 	end
 	GameTooltip:Show();
@@ -1938,51 +1943,31 @@ function addon:HandleAutoSummonTrigger(event, ...)
 	end
 end
 
-local function UnitAuraByNameOrId(unit, aura_name_or_id, filter)
-	if(not aura_name_or_id) then
-		return nil;
+local function UnitHasAuraSpellID(unit, spell_id, filter)
+	if(type(spell_id) ~= "number") then
+		return false;
 	end
 
-	if(type(UnitAura) == "function") then
-		for index = 1, 40 do
-			local name, icon, count, debuffType, duration, expirationTime, sourceUnit, isStealable, nameplateShowPersonal, spell_id = UnitAura(unit, index, filter);
-			if(not name) then
-				break;
-			end
+	if(not C_UnitAuras or type(C_UnitAuras.GetAuraDataByIndex) ~= "function") then
+		return false;
+	end
 
-			if(name == aura_name_or_id or spell_id == aura_name_or_id) then
-				return name, icon, count, debuffType, duration, expirationTime, sourceUnit, isStealable, nameplateShowPersonal, spell_id;
-			end
+	for index = 1, 40 do
+		local auraData = C_UnitAuras.GetAuraDataByIndex(unit, index, filter);
+		if(not auraData) then
+			return false;
+		end
+
+		if(auraData.spellId == spell_id) then
+			return true;
 		end
 	end
 
-	if(C_UnitAuras and type(C_UnitAuras.GetAuraDataByIndex) == "function") then
-		for index = 1, 40 do
-			local auraData = C_UnitAuras.GetAuraDataByIndex(unit, index, filter);
-			if(not auraData) then
-				break;
-			end
-
-			local name = auraData.name;
-			local spell_id = auraData.spellId;
-			if(name == aura_name_or_id or spell_id == aura_name_or_id) then
-				return name, auraData.icon or auraData.iconFileID, auraData.applications or auraData.charges, auraData.dispelName, auraData.duration, auraData.expirationTime, auraData.sourceUnit, auraData.isStealable, auraData.nameplateShowPersonal, spell_id;
-			end
-		end
-	end
-
-	if(AuraUtil and type(AuraUtil.FindAuraByName) == "function" and type(aura_name_or_id) == "string") then
-		return AuraUtil.FindAuraByName(aura_name_or_id, unit, filter);
-	end
-
-	return nil;
+	return false;
 end
 
 function addon:IsPlayerEating()
-	-- Find localized name for the food/drink buff, there are too many buff ids to manually check
-	local localizedFood = GetSpellInfoCompat(33264);
-	local localizedDrink = GetSpellInfoCompat(160599);
-	return UnitAuraByNameOrId("player", localizedFood) ~= nil or UnitAuraByNameOrId("player", localizedDrink) ~= nil;
+	return UnitHasAuraSpellID("player", 33264) or UnitHasAuraSpellID("player", 160599);
 end
 
 local WINTERSPRING_CUB_ID = 68646;
@@ -2110,7 +2095,7 @@ end
 
 function ToggleBattlePetUtility()
 	if(InCombatLockdown()) then
-		DEFAULT_CHAT_FRAME:AddMessage("|cffcc22BattlePetUtility:|r Cannot toggle in combat");
+		DEFAULT_CHAT_FRAME:AddMessage("|cffffffffBattle Pet Utility|r|cffb512fc!|r |cffcc22Cannot toggle in combat|r");
 		return;
 	end
 	
@@ -2197,6 +2182,39 @@ local function EnableAddon()
 		BattlePetUtilityFrameButtons_OnShow(BattlePetUtilityFrameButtons);
 	end
 end
+
+local function RegisterLoadTimeEvents()
+	if(addon._loadTimeEventsRegistered) then return end
+	addon._loadTimeEventsRegistered = true;
+
+	addon:RegisterEvent("PET_BATTLE_OPENING_START");
+	addon:RegisterEvent("PET_BATTLE_CLOSE");
+	addon:RegisterRuntimeUpdateEvents();
+	addon:RegisterEvent("PLAYER_ENTERING_WORLD");
+	addon:RegisterEvent("PLAYER_ALIVE", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("PLAYER_UNGHOST", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("PLAYER_CONTROL_GAINED", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("UNIT_EXITED_VEHICLE", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("UNIT_AURA", addon.HandleAutoSummonTrigger);
+	addon:RegisterEvent("SPELL_UPDATE_COOLDOWN");
+	addon:RegisterEvent("CURSOR_CHANGED", addon.CURSOR_UPDATE);
+	addon:RegisterEvent("PLAYER_REGEN_DISABLED");
+	addon:RegisterEvent("PLAYER_REGEN_ENABLED");
+	addon:RegisterEvent("GOSSIP_SHOW");
+	addon:RegisterEvent("GOSSIP_CLOSED");
+	addon:RegisterEvent("GOSSIP_CONFIRM");
+	addon:RegisterEvent("BARBER_SHOP_OPEN");
+	addon:RegisterEvent("BARBER_SHOP_CLOSE");
+	addon:RegisterEvent("ZONE_CHANGED_NEW_AREA");
+	addon:RegisterEvent("ZONE_CHANGED");
+	addon:RegisterEvent("ZONE_CHANGED_INDOORS");
+	addon:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
+	addon:RegisterEvent("BAG_UPDATE_DELAYED", "RefreshPetCharms");
+	addon:RegisterEvent("CURRENCY_DISPLAY_UPDATE", "RefreshPetCharms");
+end
+
+RegisterLoadTimeEvents();
 
 RGX:RegisterEvent("PLAYER_LOGIN", function()
 	InitializeAddon();

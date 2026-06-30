@@ -32,9 +32,9 @@ local function EnsureBPUTextStyles(db)
 end
 
 Textures:RegisterBars("BattlePetUtility", {
-	[DEFAULT_STATUSBAR_NAME] = [[Interface\AddOns\BattlePetUtility\media\renascensionl.tga]],
-	["Glamour"] = [[Interface\AddOns\BattlePetUtility\media\renascensionl.tga]],
-	["Smoother"] = [[Interface\AddOns\BattlePetUtility\media\backdrop.tga]],
+	[DEFAULT_STATUSBAR_NAME] = [[Interface\AddOns\BattlePetUtility\media\renascensionl]],
+	["Glamour"] = [[Interface\AddOns\BattlePetUtility\media\renascensionl]],
+	["Smoother"] = [[Interface\AddOns\BattlePetUtility\media\backdrop]],
 })
 
 E.VISIBILITY_MODE = {
@@ -50,10 +50,9 @@ E.AUTO_SUMMON_MODE = {
 }
 
 function addon:InitializeDatabase()
-	-- Carry over data from old BattlePetUtilityDB saved variable name (pre-rename)
-	if type(_G.BattlePetUtilityDB) == "table" and next(_G.BattlePetUtilityDB) ~= nil then
-		_G.BattlePetUtilityDB = _G.BattlePetUtilityDB
-		_G.BattlePetUtilityDB = nil
+	-- Carry over data from the old PetBuddy2 saved variable name.
+	if type(_G.BattlePetUtilityDB) ~= "table" and type(_G.PetBuddyDB) == "table" then
+		_G.BattlePetUtilityDB = _G.PetBuddyDB
 	end
 
 	-- Migrate old flat BattlePetUtilityDB to NewDatabase structure

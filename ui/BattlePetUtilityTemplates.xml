@@ -162,7 +162,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="BORDER" textureSubLevel="-1">
-				<Texture name="$parentIconBackdrop" file="Interface\\AddOns\\BattlePetUtility\media\backdrop">
+				<Texture name="$parentIconBackdrop" file="Interface\AddOns\BattlePetUtility\media\backdrop">
 					<Size x="62" y="62"/>
 					<Anchors>
 						<Anchor point="CENTER" relativeTo="$parentIcon" x="0" y="0"/>
@@ -170,7 +170,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK" textureSubLevel="-1">
-				<Texture name="$parentIconGloss" file="Interface\\AddOns\\BattlePetUtility\media\gloss" alphaMode="ADD">
+				<Texture name="$parentIconGloss" file="Interface\AddOns\BattlePetUtility\media\gloss" alphaMode="ADD">
 					<Size x="56" y="56"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon" x="0" y="0"/>
@@ -179,7 +179,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK">
-				<Texture name="$parentIconBorder" parentKey="iconBorder" file="Interface\\AddOns\\BattlePetUtility\media\border">
+				<Texture name="$parentIconBorder" parentKey="iconBorder" file="Interface\AddOns\BattlePetUtility\media\border">
 					<Size x="62" y="62"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon"/>
@@ -313,10 +313,11 @@
 									<Anchors>
 										<Anchor point="RIGHT" relativeTo="$parent" relativePoint="RIGHT" x="-5" y="2"/>
 									</Anchors>
+									<Color r="0.02" g="0.03" b="0.02"/>
 								</FontString>
 							</Layer>
 						</Layers>
-						<BarTexture file="Interface\\AddOns\\BattlePetUtility\media\renascensionl"/>
+						<BarTexture file="Interface\AddOns\BattlePetUtility\media\renascensionl"/>
 						<BarColor r="0.22" g="1.0" b="0.08"/>
 						<Scripts>
 							<OnLoad>
@@ -344,10 +345,11 @@
 									<Anchors>
 										<Anchor point="RIGHT" relativeTo="$parent" relativePoint="RIGHT" x="-7" y="-1"/>
 									</Anchors>
+									<Color r="0.92" g="0.96" b="1.0"/>
 								</FontString>
 							</Layer>
 						</Layers>
-						<BarTexture file="Interface\\AddOns\\BattlePetUtility\media\renascensionl"/>
+						<BarTexture file="Interface\AddOns\BattlePetUtility\media\renascensionl"/>
 						<BarColor r="0.2" g="0.7" b="1.0"/>
 						<Scripts>
 							<OnLoad>
@@ -448,18 +450,18 @@
 				if(self.SetBackdrop) then
 					self:SetBackdrop({
 						bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-						edgeFile = "Interface\\AddOns\\BattlePetUtility\\media\\frameborder",
+						edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
 						tile = true,
 						tileSize = 16,
-						edgeSize = 16,
-						insets = { left = 4, right = 4, top = 4, bottom = 4 },
+						edgeSize = 10,
+						insets = { left = 3, right = 3, top = 3, bottom = 3 },
 					});
 				end
 				if(self.SetBackdropBorderColor) then
-					self:SetBackdropBorderColor(0, 0, 0, 0.85);
+					self:SetBackdropBorderColor(0.42, 0.25, 0.58, 0.90);
 				end
 				if(self.SetBackdropColor) then
-					self:SetBackdropColor(0, 0, 0, 0.7);
+					self:SetBackdropColor(0.015, 0.015, 0.025, 0.72);
 				end
 				
 				self.petAbilities = {}
@@ -509,7 +511,7 @@
 				</FontString>
 			</Layer>
 			<Layer level="OVERLAY" textureSubLevel="1">
-				<Texture name="$parentIconGloss" file="Interface\\AddOns\\BattlePetUtility\media\gloss" alphaMode="ADD">
+				<Texture name="$parentIconGloss" file="Interface\AddOns\BattlePetUtility\media\gloss" alphaMode="ADD">
 					<Size x="38" y="38"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon" x="0" y="0"/>
@@ -540,14 +542,14 @@
 				BattlePetUtilityFrameButton_OnLeave(self);
 			</OnLeave>
 		</Scripts>
-		<NormalTexture name="$parentNormalTexture" parentKey="NormalTexture" file="Interface\\AddOns\\BattlePetUtility\media\border">
+		<NormalTexture name="$parentNormalTexture" parentKey="NormalTexture" file="Interface\AddOns\BattlePetUtility\media\border">
 			<Anchors>
 				<Anchor point="TOPLEFT" x="-3" y="3"/>
 				<Anchor point="BOTTOMRIGHT" x="3" y="-3"/>
 			</Anchors>
 			<Color r="0.05" g="0.05" b="0.05"/>
 		</NormalTexture>
-		<PushedTexture file="Interface\\AddOns\\BattlePetUtility\media\border">
+		<PushedTexture file="Interface\AddOns\BattlePetUtility\media\border">
 			<Anchors>
 				<Anchor point="TOPLEFT" x="-2" y="2"/>
 				<Anchor point="BOTTOMRIGHT" x="2" y="-2"/>
@@ -588,7 +590,7 @@
 		</Scripts>
 	</Frame>
 	
-	<Texture name="BattlePetUtilityButtonHighlightTextureTemplate" file="Interface\\AddOns\\BattlePetUtility\media\loadoutbuttonhighlight" alphaMode="ADD" virtual="true">
+	<Texture name="BattlePetUtilityButtonHighlightTextureTemplate" file="Interface\AddOns\BattlePetUtility\media\loadoutbuttonhighlight" alphaMode="ADD" virtual="true">
 		<TexCoords left="0" right="0.8125" top="0" bottom="0.71875"/>
 	</Texture>
 	
@@ -605,7 +607,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="BORDER" textureSubLevel="-1">
-				<Texture name="$parentIconBackdrop" file="Interface\\AddOns\\BattlePetUtility\media\backdrop">
+				<Texture name="$parentIconBackdrop" file="Interface\AddOns\BattlePetUtility\media\backdrop">
 					<Size x="62" y="62"/>
 					<Anchors>
 						<Anchor point="CENTER" relativeTo="$parentIcon" x="0" y="0"/>
@@ -613,7 +615,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK" textureSubLevel="-1">
-				<Texture name="$parentIconGloss" file="Interface\\AddOns\\BattlePetUtility\media\gloss" alphaMode="ADD">
+				<Texture name="$parentIconGloss" file="Interface\AddOns\BattlePetUtility\media\gloss" alphaMode="ADD">
 					<Size x="56" y="56"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon" x="0" y="0"/>
@@ -622,7 +624,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK">
-				<Texture name="$parentIconBorder" parentKey="iconBorder" file="Interface\\AddOns\\BattlePetUtility\media\border">
+				<Texture name="$parentIconBorder" parentKey="iconBorder" file="Interface\AddOns\BattlePetUtility\media\border">
 					<Size x="62" y="62"/>
 					<Anchors>
 						<Anchor point="CENTER" relativePoint="CENTER" relativeKey="$parent.icon"/>
@@ -695,7 +697,7 @@
 		<Scripts>
 			<OnValueChanged function="HybridScrollFrame_OnValueChanged"/>
 		</Scripts>
-		<ThumbTexture name="$parentThumbTexture" inherits="HybridScrollBarButton" file="Interface\\AddOns\\BattlePetUtility\media\sliderthumb" parentKey="thumbTexture" alphaMode="ADD">
+		<ThumbTexture name="$parentThumbTexture" inherits="HybridScrollBarButton" file="Interface\AddOns\BattlePetUtility\media\sliderthumb" parentKey="thumbTexture" alphaMode="ADD">
 			<Size x="16" y="16"/>
 			<TexCoords left="0" right="1" top="0" bottom="1"/>
 			<!-- <TexCoords left="0.1875" right="0.8125" top="0" bottom="1"/> -->
@@ -709,7 +711,7 @@
 				<Texture parentKey="background" atlas="PetList-ButtonBackground"/>
 			</Layer>
 			<Layer level="BACKGROUND" textureSubLevel="1">
-				<Texture parentKey="backgroundError" file="Interface\\AddOns\\BattlePetUtility\media\error" hidden="true">
+				<Texture parentKey="backgroundError" file="Interface\AddOns\BattlePetUtility\media\error" hidden="true">
 					<Size x="52" y="44"/>
 					<Anchors>
 						<Anchor point="LEFT" x="1" y="0"/>

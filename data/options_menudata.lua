@@ -57,13 +57,13 @@ function addon:GetPrimaryMenuData()
 
 	local data = {
 		{
-			text = "BattlePetUtility Options", isTitle = true, notCheckable = true,
+			text = "Battle Pet Utility! Options", isTitle = true, notCheckable = true,
 		},
 		{
 			text = "Battle Pet HUD and utility menu", isTitle = true, notCheckable = true, disabled = true,
 		},
 		{
-			text = "Lock BattlePetUtility",
+			text = "Lock Battle Pet Utility!",
 			func = function() self.db.global.IsFrameLocked = not self.db.global.IsFrameLocked end,
 			checked = function() return self.db.global.IsFrameLocked end,
 			isNotRadio = true,

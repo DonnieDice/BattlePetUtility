@@ -307,7 +307,7 @@ function addon:GetRematchLoadouts()
 		local teamID, team = iter(state, key);
 		key = teamID;
 		if(teamID == nil) then
-			break;
+			break
 		end
 
 		if(type(team) == "table" and team.name and team.name ~= "") then
@@ -650,7 +650,7 @@ function BattlePetUtilityFrameLoadouts_UpdateList()
 						petIcon.iconBorder:SetVertexColor(rarityColor.r, rarityColor.g, rarityColor.b);
 						
 						petIcon.petTypeIcon:Show();
-						petIcon.petTypeIcon:SetTexture("Interface\\PetBattles\\PetIcon-"..PET_TYPE_SUFFIX[petType or 1]);
+						petIcon.petTypeIcon:SetTexture(GetPetTypeTexture(petType or 1));
 						
 						petIcon.isDead:Hide();
 					else
@@ -797,7 +797,7 @@ end
 
 function BattlePetUtilityLoadoutsSaveButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\BattlePetUtility\\media\\savebuttonicon",
+		iconTexture = "Interface\\AddOns\\BattlePetUtility\\media\\savebuttonicon.tga",
 		-- count = "S",
 		tooltipTitle = "Save Loadout",
 		tooltipDescription = "Save current pets and abilities to BattlePetUtility loadouts, or open Rematch Save Team when Rematch is available",
@@ -816,7 +816,7 @@ end
 
 function BattlePetUtilityLoadoutsToggleButton_OnLoad(self)
 	local actionData = {
-		iconTexture = "Interface\\AddOns\\BattlePetUtility\\media\\togglebuttonicondown",
+		iconTexture = "Interface\\AddOns\\BattlePetUtility\\media\\togglebuttonicondown.tga",
 		tooltipTitle = "Toggle Loadout List",
 		tooltipDescription = "Show/hide the list of existing loadouts",
 		func = function(self)
@@ -849,11 +849,11 @@ function BattlePetUtilityFrameLoadoutsScrollFrame_ToggleVisibility(showstate)
 		BattlePetUtilityFrameLoadouts_UpdateList();
 		HybridScrollFrame_SetOffset(BattlePetUtilityFrameLoadouts.scrollFrame, 0);
 		if(button and button.icon) then
-			button.icon:SetTexture("Interface\\AddOns\\BattlePetUtility\\media\\togglebuttoniconup");
+			button.icon:SetTexture("Interface\\AddOns\\BattlePetUtility\\media\\togglebuttoniconup.tga");
 		end
 	else
 		if(button and button.icon) then
-			button.icon:SetTexture("Interface\\AddOns\\BattlePetUtility\\media\\togglebuttonicondown");
+			button.icon:SetTexture("Interface\\AddOns\\BattlePetUtility\\media\\togglebuttonicondown.tga");
 		end
 	end
 end

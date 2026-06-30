@@ -139,3 +139,65 @@ if type(GetNumGossipActiveQuests) ~= "function" and C_GossipInfo and type(C_Goss
 		return TableLen(C_GossipInfo.GetActiveQuests());
 	end
 end
+
+if C_PetJournal then
+	if type(C_PetJournal.GetPetInfoByPetID) == "function" then
+		local OriginalGetPetInfoByPetID = C_PetJournal.GetPetInfoByPetID;
+		C_PetJournal.GetPetInfoByPetID = function(...)
+			local a, b, c, d, e, f, g, h, i, j, k, l, m, n, o = OriginalGetPetInfoByPetID(...);
+			if type(a) == "table" and b == nil then
+				local info = a;
+				return info.speciesID, info.customName, info.level, info.xp, info.maxXp, info.displayID, info.isFavorite, info.name, info.icon, info.petType, info.creatureID, info.sourceText, info.description, info.isWild, info.canBattle;
+			end
+			return a, b, c, d, e, f, g, h, i, j, k, l, m, n, o;
+		end
+	end
+
+	if type(C_PetJournal.GetPetInfoBySpeciesID) == "function" then
+		local OriginalGetPetInfoBySpeciesID = C_PetJournal.GetPetInfoBySpeciesID;
+		C_PetJournal.GetPetInfoBySpeciesID = function(...)
+			local a, b, c, d, e, f, g = OriginalGetPetInfoBySpeciesID(...);
+			if type(a) == "table" and b == nil then
+				local info = a;
+				return info.name, info.icon, info.petType, info.creatureID, info.sourceText, info.description, info.isWild;
+			end
+			return a, b, c, d, e, f, g;
+		end
+	end
+
+	if type(C_PetJournal.GetPetLoadOutInfo) == "function" then
+		local OriginalGetPetLoadOutInfo = C_PetJournal.GetPetLoadOutInfo;
+		C_PetJournal.GetPetLoadOutInfo = function(...)
+			local a, b, c, d, e = OriginalGetPetLoadOutInfo(...);
+			if type(a) == "table" and b == nil then
+				local info = a;
+				return info.petID, info.ability1ID or info.abilityID1, info.ability2ID or info.abilityID2, info.ability3ID or info.abilityID3, info.locked;
+			end
+			return a, b, c, d, e;
+		end
+	end
+
+	if type(C_PetJournal.GetPetStats) == "function" then
+		local OriginalGetPetStats = C_PetJournal.GetPetStats;
+		C_PetJournal.GetPetStats = function(...)
+			local a, b, c, d, e = OriginalGetPetStats(...);
+			if type(a) == "table" and b == nil then
+				local info = a;
+				return info.health, info.maxHealth, info.power, info.speed, info.rarity;
+			end
+			return a, b, c, d, e;
+		end
+	end
+
+	if type(C_PetJournal.GetPetAbilityInfo) == "function" then
+		local OriginalGetPetAbilityInfo = C_PetJournal.GetPetAbilityInfo;
+		C_PetJournal.GetPetAbilityInfo = function(...)
+			local a, b, c, d = OriginalGetPetAbilityInfo(...);
+			if type(a) == "table" and b == nil then
+				local info = a;
+				return info.name, info.icon, info.petType, info.cooldown;
+			end
+			return a, b, c, d;
+		end
+	end
+end

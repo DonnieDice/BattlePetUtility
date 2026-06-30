@@ -12,7 +12,8 @@ local E = addon.E
 local ICON_PATTERN_12 = "|T%s:12:12:0:0|t"
 local ICON_PATTERN_16 = "|T%s:16:16:0:0|t"
 
-local PET_BUDDY_ICON    = "Interface\\ICONS\\INV_pandarenserpentpet"
+local BPU_ICON          = "Interface\\AddOns\\BattlePetUtility\\media\\logo.tga"
+local PET_BUDDY_ICON    = BPU_ICON
 local TEX_PET_BUDDY_ICON = ICON_PATTERN_16:format(PET_BUDDY_ICON)
 
 local TEX_HEALTH_ICON = "|TInterface\\PetBattles\\PetBattle-StatIcons:16:16:0:0:32:32:16:32:16:32|t"
@@ -59,7 +60,7 @@ end
 function addon:GetDatabrokerMenuData()
     return {
         {
-            text = "BattlePetUtility", isTitle = true, notCheckable = true,
+            text = addon.ADDON_TITLE_COLORED or "|cffb512fcB|r|cffffffffattle |cffb512fcP|r|cffffffffet |cffb512fcU|r|cfffffffftility|r|cffb512fc!|r", isTitle = true, notCheckable = true,
         },
         {
             text = "Show wounded pets",
@@ -119,7 +120,7 @@ function addon:GetDatabrokerMenuData()
             text = "", isTitle = true, notCheckable = true, disabled = true,
         },
         {
-            text         = "BattlePetUtility Options",
+            text         = "Battle Pet Utility! Options",
             notCheckable = true,
             hasArrow     = true,
             menuList     = addon:GetPrimaryMenuData(),
@@ -136,8 +137,8 @@ function addon:InitializeDatabroker()
 
     addon.databroker = DB:NewDataObject(ADDON_NAME, {
         type  = "data source",
-        label = "BattlePetUtility",
-        text  = "BattlePetUtility",
+        label = addon.ADDON_TITLE or "Battle Pet Utility!",
+        text  = addon.ADDON_TITLE or "Battle Pet Utility!",
         icon  = PET_BUDDY_ICON,
         OnClick = function(frame, button)
             if button == "LeftButton" then
@@ -149,7 +150,7 @@ function addon:InitializeDatabroker()
         end,
         OnTooltipShow = function(tooltip)
             if not tooltip or not tooltip.AddLine then return end
-            tooltip:AddLine(TEX_PET_BUDDY_ICON .. " BattlePetUtility")
+            tooltip:AddLine(TEX_PET_BUDDY_ICON .. " " .. (addon.ADDON_TITLE_COLORED or "|cffb512fcB|r|cffffffffattle |cffb512fcP|r|cffffffffet |cffb512fcU|r|cfffffffftility|r|cffb512fc!|r"))
             tooltip:AddLine("|cffd9c6ffBattle Pet HUD|r")
             tooltip:AddLine(" ")
             tooltip:AddLine("Active Pets")
@@ -226,7 +227,7 @@ function addon:InitializeDatabroker()
                 tooltip:AddLine(" ")
             end
 
-            tooltip:AddLine("Left-Click |cffffffffToggle BattlePetUtility|h")
+            tooltip:AddLine("Left-Click |cffffffffToggle Battle Pet Utility!|h")
             tooltip:AddLine("Right-Click |cffffffffShow options|h")
         end,
         OnLeave = function() end,
@@ -258,7 +259,7 @@ function addon:UpdateDatabrokerText()
     end
 
     if #strings == 0 then
-        table.insert(strings, "BattlePetUtility")
+        table.insert(strings, addon.ADDON_TITLE or "Battle Pet Utility!")
     end
 
     addon.databroker.text = table.concat(strings, "  ")
